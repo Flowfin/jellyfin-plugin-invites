@@ -24,17 +24,6 @@
     </PropertyGroup>
 
     <!--
-        Restore writes packages.lock.json and, on a build runner, refuses to restore
-        anything the lock file does not already name. Rebuilding an old tag then resolves
-        the dependency versions that tag shipped with rather than whatever is newest on
-        the feed that day.
-    -->
-    <PropertyGroup>
-        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <RestoreLockedMode Condition="'$(GITHUB_ACTIONS)' == 'true'">true</RestoreLockedMode>
-    </PropertyGroup>
-
-    <!--
         Deterministic is on by default and is stated here so a change that turns it off
         has to say so. ContinuousIntegrationBuild replaces the absolute paths of the
         machine that built with relative ones, which is what stops two runners producing
