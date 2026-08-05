@@ -39,7 +39,7 @@ the release process rather than here.
 
 ## Rebuilding an old version
 
-`packages.lock.json` is committed next to the project file, and it records the exact
+`packages.lock.json` is committed next to each project file, and it records the exact
 dependency graph a build resolved, not the ranges the project asked for. On a build
 runner, restore refuses to resolve anything the lock file does not already name, so
 rebuilding an old tag pulls the versions that tag shipped with rather than whatever
@@ -58,7 +58,7 @@ Two clean builds of one commit produce byte identical output. Measured by removi
 ```
 $ dotnet build Jellyfin.Plugin.Template.sln -c Release --no-incremental
 $ python -c "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path('Jellyfin.Plugin.Template/bin/Release/net9.0/Jellyfin.Plugin.Template.dll').read_bytes()).hexdigest())"
-a870cf493c761f4889571e3f26c33087896210143531d1e9fe3e5f05c957fa1e
+f39f9cabf6490456df94749040db7ee8c3e6d420d5afd7efe22114af9c01019e
 ```
 
 Removing `obj/` and `bin/` and doing it again prints the same digest.
