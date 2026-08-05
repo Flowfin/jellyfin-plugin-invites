@@ -1,0 +1,99 @@
+name: '📦 Package Plugin'
+
+on:
+  # Every pull request, so a packaging mistake is found here rather than by the
+  # people who install the result. No paths-ignore, for the reason in build.yaml.
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Package with the plugin repository manager
+        # Reads the committed build.yaml, so the package produced here is the
+        # one the release will produce rather than a separate recipe.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: The packaged file list equals the artifact list in build.yaml
+        # The artifact list is what a catalogue and the release tooling read. A
+        # package holding a file that list does not name, or missing one it
+        # does, is a plugin that installs wrong on somebody else's server. The
+        # comparison is exact and fails closed: an unreadable zip or an empty
+        # expected list reds the job rather than passing it.
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          # The artifacts block of build.yaml, one filename per line. Read from
+          # the committed file rather than restated here, so this check cannot
+          # drift away from what it is checking.
+          expected=$(awk '
+            /^artifacts:/ {inblock=1; next}
+            inblock && /^[a-zA-Z]/ {inblock=0}
+            inblock && /^-/ {gsub(/^- *"?/,""); gsub(/"?[[:space:]]*$/,""); print}
+          ' build.yaml | sort)
+          if [ -z "$expected" ]; then
+            echo "::error::No artifacts listed in build.yaml. Refusing to compare against an empty list."
+            exit 1
+          fi
+          if ! actual=$(unzip -Z1 "$ARTIFACT" | grep -v '^meta.json$' | sort); then
+            echo "::error::Could not read the packaged archive at ${ARTIFACT}."
+            exit 1
+          fi
+          echo "build.yaml artifacts:"; echo "$expected"
+          echo "packaged, excluding the manifest the packager adds:"; echo "$actual"
+          if [ "$expected" != "$actual" ]; then
+            echo "::error::The packaged file list does not match the artifact list in build.yaml."
+            diff <(echo "$expected") <(echo "$actual") || true
+            exit 1
+          fi
+          echo "The package holds exactly what build.yaml names."
+
+      - name: Generate the bill of materials
+        # The plan keeps this plugin's runtime dependency set empty. This file is
+        # what proves it stayed empty: a pull request that quietly adds a package
+        # arrives as a new component here instead of as nothing at all.
+        run: |
+          set -euo pipefail
+          dotnet tool install --global CycloneDX --version 6.2.0
+          dotnet CycloneDX Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj \
+            --output sbom --json --set-name jellyfin-plugin-invites
+          ls -l sbom
+
+      - name: Keep the package and the bill of materials together
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: plugin-package
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            ${{ steps.jprm.outputs.artifact }}
+            sbom/
