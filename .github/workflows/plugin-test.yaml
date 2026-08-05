@@ -1,0 +1,42 @@
+# The test leg, owned by this repository. Reusable for the same reason as the
+# build leg: the required check context is `call / test` and is built from the
+# caller job id and this job id.
+name: 'Plugin test'
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        required: false
+        default: '9.0.x'
+        description: 'The .NET SDK version to test with'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # Do not give this job a `name:`. See the note in plugin-build.yaml.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '${{ inputs.dotnet-version }}'
+
+      - name: Restore against the lock file
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
