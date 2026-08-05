@@ -1,7 +1,59 @@
 <Project>
+    <!--
+        The version is written in build.yaml and nowhere else. That file is the packaging
+        manifest a catalogue reads, so it is the copy that has to be right, and the three
+        assembly properties below are read out of it at build time rather than typed a
+        second time. Two numbers for one version drift, and a plugin whose assembly
+        version disagrees with its manifest version is one nobody can reason about when a
+        bug report names a version.
+
+        docs/versioning.md says which of the four parts moves for a breaking change, a
+        feature and a fix.
+    -->
     <PropertyGroup>
-        <Version>0.0.0.0</Version>
-        <AssemblyVersion>0.0.0.0</AssemblyVersion>
-        <FileVersion>0.0.0.0</FileVersion>
+        <PluginManifestPath>$(MSBuildThisFileDirectory)build.yaml</PluginManifestPath>
+        <_PluginManifestText>$([System.IO.File]::ReadAllText($(PluginManifestPath)))</_PluginManifestText>
+        <_PluginVersionLine>$([System.Text.RegularExpressions.Regex]::Match($(_PluginManifestText), '(?m)^version:[^\r\n]*'))</_PluginVersionLine>
+        <PluginManifestVersion>$([System.Text.RegularExpressions.Regex]::Replace($(_PluginVersionLine), '[^0-9.]', ''))</PluginManifestVersion>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <Version>$(PluginManifestVersion)</Version>
+        <AssemblyVersion>$(PluginManifestVersion)</AssemblyVersion>
+        <FileVersion>$(PluginManifestVersion)</FileVersion>
+    </PropertyGroup>
+
+    <!--
+        Restore writes packages.lock.json and, on a build runner, refuses to restore
+        anything the lock file does not already name. Rebuilding an old tag then resolves
+        the dependency versions that tag shipped with rather than whatever is newest on
+        the feed that day.
+    -->
+    <PropertyGroup>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <RestoreLockedMode Condition="'$(GITHUB_ACTIONS)' == 'true'">true</RestoreLockedMode>
+    </PropertyGroup>
+
+    <!--
+        Deterministic is on by default and is stated here so a change that turns it off
+        has to say so. ContinuousIntegrationBuild replaces the absolute paths of the
+        machine that built with relative ones, which is what stops two runners producing
+        two different files from one commit.
+    -->
+    <PropertyGroup>
+        <Deterministic>true</Deterministic>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+    <!--
+        Without this, a build.yaml whose version key is missing, misspelled or not four
+        parts leaves PluginManifestVersion empty, and the build quietly stamps the SDK
+        default of 1.0.0.0 into the assembly while the manifest says something else. That
+        is the exact drift this file exists to prevent, so it is refused rather than
+        allowed through.
+    -->
+    <Target Name="RefuseUnreadablePluginVersion" BeforeTargets="BeforeBuild">
+        <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(PluginManifestVersion)', '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'))"
+               Text="No four part version could be read from $(PluginManifestPath). What was read was '$(PluginManifestVersion)'. The version lives in that file and the assembly version, file version and package version are all derived from it." />
+    </Target>
 </Project>
