@@ -1,0 +1,42 @@
+name: '🔎 Invariant Lint'
+
+on:
+  # Every branch and every pull request. The rules are a cheap read-only scan
+  # and there is no path this plugin's source could move to that should escape
+  # them. No paths-ignore, for the reason in build.yaml.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  invariants:
+    name: Invariant lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Every rule bites its own fixture
+        # This runs first and on every run, not once at review time. A rule that
+        # has stopped matching the shape it is about goes green against the tree
+        # forever and nobody finds out, so the proof is executed rather than
+        # remembered. Most of these rules cannot fire against the source yet
+        # because the code they are about is not written; the fixtures are the
+        # only thing standing between them and being decorative.
+        run: bash .github/lint/invariants.sh selftest
+
+      - name: The tree holds none of the shapes
+        run: bash .github/lint/invariants.sh check .
