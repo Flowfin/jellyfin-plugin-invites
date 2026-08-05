@@ -17,15 +17,19 @@ means it does not, with the reason. Deferred means a later milestone decides, an
 counts as declined until then. Kept and removed are the two answers for a workflow
 this repository has that the gate does not.
 
+An answer is a decision rather than a description of the directory as it stands. A
+row saying removed names where the removal is carried out, and until that lands the
+file is still there.
+
 ## What the target gate has
 
 | Workflow | Answer | Reason |
 | --- | --- | --- |
-| `build.yml` | adopted in substance | On the target it is a reusable workflow the others call rather than a check of its own, and #14 lands the equivalent here as a first-party build. |
+| `build.yml` | adopted, landed | On the target it is a reusable workflow the others call rather than a check of its own, and #14 landed the same shape here as `plugin-build.yaml`. |
 | `codeql.yml` | adopted | #16 lands a CodeQL workflow this repository owns, replacing the shared template call. |
 | `dco.yml` | adopted, landed | Already in the tree at `e776ccf`. |
 | `dependency-review.yml` | adopted, landed | Already in the tree at `e776ccf`. |
-| `dotnet.yml` | adopted | The build and test legs land with #14, and #15 adds the oldest supported server ABI to them. |
+| `dotnet.yml` | adopted, landed | The build and test legs landed with #14, and #15 adds the oldest supported server ABI to them. |
 | `e2e-login.yml` | declined | That suite drives a browser against a real identity provider, and this plugin's equivalent surface is covered at the route level plus one recorded manual check, because a browser test needs a display and a network and the headless rule refuses both. |
 | `fuzz.yml` | adopted | #21 fuzzes the invitation code parser on a schedule. |
 | `manifest-freshness.yml` | deferred to M12 | There is no published manifest to keep fresh until a release process exists. |
@@ -49,23 +53,27 @@ this repository has that the gate does not.
 
 | Workflow | Answer | Reason |
 | --- | --- | --- |
-| `build.yaml` | replaced by #14 | It calls the shared template build, which this repository neither owns nor pins, and #14 lands a first-party one in its place. |
-| `changelog.yaml` | removed | It drafts a release and rewrites the version in `Directory.Build.props` and `build.yaml` with `sed` and `yq`, which puts back the second source of truth #9 removed, and there is nothing to release before M12 writes a release process. |
-| `command-dispatch.yaml` | removed | It turns an issue comment into a repository dispatch, which is a write surface driven by untrusted input, and it is carried for slash commands nobody here uses. |
-| `command-rebase.yaml` | removed | It exists only to serve the dispatcher above and has no reason to stay once that goes. |
+| `build.yaml` | kept | Since #14 it calls a reusable workflow this repository owns rather than a shared template one, and its job id is what the required check context is built from. |
+| `changelog.yaml` | removed, in #7 | It drafts a release and rewrites the version in `Directory.Build.props` and `build.yaml` with `sed` and `yq`, which puts back the second source of truth #9 removes, and there is nothing to release before M12 writes a release process. |
+| `command-dispatch.yaml` | removed, in #7 | It turns an issue comment into a repository dispatch, which is a write surface driven by untrusted input, and it is carried for slash commands nobody here uses. |
+| `command-rebase.yaml` | removed, in #7 | It exists only to serve the dispatcher above and has no reason to stay once that goes. |
 | `dco.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 | `dependency-review.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
+| `plugin-build.yaml` | kept | The first-party build leg landed by #14, which is this repository's answer to the target gate's `build.yml`. |
+| `plugin-test.yaml` | kept | The first-party test leg landed by #14, which is this repository's answer to the target gate's `dotnet.yml`. |
 | `publish.yaml` | deferred to M12 | It publishes on a release, and it stands unchanged until the release process it belongs to is written. |
-| `scan-codeql.yaml` | replaced by #16 | The input is corrected in #7 so the scan runs against this repository at all, and #16 replaces the shared template call with one this repository owns. |
+| `scan-codeql.yaml` | kept | #7 corrects the input so the scan runs against this repository at all, and #16 replaces the shared template call with a workflow this repository owns. |
 | `scorecard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
-| `sync-labels.yaml` | removed | It replaces this repository's labels with a shared list and deletes every label that list does not name, and two labels this plugin's issues lean on are not named there. |
-| `test.yaml` | replaced by #14 | It calls the shared template test workflow, and #14 lands a first-party one that this repository can pin and reason about. |
+| `sync-labels.yaml` | removed, here | It replaces this repository's labels with a shared list and deletes every label that list does not name, and two labels this plugin's issues lean on are not named there. |
+| `test.yaml` | kept | Since #14 it calls the first-party test leg rather than a shared template one. |
 | `unicode-guard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 | `zizmor.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 
 ## The label row, in full
 
-The one-sentence reason above is short because the table wants it short. The measurement behind it is this. The shared list the workflow syncs from carries 25 labels, and it is applied with `delete-other-labels: true`:
+The one-sentence reason above is short because the table wants it short. The
+measurement behind it is this. The workflow calls a shared one that applies a central
+label list with `delete-other-labels: true`:
 
 ```
 $ gh api -H "Accept: application/vnd.github.raw" \
@@ -89,7 +97,8 @@ $ gh issue list --state all --limit 300 --json number,labels \
 1	question
 ```
 
-`security` and `planning` appear in the shared list neither as a label nor as an alias of one:
+`security` and `planning` appear in the shared list neither as a label nor as an
+alias of one:
 
 ```
 $ gh api -H "Accept: application/vnd.github.raw" \
@@ -98,6 +107,9 @@ $ gh api -H "Accept: application/vnd.github.raw" \
 40:    - enhancement
 ```
 
-So a run deletes them, and with them 50 label attachments across the issues that carry them. `enhancement` survives but not under its own name: it is listed as an alias of `feature`, so the 28 issues carrying it end up carrying `feature` instead, and anything that filters on `enhancement` stops matching.
+So a run deletes them, and with them 50 label attachments across the issues that
+carry them. `enhancement` survives but not under its own name: it is listed as an
+alias of `feature`, so the 28 issues carrying it end up carrying `feature` instead,
+and anything that filters on `enhancement` stops matching.
 
 The workflow runs on a monthly schedule and nothing here would say it had happened.
