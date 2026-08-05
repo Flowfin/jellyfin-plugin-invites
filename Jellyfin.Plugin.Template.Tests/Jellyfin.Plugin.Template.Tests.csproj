@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.Template.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- The plugin is compiled for the server's framework, which is not the
+         newest one a contributor's machine necessarily has a runtime for. Let
+         the test host roll forward so the suite runs on a machine carrying only
+         a later runtime, rather than requiring an installer to be run. -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jellyfin.Plugin.Template\Jellyfin.Plugin.Template.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The plugin excludes the runtime assets of these packages because the
+         server supplies them at load time. Nothing supplies them to a test
+         host, so the suite carries them itself. The versions must stay equal to
+         the ones the plugin compiles against, in
+         Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj: a lower one
+         here would run the plugin against an assembly it was not built for. -->
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.11" />
+  </ItemGroup>
+
+</Project>
