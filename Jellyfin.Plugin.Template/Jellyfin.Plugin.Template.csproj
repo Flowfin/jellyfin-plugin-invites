@@ -12,10 +12,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" >
+    <!--
+      The version comes from JellyfinPackageVersion in Directory.Build.props, which is the
+      shipping version ordinarily and the floor read out of build.yaml's targetAbi when
+      BuildAgainstAbiFloor is set.
+    -->
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" >
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.11.11">
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
