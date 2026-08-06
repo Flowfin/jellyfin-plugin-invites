@@ -51,6 +51,30 @@ you cannot demonstrate a full exploit.
 Out of scope: the Jellyfin server itself, a server whose operator configured it
 to be open, and reports produced by a scanner with nothing behind them.
 
+## What a leaked link costs
+
+An invitation link is a bearer credential. Anybody holding it can create an
+account, so a link in a forwarded message or a browser history on a shared
+machine is worth whatever the invitation behind it was worth. This is the bound
+on that, in the same words as
+[docs/threat-model.md](docs/threat-model.md), which is where each clause is
+placed against the issue that keeps it:
+
+> Somebody who holds a leaked link, and reaches the server before the invited
+> person does, gets one account for each use the invitation had left, with
+> exactly the template that invitation carried, valid for no longer than the
+> invitation had left, listed for the operator as a redemption of that
+> invitation, and removable by deleting that account.
+
+None of the issues behind those clauses is closed, so today the sentence is what
+this plugin is being built to, and not a report of what it does. A report that
+the plugin exceeds this bound once the code exists is a report this policy wants,
+and the list above is what to measure it against.
+
+The default validity is seven days, and a spent invitation is spent for good.
+The threat model carries the reasoning for both, and both are the shortest
+window that still works rather than the longest one an operator would tolerate.
+
 ## What is not defended
 
 These are the entries the threat model in [docs/threat-model.md](docs/threat-model.md)
