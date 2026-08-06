@@ -219,6 +219,22 @@ repository currently builds. Issue #2 renames the project off the template, and
 the artifact list has to move in the same change or the packaging job reds on
 the comparison above.
 
+## What the failing items are waiting on
+
+Five of the seven wait on one thing that is not a piece of work. The identifier,
+the display name, the overview and description, the owner and the category are
+all held by #3 and #8, and both of those wait on the twelfth entry in #11, which
+is where the display name and the identifier are decided. The identifier is
+permanent in practice once anybody has installed the plugin, so it is the one
+field on this list that cannot be corrected later at the cost of a version bump.
+
+The per-version checksum, source address and timestamp wait on the eleventh
+entry in the same place, which decides where the manifest is hosted. #119 cannot
+generate a manifest into a location nobody has chosen.
+
+The changelog under #124 waits on neither and is the one failing item that could
+move today.
+
 ## What this record does not say
 
 It does not say the plugin is ready for a catalogue. Seven of the items above
