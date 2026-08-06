@@ -6,9 +6,25 @@ on:
       - released
   workflow_dispatch:
 
+# Explicit deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@master
+    # Pinned by commit rather than to a branch. On a branch pin the content of
+    # this call changes whenever somebody merges in another organisation's
+    # repository, and of everything this tree calls out to this is the one that
+    # publishes the artefact people install. The commit is the head of that
+    # repository's default branch on the date in the comment, and it is the same
+    # one scan-codeql.yaml carries, so the tree holds one pin and not two.
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master as of 2026-07-29
+    # The called workflow has three jobs and two of them are guarded on
+    # `contains(github.repository, 'jellyfin/')`, which is false here, so what
+    # runs is its build job and the first two steps of its upload job. The one
+    # step needing more than read is the release-asset upload, which posts to
+    # the release with the job token. Nothing here writes anywhere else.
+    permissions:
+      contents: write # attach the built package to the release
     with:
       version: ${{ github.event.release.tag_name }}
       is-unstable: ${{ github.event.release.prerelease }}
