@@ -62,10 +62,11 @@ jobs:
         # The plugin project only. The test project's dependencies are its own
         # and are covered by the ordinary build.
         #
-        # No --locked-mode and no lock file is written: the committed lock file
-        # pins the shipping line, and this leg resolves a different version of
-        # the same two packages on purpose. Directory.Build.props turns the lock
-        # file off for this build rather than letting the restore rewrite it.
+        # No --locked-mode: the committed lock file pins the shipping line, and
+        # this leg resolves a different version of the same two packages on
+        # purpose. Directory.Build.props points the floor restore at a throwaway
+        # lock file under obj/, because NuGet updates an existing lock file
+        # whatever RestorePackagesWithLockFile says.
         #
         # Warnings are errors in the project file, so a clean run here is the
         # analyzers passing against the floor rather than the analyzers being
