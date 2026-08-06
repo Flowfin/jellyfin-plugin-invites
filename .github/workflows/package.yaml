@@ -117,11 +117,25 @@ jobs:
             exit 1
           fi
           echo "Everything that ships is named in build.yaml, and nothing else."
+          # Kept beside the bill of materials because the two answer different
+          # questions and only this one answers #35's. The bill of materials is
+          # the restore graph, so it lists every package the compiler saw,
+          # including the server's own and the analyzers, and a reader cannot
+          # tell from it which of them ship. This file is the set that ships.
+          mkdir -p sbom
+          printf '%s\n' "$shipped" > sbom/publish-closure.txt
 
       - name: Generate the bill of materials
-        # The plan keeps this plugin's runtime dependency set empty. This file is
-        # what proves it stayed empty: a pull request that quietly adds a package
-        # arrives as a new component here instead of as nothing at all.
+        # The plan keeps this plugin's runtime dependency set empty. A pull
+        # request that quietly adds a package arrives as a new component here
+        # instead of as nothing at all.
+        #
+        # Read what this file is. It is the restore graph of the project, so it
+        # lists the server's own packages and the analyzers alongside anything
+        # this plugin brought, and none of those three classes is marked in it.
+        # It is the record of what the compiler saw, not the answer to whether
+        # the runtime set is empty. The step above writes that answer to
+        # sbom/publish-closure.txt, and the two travel together.
         run: |
           set -euo pipefail
           dotnet tool install --global CycloneDX --version 6.2.0
