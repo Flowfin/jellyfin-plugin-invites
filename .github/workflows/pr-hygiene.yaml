@@ -1,0 +1,59 @@
+name: '🧹 PR Hygiene'
+
+on:
+  # edited is in the list so that adding the missing issue reference to the body
+  # re-runs the check, rather than leaving a red mark on a pull request that has
+  # already been repaired.
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# Deny-all at workflow level; the job below grants only what it reads.
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Deterministic pull-request hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # read the script and its fixtures out of the tree
+      pull-requests: read # read the body, the commits and the changed files
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Every leg bites its own fixture
+        # First, and on every run. A leg that has stopped seeing the shape it is
+        # about goes green forever and nobody finds out, so the proof is executed
+        # rather than remembered.
+        run: bash .github/lint/pr-hygiene.sh selftest
+
+      - name: Read what the pull request says about itself
+        # Everything untrusted goes straight from the API into a file. None of it
+        # is interpolated into shell, so a body or a filename cannot become a
+        # command here.
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          PR_NUMBER: '${{ github.event.pull_request.number }}'
+          REPO: '${{ github.repository }}'
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/pr"
+          gh api "repos/${REPO}/pulls/${PR_NUMBER}" \
+            --jq '.body // ""' > "${RUNNER_TEMP}/pr/body.txt"
+          gh api "repos/${REPO}/pulls/${PR_NUMBER}" \
+            --jq '"\(.user.type) \(.author_association)"' > "${RUNNER_TEMP}/pr/author.txt"
+          gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/commits" \
+            --jq '.[].commit.message | gsub("\n";" ")' > "${RUNNER_TEMP}/pr/commits.txt"
+          gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '.[] | "\(.changes) \(.filename)"' > "${RUNNER_TEMP}/pr/files.txt"
+
+      - name: Judge it
+        run: bash .github/lint/pr-hygiene.sh check "${RUNNER_TEMP}/pr"
