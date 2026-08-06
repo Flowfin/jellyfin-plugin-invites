@@ -57,10 +57,15 @@ test may not:
 - read or write the machine's certificate stores
 - open a network connection
 - launch an external binary or expect one to be installed
+- sleep on a real clock to wait for something, because four behaviours here are
+  clock-driven and a suite that sleeps gets slower until people stop running it
 
 If a behaviour cannot be tested inside that, it is not tested silently. Say so,
-and say what covers it instead. Milestone M10 states this rule in the tree and
-proves the suite obeys it.
+and say what covers it instead.
+
+The rule is executed rather than trusted. `.github/workflows/headless.yaml` runs
+the suite inside a container with no network interface, as an unprivileged user,
+so a test that reaches out fails there rather than on the next machine.
 
 ## No guard without proof that it bites
 
