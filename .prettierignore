@@ -1,0 +1,16 @@
+# What the formatter is not allowed to judge, and why for each entry.
+
+# Deliberately misformatted input. The workflow runs the check against this
+# directory on its own, with this ignore file bypassed, and requires it to come
+# back red. Leaving it visible to the tree scan would make every run fail.
+.github/lint/fixtures/prettier/
+
+# Already minified. Reformatting it would undo the minification and the file is
+# not read by a person.
+*.min.js
+
+# Build output and restored packages. Not tracked, and a local run should not
+# spend time on bytes no reviewer will ever see.
+bin/
+obj/
+node_modules/
