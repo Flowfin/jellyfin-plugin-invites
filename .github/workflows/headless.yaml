@@ -1,0 +1,103 @@
+# The headless rule in CONTRIBUTING.md, executed rather than asserted.
+#
+# The ordinary test leg runs on a machine that has a network, a writable home
+# directory and whatever the runner image happens to carry, so a test that
+# quietly depends on any of those passes there and breaks on the next machine.
+# This leg takes those away: the suite runs inside a container with no network
+# interface at all, as the unprivileged user the runner already is, with the
+# workspace mounted at the same path so nothing depends on where it sits.
+#
+# Restore and build happen outside, because both legitimately need the network.
+# What is judged here is the test run.
+#
+# The package cache is put inside the workspace before the restore so the paths
+# baked into the restore output exist inside the container too. Without that the
+# run fails for a reason that has nothing to do with the rule, which is the worst
+# kind of red.
+name: '🚫 Headless Suite'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  headless:
+    name: Suite runs headless and offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    env:
+      # Pinned by digest rather than by tag, for the same reason every action in
+      # this repository is pinned by commit: a tag is a name somebody else can
+      # move, and a test environment that changes underneath is one whose green
+      # runs mean less each time.
+      SDK_IMAGE: 'mcr.microsoft.com/dotnet/sdk@sha256:2205fd3a7cf5e422c58398a9968aa8b5041fdbb47c76574fe631082e4cbfa2b8'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore and build, with the network the container will not have
+        run: |
+          set -euo pipefail
+          export NUGET_PACKAGES="${GITHUB_WORKSPACE}/.nuget-packages"
+          dotnet restore --locked-mode
+          dotnet build Jellyfin.Plugin.Template.sln --configuration Release --no-restore
+
+      - name: Fetch the image, also with the network
+        run: docker pull "${SDK_IMAGE}"
+
+      - name: Run the suite with no network and no privileges
+        # --network none gives the container no interface but loopback, so a test
+        # that opens a connection fails here rather than on somebody's machine
+        # later. --user is the runner's own unprivileged id, so nothing in the
+        # suite can rely on being root inside the container either.
+        run: |
+          set -euo pipefail
+          echo "running as $(id -u):$(id -g), which is $(id -un)"
+          docker run --rm \
+            --network none \
+            --user "$(id -u):$(id -g)" \
+            --volume "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            --workdir "${GITHUB_WORKSPACE}" \
+            --env NUGET_PACKAGES="${GITHUB_WORKSPACE}/.nuget-packages" \
+            --env DOTNET_CLI_HOME="${GITHUB_WORKSPACE}/.dotnet-home" \
+            --env DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+            --env DOTNET_NOLOGO=1 \
+            --env DOTNET_CLI_UI_LANGUAGE=en \
+            "${SDK_IMAGE}" \
+            dotnet test Jellyfin.Plugin.Template.sln --configuration Release --no-build
+
+      - name: Show that the container really had no network
+        # The leg above proves nothing if the container could reach out after
+        # all. This asks the same container configuration to open a connection
+        # and requires it to fail.
+        run: |
+          set -euo pipefail
+          if docker run --rm --network none --user "$(id -u):$(id -g)" \
+               "${SDK_IMAGE}" \
+               bash -c 'exec 3<>/dev/tcp/1.1.1.1/443'; then
+            echo "::error::A container started with --network none opened a connection. The leg above is not proving what it says."
+            exit 1
+          fi
+          echo "A connection from inside --network none fails, so the suite above ran without one."
