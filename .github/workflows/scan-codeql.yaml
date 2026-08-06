@@ -15,6 +15,15 @@ on:
 
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@master
+    # The called workflow guards its job with `github.repository == inputs.repository-name`,
+    # so while this named the upstream template every run here was skipped and no scan
+    # result ever reached this repository. It names this repository now.
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master as of 2026-07-29
+    # Granted per job rather than at workflow level, and read-only apart from the
+    # upload the analysis exists to make.
+    permissions:
+      contents: read # check out the tree to analyse
+      actions: read # read the workflow run the results are attached to
+      security-events: write # upload the results into the code-scanning tab
     with:
-      repository-name: jellyfin/jellyfin-plugin-template
+      repository-name: iderex/jellyfin-plugin-invites

@@ -61,7 +61,7 @@ file is still there.
 | `dependency-review.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 | `plugin-build.yaml` | kept | The first-party build leg landed by #14, which is this repository's answer to the target gate's `build.yml`. |
 | `plugin-test.yaml` | kept | The first-party test leg landed by #14, which is this repository's answer to the target gate's `dotnet.yml`. |
-| `publish.yaml` | deferred to M12 | It publishes on a release, and it stands unchanged until the release process it belongs to is written. |
+| `publish.yaml` | deferred to M12 | It publishes on a release, and what it does is decided when the release process it belongs to is written. Its call is pinned by commit and its job carries its own permissions block, under #14, which changes nothing about the release path. |
 | `scan-codeql.yaml` | kept | #7 corrects the input so the scan runs against this repository at all, and #16 replaces the shared template call with a workflow this repository owns. |
 | `scorecard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 | `sync-labels.yaml` | removed, here | It replaces this repository's labels with a shared list and deletes every label that list does not name, and two labels this plugin's issues lean on are not named there. |
