@@ -1,6 +1,73 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "github>jellyfin/.github//renovate-presets/default"
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency bot configuration for this repository. Everything the bot does here is named in this file rather than inherited from another organisation's preset, because a bot that can raise a version is a bot whose merged output is code this project did not write, and the rules deciding that should be readable in one place next to the tree they act on.",
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard",
+    ":semanticCommitsDisabled",
+    ":timezone(Etc/UTC)",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": ["dependencies"],
+  "rebaseWhen": "conflicted",
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "schedule": ["* 0-6 * * 1"],
+  "packageRules": [
+    {
+      "description": "The Jellyfin server packages are not a staleness question. Their version is the server line this plugin is built for, decided in Directory.Build.props and read from the same place by the packaging manifest and the floor build, so a bot raising it would move the plugin to a server line nobody chose and would do it by editing a number three other things derive from. Moving that line is a deliberate change with its own issue.",
+      "matchPackageNames": ["Jellyfin.Controller", "Jellyfin.Model"],
+      "enabled": false
+    },
+    {
+      "description": "Action updates arrive as one pull request rather than one per action, and only when the jump is not major. helpers:pinGitHubActionDigests above keeps every reference a commit hash with the tag in a trailing comment, so an update rewrites the hash and never turns a pinned reference back into a movable tag.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "actions",
+      "groupSlug": "actions",
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "A major action jump is its own pull request. It is the case where the inputs, the outputs or the permissions of a step can have changed underneath, and grouping it with routine bumps is how that gets read as routine.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "The test-only packages move together. They are one decision to a reader: either the suite still runs on the new versions or it does not, and the check that answers that is the same run either way.",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": [
+        "Microsoft.NET.Test.Sdk",
+        "xunit",
+        "xunit.runner.visualstudio"
+      ],
+      "groupName": "test packages",
+      "groupSlug": "test-packages",
+      "addLabels": ["tests"]
+    },
+    {
+      "description": "The analyzers are separate from the test packages. Warnings are errors in this tree, so an analyzer version is the one dependency bump that can red the build for a reason in the plugin's own source rather than in a dependency.",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": [
+        "SerilogAnalyzer",
+        "StyleCop.Analyzers",
+        "SmartAnalyzers.MultithreadingAnalyzer"
+      ],
+      "groupName": "analyzers",
+      "groupSlug": "analyzers"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "description": "A security update is not a routine update and is not reviewed with the same attention. It carries its own label, it is never grouped with anything, and it ignores the schedule above so it is not held until the window comes round.",
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "schedule": [],
+    "groupName": null,
+    "prCreation": "immediate"
+  },
+  "lockFileMaintenance": {
+    "description": "Off. A maintenance run re-resolves every entry in packages.lock.json at once, which is the one pull request in this repository whose diff nobody can read and whose reason is nothing more specific than time passing. The lock file still moves, as the second half of whatever pull request changed a package reference, because a build with --locked-mode fails on the runner if the pair arrives apart. Leaving it enabled also forces a dependency dashboard, since its branch is created only through one.",
+    "enabled": false
+  },
+  "ignorePaths": ["**/node_modules/**", "**/bin/**", "**/obj/**"]
 }
