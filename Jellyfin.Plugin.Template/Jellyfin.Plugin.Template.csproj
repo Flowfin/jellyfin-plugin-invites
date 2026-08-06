@@ -6,16 +6,25 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!--
+      The lock file pins the shipping line. A floor build resolves a different version of
+      the same packages on purpose, so it neither validates the lock file nor rewrites it.
+    -->
+    <RestorePackagesWithLockFile Condition="'$(BuildAgainstAbiFloor)' != 'true'">true</RestorePackagesWithLockFile>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" >
+    <!--
+      The version comes from JellyfinPackageVersion in Directory.Build.props, which is the
+      shipping version ordinarily and the floor read out of build.yaml's targetAbi when
+      BuildAgainstAbiFloor is set.
+    -->
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" >
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.11.11">
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
