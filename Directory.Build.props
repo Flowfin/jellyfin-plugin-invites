@@ -24,6 +24,52 @@
     </PropertyGroup>
 
     <!--
+        build.yaml also declares targetAbi, which is the oldest server this plugin claims
+        to load on. The shipping build compiles against a newer package from the same
+        line, so a call into a member that arrived after the floor compiles clean here and
+        throws on the oldest server the manifest invites somebody to install on. The floor
+        version is derived from targetAbi rather than typed a second time: raising the
+        claim in build.yaml is what moves the version the floor build compiles against, so
+        the two cannot disagree.
+
+        A NuGet package version for the server line is three parts and targetAbi is four,
+        so 10.11.0.0 selects 10.11.0. The three part run is matched inside the line rather
+        than stripped out of it, because stripping every non-digit from the whole line
+        concatenates anything else on it into the number instead of refusing.
+    -->
+    <PropertyGroup>
+        <_PluginTargetAbiLine>$([System.Text.RegularExpressions.Regex]::Match($(_PluginManifestText), '(?m)^targetAbi:[^\r\n]*'))</_PluginTargetAbiLine>
+        <JellyfinAbiFloorVersion>$([System.Text.RegularExpressions.Regex]::Match($(_PluginTargetAbiLine), '[0-9]+\.[0-9]+\.[0-9]+'))</JellyfinAbiFloorVersion>
+    </PropertyGroup>
+
+    <!--
+        The version of the Jellyfin packages the plugin compiles against. It is one
+        property rather than a number repeated on each PackageReference, because the whole
+        point of the floor build is that every reference moves together.
+    -->
+    <PropertyGroup>
+        <JellyfinShippingVersion>10.11.11</JellyfinShippingVersion>
+        <JellyfinPackageVersion Condition="'$(BuildAgainstAbiFloor)' == 'true'">$(JellyfinAbiFloorVersion)</JellyfinPackageVersion>
+        <JellyfinPackageVersion Condition="'$(JellyfinPackageVersion)' == ''">$(JellyfinShippingVersion)</JellyfinPackageVersion>
+    </PropertyGroup>
+
+    <!--
+        A floor restore resolves a different version of the same packages on purpose, so
+        it must not touch the committed lock file, which pins the shipping line. Turning
+        RestorePackagesWithLockFile off is not enough: that property decides whether a
+        lock file is created, and NuGet updates one that already exists either way. The
+        floor build is pointed at a throwaway lock file under obj/ instead, so the
+        committed one is not the file the restore is holding.
+
+        Measured rather than reasoned: the first version of this change turned the
+        property off, and the leg's own read-back step caught the committed lock file
+        rewritten on a clean checkout.
+    -->
+    <PropertyGroup Condition="'$(BuildAgainstAbiFloor)' == 'true'">
+        <NuGetLockFilePath>$(MSBuildProjectDirectory)/obj/abi-floor.packages.lock.json</NuGetLockFilePath>
+    </PropertyGroup>
+
+    <!--
         Deterministic is on by default and is stated here so a change that turns it off
         has to say so. ContinuousIntegrationBuild replaces the absolute paths of the
         machine that built with relative ones, which is what stops two runners producing
@@ -44,5 +90,15 @@
     <Target Name="RefuseUnreadablePluginVersion" BeforeTargets="BeforeBuild">
         <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(PluginManifestVersion)', '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'))"
                Text="No four part version could be read from $(PluginManifestPath). What was read was '$(PluginManifestVersion)'. The version lives in that file and the assembly version, file version and package version are all derived from it." />
+    </Target>
+
+    <!--
+        A floor build that could not read targetAbi would leave the package version empty
+        and resolve whatever NuGet felt like, which is a floor build that proves nothing
+        while reporting green. It is refused instead, with the file named.
+    -->
+    <Target Name="RefuseUnreadableAbiFloor" BeforeTargets="BeforeBuild" Condition="'$(BuildAgainstAbiFloor)' == 'true'">
+        <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(JellyfinAbiFloorVersion)', '^[0-9]+\.[0-9]+\.[0-9]+$'))"
+               Text="No three part floor version could be derived from the targetAbi in $(PluginManifestPath). The line read was '$(_PluginTargetAbiLine)'. The oldest server this plugin claims to load on lives in that file and the floor build compiles against it." />
     </Target>
 </Project>
