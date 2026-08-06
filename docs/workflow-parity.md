@@ -26,7 +26,7 @@ file is still there.
 | Workflow | Answer | Reason |
 | --- | --- | --- |
 | `build.yml` | adopted, landed | On the target it is a reusable workflow the others call rather than a check of its own, and #14 landed the same shape here as `plugin-build.yaml`. |
-| `codeql.yml` | adopted | #16 lands a CodeQL workflow this repository owns, replacing the shared template call. |
+| `codeql.yml` | adopted, landed | #16 landed a CodeQL workflow this repository owns as `scan-codeql.yaml`, replacing the shared call. It runs security-extended rather than the target gate's `+security-and-quality`, which is the same security set without the quality queries. |
 | `dco.yml` | adopted, landed | Already in the tree at `e776ccf`. |
 | `dependency-review.yml` | adopted, landed | Already in the tree at `e776ccf`. |
 | `dotnet.yml` | adopted, landed | The build and test legs landed with #14, and #15 adds the oldest supported server ABI to them. |
@@ -62,7 +62,7 @@ file is still there.
 | `plugin-build.yaml` | kept | The first-party build leg landed by #14, which is this repository's answer to the target gate's `build.yml`. |
 | `plugin-test.yaml` | kept | The first-party test leg landed by #14, which is this repository's answer to the target gate's `dotnet.yml`. |
 | `publish.yaml` | deferred to M12 | It publishes on a release, and what it does is decided when the release process it belongs to is written. Its call is pinned by commit and its job carries its own permissions block, under #14, which changes nothing about the release path. |
-| `scan-codeql.yaml` | kept | #7 corrects the input so the scan runs against this repository at all, and #16 replaces the shared template call with a workflow this repository owns. |
+| `scan-codeql.yaml` | kept | #7 corrected the input so the scan ran against this repository at all, and #16 replaced the shared call with the analysis written out in this file. It is this repository's answer to the target gate's `codeql.yml`. |
 | `scorecard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
 | `sync-labels.yaml` | removed, here | It replaces this repository's labels with a shared list and deletes every label that list does not name, and two labels this plugin's issues lean on are not named there. |
 | `test.yaml` | kept | Since #14 it calls the first-party test leg rather than a shared template one. |
