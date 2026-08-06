@@ -6,11 +6,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
-    <!--
-      The lock file pins the shipping line. A floor build resolves a different version of
-      the same packages on purpose, so it neither validates the lock file nor rewrites it.
-    -->
-    <RestorePackagesWithLockFile Condition="'$(BuildAgainstAbiFloor)' != 'true'">true</RestorePackagesWithLockFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>

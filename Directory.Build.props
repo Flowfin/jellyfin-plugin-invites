@@ -54,6 +54,22 @@
     </PropertyGroup>
 
     <!--
+        A floor restore resolves a different version of the same packages on purpose, so
+        it must not touch the committed lock file, which pins the shipping line. Turning
+        RestorePackagesWithLockFile off is not enough: that property decides whether a
+        lock file is created, and NuGet updates one that already exists either way. The
+        floor build is pointed at a throwaway lock file under obj/ instead, so the
+        committed one is not the file the restore is holding.
+
+        Measured rather than reasoned: the first version of this change turned the
+        property off, and the leg's own read-back step caught the committed lock file
+        rewritten on a clean checkout.
+    -->
+    <PropertyGroup Condition="'$(BuildAgainstAbiFloor)' == 'true'">
+        <NuGetLockFilePath>$(MSBuildProjectDirectory)/obj/abi-floor.packages.lock.json</NuGetLockFilePath>
+    </PropertyGroup>
+
+    <!--
         Deterministic is on by default and is stated here so a change that turns it off
         has to say so. ContinuousIntegrationBuild replaces the absolute paths of the
         machine that built with relative ones, which is what stops two runners producing
