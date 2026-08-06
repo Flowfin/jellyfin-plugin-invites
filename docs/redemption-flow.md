@@ -94,7 +94,7 @@ exist before.
 | --- | --- | --- | --- | --- | --- |
 | 1 | Code absent, expired, spent or revoked at the first check | `Start` | The single indistinguishable refusal, byte for byte the same in all four cases | Nothing | #28, #55 |
 | 2 | Live at the first check, gone by the post | `Locked` | The same single refusal as branch 1, and for the same reason: the person who reached this point cannot be told apart from an attacker who timed it | Nothing. The lock is released and no write has happened | #28, #40, #56 |
-| 3 | Username already taken | `Posted` | The form again, with the username field marked and the answers the person already typed still in it | Nothing | #62 |
+| 3 | Username already taken | `Posted` | The form again, with the username field marked and the answers the person already typed still in it | Nothing | #67, #62 |
 | 4 | Password refused by the rules | `Posted` | The form again, naming which rule was missed and never echoing the password | Nothing. The rules were checked before anything was created, which is what makes this branch cheap | #76 |
 | 5 | Account created, setting the credential failed | `Created` | The single refusal, plus the operator-facing reason recorded against the invitation's non-secret identifier | Nothing, after the unwind below | #66, #32 |
 | 6 | Applying the template failed | `Credentialed` | As branch 5 | Nothing, after the unwind below | #64, #69 |
