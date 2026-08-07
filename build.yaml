@@ -1,15 +1,16 @@
 ---
-name: "Template"
-guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
+name: "Account Invitations"
+guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
 version: "0.1.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Short description about your plugin"
+overview: "Invitation links that let somebody set up their own account. Under development, nothing of it works yet."
 description: >
-  This is a longer description that can span more than one
-  line and include details about your plugin.
-category: "General"
-owner: "jellyfin"
+  An operator invites somebody with a link, and the person sets up their own account without the operator creating it by hand or handing out a password.
+
+  None of this is built yet. What installs today adds one page to the server dashboard, and there is nothing on that page to set.
+category: "Administration"
+owner: "Flowfin"
 artifacts:
 - "Jellyfin.Plugin.Template.dll"
 changelog: >
