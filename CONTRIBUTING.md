@@ -67,6 +67,13 @@ The rule is executed rather than trusted. `.github/workflows/headless.yaml` runs
 the suite inside a container with no network interface, as an unprivileged user,
 so a test that reaches out fails there rather than on the next machine.
 
+The tests this rule refuses are listed in `docs/tests-not-written.md`, each with
+the clause that refuses it and what covers the same risk instead. Read it before
+adding a test that needs a browser, a server, a certificate or a sleep, because
+the answer is probably already there and says what to write instead. Two of the
+replacements are a person doing something once per release, and
+`docs/manual-checks.md` is where a run of those is recorded.
+
 ## The invariant lint
 
 Some of this plugin's rules are shapes that must never appear in the source: a
