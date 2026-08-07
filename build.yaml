@@ -1,6 +1,7 @@
 ---
 name: "Account Invitations"
 guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
+imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-invites/master/img/logo.png"
 version: "0.1.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
