@@ -1,0 +1,161 @@
+# Personal data this plugin holds
+
+An invitation is a record that a particular operator invited a particular
+person at a particular time, and that a particular account came out of it. That
+is personal data about two people before a single optional field is added, and
+it is worth writing down before the record type exists rather than after.
+
+Nothing below is implemented. The record is #38, the attempt trail is #43, and
+the store they both live in is #39. This document is what those three are built
+against: a field that is not in the inventory does not go in the record, and a
+field in the inventory carries the reason it is there.
+
+The accounts themselves are not in this inventory. An account created by an
+invitation is an ordinary Jellyfin account in the server's own user database,
+holding whatever the server holds about any account, and removing this plugin
+does not change that. What this plugin adds is the link between that account
+and the invitation it came from, and that link is the row worth the most care.
+
+## The test every row had to pass
+
+Would the plugin still do its job without this field. A field that survives has
+a reader named in an open issue. A field that fails is not stored, however
+useful somebody can imagine it being later.
+
+Three fields failed and are handled below rather than being quietly kept: the
+operator's free-text label, a contact address for the invited person, and the
+address a redemption arrived from.
+
+## The invitation record
+
+| Field | Why it exists | What deletes it |
+| --- | --- | --- |
+| Invitation identifier | A non-secret name for one invitation, so a log line and an administrator view can both point at it without either one carrying the code. Required by #32. | The record |
+| Keyed hash of the code | Lets a presented code be checked without the code being held. Required by #29. Not data about a person, and listed here so the inventory is the whole record rather than the interesting part of it. | The record |
+| Minted by | The operator account answerable for this invitation. This is personal data about the operator, and it is the field that makes #43 answerable at all. | The record |
+| Minted at | Fixes the invitation in time, which is what makes a trail readable. | The record |
+| Expires at | Read by the expiry comparison in #51. | The record |
+| Uses granted, uses remaining | The count #52 makes authoritative. | The record |
+| Revoked, revoked at | Revocation is #54, and the time is what tells an operator a restore undid it. | The record |
+| Template name | Which grant this invitation carries, from #61. | The record |
+| Accounts produced | The link between an invitation and the accounts it created. This is the most identifying row here, and it is also the one an operator needs when an account they do not recognise appears. | The record |
+| Operator label | Failed the test. See below. | Not stored |
+| Contact address | Failed the test. See below. | Not stored |
+
+## The attempt trail
+
+| Field | Why it exists | What deletes it |
+| --- | --- | --- |
+| Invitation identifier, where one matched | Says which invitation an attempt was against. Empty where the presented code matched nothing, because there is nothing to name. | The trail bound |
+| Outcome | One value from the fixed set in #43. Not free text, so nothing typed by anyone reaches it. | The trail bound |
+| Time | When it happened. | The trail bound |
+| Source address | Failed the test. See below. | Not stored |
+
+## The three that failed
+
+The operator's label first. #38 leaves it open and #82 has minting accept one.
+It is the field most likely to end up holding a person's full name and mail
+address, because that is the obvious thing to type into a box that says what
+this link is for. The plugin works without it: an invitation is already
+identifiable by its identifier, who minted it and when. The recommendation is
+that it is not stored. If it is kept anyway, it is kept as a field the operator
+is told is stored in clear and shown in the administrator view, and it is
+covered by the same retention as the record.
+
+Then a contact address for the invited person. Decision 9 in #11 is whether the
+guided setup collects one. This inventory is the argument for collecting none:
+the plugin's job ends when an account exists, account recovery is the server's
+job, and an address collected here is the only field that would make this
+plugin hold contact data about a person the server does not already hold.
+Written as a parameter rather than a refusal, because it is the maintainer's
+call and not this document's.
+
+Last, the address a redemption came from. This one is worth separating with
+care,
+because seeing a value and holding it are different things. Rate limiting and
+lockout in #31 need the source address while the request is being decided, and
+need nothing of it afterwards. Storing it in the trail is what turns a counter
+into a record of where a person was. The recommendation is that #31 keeps it in
+memory for as long as its window and no longer, and that the trail does not
+carry it. #43 allows the field if this inventory does, and this inventory does
+not.
+
+## Retention is a parameter, not a number
+
+Decision 8 in #11 has not been answered, so no number appears here. Two named
+parameters are what the record and the trail are built against, and answering
+#11 fills them in without either issue being reopened.
+
+`record-retention` is how long a spent, expired or revoked invitation record is
+kept after it stops being usable. It has to be long enough that an operator
+investigating an unfamiliar account can still find where it came from, and
+short enough that it is not an indefinite register of who was invited. The
+sweep that applies it is #59.
+
+`trail-bound` is what bounds the attempt trail. #43 requires it be bounded and
+says why: an endpoint a stranger can hammer, writing an unbounded trail, is a
+disk-filling attack that uses the operator's own record keeping as the weapon.
+The bound is a count or an age, and it names what is dropped first.
+
+## What deletes anything
+
+Nothing today. There is no store, so there is nothing holding a value that
+could be deleted:
+
+```
+$ git ls-files --with-tree=origin/master -- '*.cs' ':!.github/lint/fixtures'
+Jellyfin.Plugin.Template.Tests/PluginPagesTests.cs
+Jellyfin.Plugin.Template.Tests/Stubs.cs
+Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
+Jellyfin.Plugin.Template/Plugin.cs
+$ git grep -lE 'Invitation|Redeem' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
+exit=1
+```
+
+Four source files, none of which knows the word invitation. The fixtures are
+excluded because they hold their violations on purpose.
+
+Three deleters are planned and no others. The retention sweep in #59 removes
+records the retention rule allows and never touches an account. Revocation in
+#54 does not delete anything, and that is deliberate, because the record of a
+revocation is what an operator needs after a restore quietly undoes it, which
+is written up in `docs/disaster-cases.md`. Uninstall in #91 removes the
+plugin's own state and leaves every account alone, which also means it removes
+the only record of which accounts came from invitations, and #91 is where the
+export that answers that lives.
+
+## What is never held, in any form
+
+The invitation code, other than as the keyed hash above. The hash secret is
+held, and it is a secret rather than personal data, and #30 owns it. The
+password an invited person chooses is handed to the server and never stored
+here. #32 is the same list applied to log lines, and the greppable half of it
+is the `secret-in-a-log-call` rule in `.github/lint/invariants.sh`.
+
+## What this document does not settle
+
+The record type does not exist, so no field has been removed from it. That
+clause of #34 is met by construction today and has to be checked again when #38
+lands, against this file.
+
+The clause asking that a documentation page carry the same inventory has no
+page to land in. Every issue in M11 was read for one and none of the seven
+names an inventory or personal data as its content:
+
+```
+$ for n in 110 111 112 113 114 115 116; do
+    gh api repos/iderex/jellyfin-plugin-invites/issues/$n --jq .body \
+      | grep -ciE 'personal data|inventory'
+  done
+0
+0
+0
+0
+0
+0
+0
+```
+
+So the page that would carry this is not owned by anything open. That is a gap
+in the plan rather than a step that was skipped, and it is the reason #34 stays
+open with this file landed.
