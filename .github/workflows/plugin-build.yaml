@@ -1,0 +1,51 @@
+# The build leg, owned by this repository. It is a reusable workflow rather than
+# a plain job so the check context stays `call / build`, which is the name the
+# branch ruleset requires; renaming a required context silently stops the gate
+# from ever reporting and every pull request waits for a check that will not
+# arrive. Raising the required list is #24 and is not this file's business.
+name: 'Plugin build'
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        required: false
+        default: '9.0.x'
+        description: 'The .NET SDK version to build with'
+        type: string
+
+# The job reads the tree and writes nothing back.
+permissions:
+  contents: read
+
+jobs:
+  # Do not give this job a `name:`. The context the ruleset requires is built
+  # from the caller job id and this job id, so it is `call / build` only while
+  # this is called from a job named `call` and this job is called `build`.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes, so do not leave the token in .git/config where a
+          # later step or a build task could read it.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '${{ inputs.dotnet-version }}'
+
+      - name: Restore against the lock file
+        # --locked-mode fails rather than resolving a version the lock file does
+        # not name, so the set of packages a build consumes is decided in a
+        # committed file and reviewed like any other change.
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        # Warnings are errors in the project files, so a clean run here is the
+        # analyzers passing rather than the analyzers being quiet.
+        run: dotnet build --configuration Release --no-restore

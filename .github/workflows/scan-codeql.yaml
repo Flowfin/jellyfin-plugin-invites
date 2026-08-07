@@ -1,20 +1,88 @@
+# CodeQL, run from this repository rather than called out to a workflow in
+# another organisation.
+#
+# Three things become this repository's own choices by owning the file, and each
+# of them is a thing the shared workflow decided elsewhere. The query suite,
+# which is security-extended here: the two queries this plugin most wants are
+# untrusted input reaching an authorization decision and a non-cryptographic
+# random source reaching a credential, and both are in the extended set and
+# neither is in the default one. The build, which restores against the committed
+# lock file in --locked-mode like every other leg in this tree, so the analysis
+# reads the same package set the shipping build does rather than whatever NuGet
+# resolves on the day. And the schedule, which stays weekly because a scan that
+# only runs on a change never re-examines old code against a new query release.
+#
+# The check context this reports is `Analyze (csharp)`. It was `call / Analyze
+# (csharp)` while the scan was a call, and neither name is in the branch
+# ruleset's required set today. Raising that set is #24, and the name to put in
+# it is the one a run reports rather than the one written here.
 name: '🔬 Run CodeQL'
 
 on:
+  # No paths-ignore. A markdown-only pull request would otherwise never start
+  # this check, and a required context that never starts reads as pending
+  # forever, so such a pull request could not be merged at all once #24 requires
+  # this one. The same reasoning is written in build.yaml, where it was measured.
   push:
-    branches: [ master ]
-    paths-ignore:
-      - '**/*.md'
+    branches: [master]
   pull_request:
-    branches: [ master ]
-    paths-ignore:
-      - '**/*.md'
+    branches: [master]
   schedule:
     - cron: '24 2 * * 4'
   workflow_dispatch:
 
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
 jobs:
-  call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@master
-    with:
-      repository-name: jellyfin/jellyfin-plugin-template
+  analyze:
+    name: 'Analyze (csharp)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # check out the tree to analyse
+      actions: read # read the run the results are attached to
+      security-events: write # upload the results into the code-scanning tab
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes, so do not leave the token in .git/config where a
+          # later step or a build task could read it.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          languages: csharp
+          # security-extended rather than the default suite. The default one
+          # holds the high-precision queries only, and the two named at the top
+          # of this file are medium-precision and arrive with the extended set.
+          queries: security-extended
+          # The build is written out below rather than left to autobuild, so the
+          # analysis compiles the same package set as the shipping build.
+          build-mode: manual
+
+      - name: Restore against the lock file
+        # --locked-mode fails rather than resolving a version the lock file does
+        # not name, so the packages the analysed build consumes are decided in a
+        # committed file and reviewed like any other change.
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          category: '/language:csharp'

@@ -1,18 +1,30 @@
 name: '🏗️ Build Plugin'
 
 on:
+  # No paths-ignore. A required check that never starts is never reported, and
+  # GitHub reads a required context that never arrives as pending forever, so a
+  # pull request touching only markdown could not be merged at all (#58). A
+  # cheap job that finds nothing to do costs less than a gate nothing can pass.
   push:
     branches:
       - master
-    paths-ignore:
-      - '**/*.md'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - '**/*.md'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A superseded run on the same ref is worth nothing; cancel it rather than let
+# it queue ahead of the current one.
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
 jobs:
+  # The job id is `call` because the required check context is `call / build`.
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@master
+    uses: ./.github/workflows/plugin-build.yaml
+    permissions:
+      contents: read

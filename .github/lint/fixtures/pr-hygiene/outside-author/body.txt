@@ -1,0 +1,1 @@
+Tidies the redemption routine a little.
