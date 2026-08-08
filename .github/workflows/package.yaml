@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
           rm -rf publish
-          dotnet publish Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj \
+          dotnet publish Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj \
             --configuration Release --output publish
           shipped=$(find publish -maxdepth 1 -name '*.dll' -printf '%f\n' | sort)
           if [ -z "$shipped" ]; then
@@ -139,7 +139,7 @@ jobs:
         run: |
           set -euo pipefail
           dotnet tool install --global CycloneDX --version 6.2.0
-          dotnet CycloneDX Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj \
+          dotnet CycloneDX Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj \
             --output sbom --json --set-name jellyfin-plugin-invites
           ls -l sbom
 

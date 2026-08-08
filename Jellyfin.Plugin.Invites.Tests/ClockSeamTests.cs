@@ -1,8 +1,8 @@
 using System;
-using Jellyfin.Plugin.Template.Time;
+using Jellyfin.Plugin.Invites.Time;
 using Xunit;
 
-namespace Jellyfin.Plugin.Template.Tests;
+namespace Jellyfin.Plugin.Invites.Tests;
 
 /// <summary>
 /// A clock a test owns. Every read returns whatever it was last set to, so a

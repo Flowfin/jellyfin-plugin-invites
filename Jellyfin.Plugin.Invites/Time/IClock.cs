@@ -1,6 +1,6 @@
 using System;
 
-namespace Jellyfin.Plugin.Template.Time;
+namespace Jellyfin.Plugin.Invites.Time;
 
 /// <summary>
 /// The one time source the plugin reads.

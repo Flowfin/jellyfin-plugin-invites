@@ -56,9 +56,9 @@ Two clean builds of one commit produce byte identical output. Measured by removi
 `obj/` and `bin/`, building, hashing, and doing it again:
 
 ```
-$ dotnet build Jellyfin.Plugin.Template.sln -c Release --no-incremental
-$ python -c "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path('Jellyfin.Plugin.Template/bin/Release/net9.0/Jellyfin.Plugin.Template.dll').read_bytes()).hexdigest())"
-9cd4dcb77f36d72723bee4f72675858da8100722659276a81e548a206c3f346f
+$ dotnet build Jellyfin.Plugin.Invites.sln -c Release --no-incremental
+$ python -c "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path('Jellyfin.Plugin.Invites/bin/Release/net9.0/Jellyfin.Plugin.Invites.dll').read_bytes()).hexdigest())"
+ec46da714e0d02c88c68adf824b39b2e04e5d51e84ee2f27091e9df42903569d
 ```
 
 Removing `obj/` and `bin/` and doing it again prints the same digest.

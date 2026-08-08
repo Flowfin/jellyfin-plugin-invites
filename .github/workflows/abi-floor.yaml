@@ -55,7 +55,7 @@ jobs:
         # than the manifest's floor is readable in the log instead of passing
         # quietly. The build refuses an unreadable targetAbi in any case.
         run: >
-          dotnet msbuild Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
+          dotnet msbuild Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj
           -getProperty:JellyfinPackageVersion -p:BuildAgainstAbiFloor=true
 
       - name: Build against the floor
@@ -72,7 +72,7 @@ jobs:
         # analyzers passing against the floor rather than the analyzers being
         # quiet.
         run: >
-          dotnet build Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
+          dotnet build Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj
           --configuration Release -p:BuildAgainstAbiFloor=true
 
       - name: Refuse a build that left the lock file rewritten

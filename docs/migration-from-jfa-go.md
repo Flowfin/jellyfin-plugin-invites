@@ -13,15 +13,19 @@ where the promise is kept:
 
 ```
 $ git ls-files -- '*.cs' ':!.github/lint/fixtures'
-Jellyfin.Plugin.Template.Tests/PluginPagesTests.cs
-Jellyfin.Plugin.Template.Tests/Stubs.cs
-Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-Jellyfin.Plugin.Template/Plugin.cs
-$ git grep -clE 'Invitation|Redeem' -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
-exit=1
+Jellyfin.Plugin.Invites.Tests/ClockSeamTests.cs
+Jellyfin.Plugin.Invites.Tests/PluginPagesTests.cs
+Jellyfin.Plugin.Invites.Tests/Stubs.cs
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
+Jellyfin.Plugin.Invites/Plugin.cs
+Jellyfin.Plugin.Invites/Time/IClock.cs
+Jellyfin.Plugin.Invites/Time/SystemClock.cs
+$ git grep -nE 'Invitation|Redeem' -- '*.cs' ':!.github/lint/fixtures'
+Jellyfin.Plugin.Invites/Plugin.cs:29:    public override string Name => "Account Invitations";
 ```
 
-Four source files, none of which knows the word invitation. So this is not a
+Seven source files, and the only one of them carrying the word invitation
+carries it as the display name. So this is not a
 page telling an operator to switch today. It is the page that says what
 switching would and would not get them, written before the code exists so that
 no feature gets claimed here and built afterwards.
