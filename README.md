@@ -130,6 +130,7 @@ drifts from it.
 | [docs/expiry-rules.md](docs/expiry-rules.md) | The seven decisions behind what looks like one comparison |
 | [docs/attempt-outcomes.md](docs/attempt-outcomes.md) | The fixed set of outcomes a redemption attempt records |
 | [docs/setup-never-asks.md](docs/setup-never-asks.md) | What the guided setup may never put a box on the page for |
+| [docs/refusal-response.md](docs/refusal-response.md) | The one page every unusable invitation produces, and what identical means |
 | [docs/configuration.md](docs/configuration.md) | One row per setting, its default, its bounds and what breaks |
 | [docs/limits.md](docs/limits.md) | Behaviour that is correct, surprising, and reported as a bug |
 | [docs/disaster-cases.md](docs/disaster-cases.md) | Restore from backup, a cloned server, two servers on one store |
