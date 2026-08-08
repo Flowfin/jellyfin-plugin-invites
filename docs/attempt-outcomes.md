@@ -24,17 +24,17 @@ made.
 
 ## The set
 
-| Outcome | What it means | Produced by |
-| --- | --- | --- |
-| `Accepted` | The code was honoured and an account was created. | #56 |
-| `NoSuchInvitation` | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #56 |
-| `Expired` | The record was found and its expiry had passed at the single clock reading this redemption took. | #51, #56 |
-| `Spent` | The record was found and had no uses left. | #52, #55, #56 |
-| `Revoked` | The record was found and the operator had revoked it. | #54, #56 |
-| `RefusedByRateLimit` | The attempt was refused before or at the lookup because a limit was reached. | #31 |
-| `RefusedByCeiling` | The redemption was refused because a ceiling on what the plugin may create was reached. | #33 |
-| `RefusedByAntiForgery` | The submission failed the cross-site check. | #78 |
-| `RefusedByValidation` | The answers on the form did not validate on the server. | #75, #76 |
+| Outcome                | What it means                                                                                                     | Produced by   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------- |
+| `Accepted`             | The code was honoured and an account was created.                                                                 | #56           |
+| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #56           |
+| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #56      |
+| `Spent`                | The record was found and had no uses left.                                                                        | #52, #55, #56 |
+| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #56      |
+| `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31           |
+| `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33           |
+| `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78           |
+| `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #75, #76      |
 
 The last four are the reason this is written down now. Each is introduced by a
 different issue, and an issue that adds a refusal without adding its member here
