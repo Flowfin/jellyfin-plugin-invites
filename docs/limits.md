@@ -144,9 +144,14 @@ in #11 and has no answer. Owned by #59, with the expiry rules in #51.
 
 ## What this page does not do yet
 
-It is not linked from the readme or from the operator guide. Neither exists:
-#110 is the readme and #111 is the guide, and the link is theirs to add rather
-than something this file can assert about itself.
+It is linked from the readme, in the table of documents, and it is not linked
+from the operator guide, which does not exist. #111 is that guide, and the link
+is its change to make rather than something this file can assert about itself.
+
+    git grep -n 'docs/limits.md' -- README.md
+    README.md:135:| [docs/limits.md](docs/limits.md) | Behaviour that is correct, surprising, and reported as a bug |
+    git ls-files docs | grep -i 'guide' ; echo "exit=$?"
+    exit=1
 
 No entry here is asserted by a test, for the reason at the top. The done
 condition of #115 asks that every entry match the behaviour the tests assert, so
