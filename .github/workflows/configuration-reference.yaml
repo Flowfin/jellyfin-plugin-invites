@@ -1,0 +1,46 @@
+name: '📖 Configuration Reference'
+
+on:
+  # Every branch and every pull request. The check is a read-only scan of two
+  # tracked files and the drift it refuses arrives in exactly the kind of change
+  # nobody thinks to run a documentation check on.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  configuration-reference:
+    name: Every setting has a row
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        # The check finds the configuration type with git ls-files, so it needs
+        # the repository rather than a bare tree, and it reads only what is
+        # tracked at this commit. No history is needed for that.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run. The configuration type carries no settings
+        # today, so neither direction of this check can fire against the tree
+        # and the step below would go green for as long as that stays true. It
+        # would also go green after a change that stopped the pattern matching a
+        # property at all, which is the failure that makes a documentation check
+        # worse than none: the file is trusted because a green mark stands
+        # behind it.
+        run: bash .github/lint/configuration-reference.sh selftest
+
+      - name: The reference and the type agree
+        run: bash .github/lint/configuration-reference.sh check
