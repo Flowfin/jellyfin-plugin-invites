@@ -1,0 +1,13 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A security problem with this plugin
+    url: https://github.com/iderex/jellyfin-plugin-invites/security/advisories/new
+    about: >-
+      Vulnerabilities go down the private route in SECURITY.md. A public issue
+      describing one is a working exploit handed to every reader of this
+      repository.
+  - name: A problem with Jellyfin itself
+    url: https://github.com/jellyfin/jellyfin/issues
+    about: >-
+      This repository is one plugin. A defect in the server belongs to the
+      Jellyfin project and its own policy.
