@@ -91,6 +91,94 @@ lands.
 | Undo a revocation by upgrading | The operator who mints, unknowingly | A revoked or spent invitation read as live, because a new version read an old file and treated a missing field as a default. | The store carries a version from the first write, an unknown newer version fails closed naming both versions, and every shipped transition has a migration with a test over a committed fixture. | #42, #92, #93 |
 | Learn which usernames exist | A stranger who found the link | Confirmation of which accounts are on the server, one name at a time. | Not defended. See below. | #67, #112 |
 
+## What a leaked link costs
+
+Invitation links leak. They go into chat applications that fetch a preview, into
+mail that sits on somebody else's server, into a screenshot, into a browser
+history on a shared machine. The design question is not how to stop that, since
+a link that cannot be forwarded is a link that cannot be sent. It is what the
+leak costs, written as a bound somebody can hold this plugin to.
+
+The bound, and this is the sentence [SECURITY.md](../SECURITY.md) repeats word
+for word:
+
+> Somebody who holds a leaked link, and reaches the server before the invited
+> person does, gets one account for each use the invitation had left, with
+> exactly the template that invitation carried, valid for no longer than the
+> invitation had left, listed for the operator as a redemption of that
+> invitation, and removable by deleting that account.
+
+Every clause of it is a property some other issue has to make true, and if any
+of them is not true the cost is larger than the sentence claims. Each clause
+below names where it is kept. Nothing in this repository redeems anything yet,
+so today the sentence is the specification and not a description:
+
+    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    exit=1
+
+| Clause | What has to hold for it | Issue |
+| --- | --- | --- |
+| one account for each use the invitation had left | The use count is a field of the record and the only authority for it, the decision routine refuses a record with no uses left, and read, decide and write happen under one lock so two presentations of a one-use invitation cannot both succeed. | #52, #56, #40, #106 |
+| with exactly the template that invitation carried | The link carries a code and nothing else, the template is resolved from the record at redemption rather than from anything presented, and the creation routine refuses to set the administrator flag or to touch an account that already exists. | #50, #56, #61, #62, #63, #64 |
+| valid for no longer than the invitation had left | Expiry is judged against a clock the plugin reads through one seam, the comparison is on an absolute instant, and an expired record is refused by the same routine that refuses a spent one. | #41, #51, #56, #59 |
+| listed for the operator as a redemption of that invitation | Every attempt appends one outcome entry, and the administrator view renders which invitation produced which account, including when the account has since gone. | #43, #45, #89 |
+| and removable by deleting that account | Deleting the account is an ordinary server action the plugin does not resist, the record renders the account as gone rather than failing, and the operator has a route that shows what the plugin did to an account and undoes it. | #45, #94, #95 |
+
+Two clauses carry a qualification a reader should not have to derive.
+
+The first clause is one account only where the invitation is single use. A
+multi-use invitation is worth as many accounts as it has uses left, to whoever
+holds the link, and that is the price of the feature rather than a defect in it.
+Which of the two is the default is decision 2 in #11 and is not answered, so the
+common case is not yet decided and this file cannot state it.
+
+The fourth clause says listed rather than noticed. The operator is told what
+happened when they look, and nothing here alerts them.
+
+### The default validity, and the reason for the number
+
+Seven days, as the default an operator may change within the ceilings #33 sets,
+enforced by the expiry rules in #51 and defaulted and validated in #86.
+
+The number is the exposure window, so the argument is what each direction costs
+when it is wrong. Too short costs the invited person a link that died before
+they opened it and the operator one more mint, which is a minute of somebody's
+evening and is fully recoverable. Too long costs a live account-creation
+credential sitting in a mailbox, a chat backup and a link preview cache for as
+long as the number says, and that is not recoverable by anybody who has stopped
+thinking about it. The costs are not symmetric, so the number belongs at the
+short end of what still works.
+
+What still works is one full week. A link sent on any weekday survives the
+weekend on either side of it, which covers the person who reads mail at work and
+sets up a media account at home. Twenty-four hours does not survive somebody
+being away for two days and turns the ordinary case into re-minting. Thirty days
+buys the same working case as seven and pays for it with four more weeks of
+exposure, which is the direction that does not recover.
+
+Seven days is also short enough that the leak the model cannot defend has
+usually already expired by the time a chat log is read by somebody new, and long
+enough that the operator is not the one paying for it.
+
+### Whether a spent invitation is spent for good
+
+It is. Once the use count reaches zero the record is never returned to a
+redeemable state by any route the plugin offers. There is no un-spend, no raise
+the count on a spent invitation, and no reopen. Minting a fresh invitation is
+the path, and it produces a fresh code, so the old link stays worthless.
+
+The reason is that an un-spend route is a revocation-undo route wearing another
+name. It takes a link that is already loose in a chat log, that the operator has
+stopped thinking about, and makes it live again without anybody re-sending it or
+deciding to. The blast radius of the feature is every link the invitation ever
+had, and the thing it saves is one mint.
+
+#55 holds what a spent code is answered with, which is the indistinguishable
+response the grid names above rather than a helpful one. #54 holds revocation
+being immediate and idempotent, and #93 holds an upgrade not reading a spent
+record as live. The one route that does revive a spent invitation is restoring a
+backup, which is undefended and is stated as such below.
+
 ## What is not defended
 
 These are stated rather than left as omissions a reader has to notice. They
