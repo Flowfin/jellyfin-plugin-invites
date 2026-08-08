@@ -2,18 +2,18 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>Template</title>
+        <title>Account Invitations</title>
     </head>
     <body>
         <div
-            id="TemplateConfigPage"
+            id="InvitesConfigPage"
             data-role="page"
             class="page type-interior pluginConfigurationPage"
             data-require="emby-input,emby-button,emby-select,emby-checkbox"
         >
             <div data-role="content">
                 <div class="content-primary">
-                    <form id="TemplateConfigForm">
+                    <form id="InvitesConfigForm">
                         <p class="fieldDescription">There is nothing to configure yet.</p>
                         <div>
                             <button
@@ -28,15 +28,15 @@
                 </div>
             </div>
             <script type="text/javascript">
-                var TemplateConfig = {
+                var InvitesConfig = {
                     pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
                 };
 
                 document
-                    .querySelector("#TemplateConfigPage")
+                    .querySelector("#InvitesConfigPage")
                     .addEventListener("pageshow", function () {
                         Dashboard.showLoadingMsg();
-                        ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(
+                        ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                             function () {
                                 Dashboard.hideLoadingMsg();
                             },
@@ -44,13 +44,13 @@
                     });
 
                 document
-                    .querySelector("#TemplateConfigForm")
+                    .querySelector("#InvitesConfigForm")
                     .addEventListener("submit", function (e) {
                         Dashboard.showLoadingMsg();
-                        ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(
+                        ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                             function (config) {
                                 ApiClient.updatePluginConfiguration(
-                                    TemplateConfig.pluginUniqueId,
+                                    InvitesConfig.pluginUniqueId,
                                     config,
                                 ).then(function (result) {
                                     Dashboard.processPluginConfigurationUpdateResult(result);
