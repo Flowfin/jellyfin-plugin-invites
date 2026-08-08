@@ -75,6 +75,27 @@ The default validity is seven days, and a spent invitation is spent for good.
 The threat model carries the reasoning for both, and both are the shortest
 window that still works rather than the longest one an operator would tolerate.
 
+## What the guided setup will never ask
+
+The page that turns an invitation into an account asks for a username, a
+password, and a password confirmation. That is the whole form.
+
+It will never ask for a password to another service, a password already used on
+this server, a payment detail, a date of birth, a postal address, a legal name,
+a security question, anything phrased as optional that the plugin has no field
+for, or anything the operator could ask outside the plugin. It loads no script,
+font, image or analytics from another host, and it says which server it belongs
+to.
+
+A page bearing this plugin's name that asks for any of those is not this
+plugin's page, and a report that it does is a report this policy wants. The
+reason for each refusal is in
+[docs/setup-never-asks.md](docs/setup-never-asks.md), and a field added to the
+form needs a row in [docs/personal-data.md](docs/personal-data.md) first.
+
+The page does not exist yet, so this is what it is being built to rather than a
+description of something serving today.
+
 ## What is not defended
 
 These are the entries the threat model in [docs/threat-model.md](docs/threat-model.md)
