@@ -55,7 +55,11 @@ public class ClockSeamTests
     /// <summary>
     /// The seam is the whole of the plugin's access to the machine clock, so a
     /// caller holding an <see cref="IClock"/> sees exactly what the clock says
-    /// and never what the machine says.
+    /// and never what the machine says. The machine side of the comparison is
+    /// read through <see cref="SystemClock"/> rather than off
+    /// <c>DateTimeOffset</c> directly, because the seam is the only route to
+    /// the machine clock in this repository and the invariant lint refuses the
+    /// other one.
     /// </summary>
     [Fact]
     public void AControlledClockDecidesWhatTheCallerSees()
@@ -64,7 +68,7 @@ public class ClockSeamTests
         IClock clock = new TestClock(chosen);
 
         Assert.Equal(chosen, clock.UtcNow);
-        Assert.NotEqual(DateTimeOffset.UtcNow.Year, clock.UtcNow.Year);
+        Assert.NotEqual(new SystemClock().UtcNow.Year, clock.UtcNow.Year);
     }
 
     /// <summary>

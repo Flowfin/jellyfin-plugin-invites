@@ -29,6 +29,7 @@ RULES=(
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
+  'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
 )
 
 # What each rule is about, printed when it fires, so the failure explains itself
@@ -45,8 +46,16 @@ explain() {
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
     link-built-from-a-request-header)
       echo "A link built from what the request says the host is, is a link an attacker chooses." ;;
+    clock-read-outside-the-seam)
+      echo "A call site that reads the machine clock can only be tested by a test that sleeps. Take an IClock." ;;
   esac
 }
+
+# The one file allowed to read the machine clock is the implementation of the
+# seam, and the rule above exempts it by name rather than by directory. Naming
+# the basename rather than the full path keeps the exemption alive across the
+# rename off the template; naming SystemClock.cs rather than a pattern keeps a
+# second file from joining it by being called something clock-shaped.
 
 fail=0
 
