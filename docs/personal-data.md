@@ -104,16 +104,23 @@ could be deleted:
 
 ```
 $ git ls-files --with-tree=origin/master -- '*.cs' ':!.github/lint/fixtures'
+Jellyfin.Plugin.Invites.Tests/ClockSeamTests.cs
 Jellyfin.Plugin.Invites.Tests/PluginPagesTests.cs
 Jellyfin.Plugin.Invites.Tests/Stubs.cs
 Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
 Jellyfin.Plugin.Invites/Plugin.cs
-$ git grep -lE 'Invitation|Redeem' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
-exit=1
+Jellyfin.Plugin.Invites/Time/IClock.cs
+Jellyfin.Plugin.Invites/Time/SystemClock.cs
+$ git grep -lE 'Invitation|Redeem' origin/master -- '*.cs' ':!.github/lint/fixtures'
+origin/master:Jellyfin.Plugin.Invites/Plugin.cs
+$ git grep -nE 'Invitation|Redeem' origin/master -- 'Jellyfin.Plugin.Invites/Plugin.cs'
+origin/master:Jellyfin.Plugin.Invites/Plugin.cs:29:    public override string Name => "Account Invitations";
 ```
 
-Four source files, none of which knows the word invitation. The fixtures are
-excluded because they hold their violations on purpose.
+Seven source files, and the one occurrence of the word invitation in any of
+them is the display name the dashboard shows. No redemption path, no store and
+no record type. The fixtures are excluded because they hold their violations on
+purpose.
 
 Three deleters are planned and no others. The retention sweep in #59 removes
 records the retention rule allows and never touches an account. Revocation in
