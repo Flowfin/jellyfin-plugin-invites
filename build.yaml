@@ -14,5 +14,10 @@ category: "Administration"
 owner: "Flowfin"
 artifacts:
 - "Jellyfin.Plugin.Invites.dll"
-changelog: >
-  changelog
+changelog: |
+  Nothing an operator can use yet. This version adds one page to the server
+  dashboard and there is nothing on that page to set. No invitation can be minted,
+  no link can be redeemed, and no account is created by this plugin.
+
+  Nothing changes about what an invitation can create, because an invitation
+  cannot create anything.
