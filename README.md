@@ -126,6 +126,7 @@ drifts from it.
 | [docs/redemption-flow.md](docs/redemption-flow.md) | Every state and branch from following a link to holding an account |
 | [docs/threat-model.md](docs/threat-model.md) | What is defended, how, and what is not defended |
 | [docs/personal-data.md](docs/personal-data.md) | Every field held about an invited person, why it exists and what deletes it |
+| [docs/logging.md](docs/logging.md) | What a log line may carry and what it may never carry, at any level |
 | [docs/expiry-rules.md](docs/expiry-rules.md) | The seven decisions behind what looks like one comparison |
 | [docs/attempt-outcomes.md](docs/attempt-outcomes.md) | The fixed set of outcomes a redemption attempt records |
 | [docs/setup-never-asks.md](docs/setup-never-asks.md) | What the guided setup may never put a box on the page for |
