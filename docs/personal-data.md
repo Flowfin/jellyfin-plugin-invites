@@ -104,10 +104,10 @@ could be deleted:
 
 ```
 $ git ls-files --with-tree=origin/master -- '*.cs' ':!.github/lint/fixtures'
-Jellyfin.Plugin.Template.Tests/PluginPagesTests.cs
-Jellyfin.Plugin.Template.Tests/Stubs.cs
-Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-Jellyfin.Plugin.Template/Plugin.cs
+Jellyfin.Plugin.Invites.Tests/PluginPagesTests.cs
+Jellyfin.Plugin.Invites.Tests/Stubs.cs
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
+Jellyfin.Plugin.Invites/Plugin.cs
 $ git grep -lE 'Invitation|Redeem' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
 exit=1
 ```

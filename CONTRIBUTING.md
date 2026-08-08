@@ -135,7 +135,7 @@ reading a red square afterwards:
 
 - the build and the suite, with the three commands above
 - the oldest server this plugin claims to load on:
-  `dotnet build Jellyfin.Plugin.Template.sln -p:BuildAgainstAbiFloor=true`
+  `dotnet build Jellyfin.Plugin.Invites.sln -p:BuildAgainstAbiFloor=true`
 - the invariant lint, with the two commands above
 - the pull-request hygiene legs: `bash .github/lint/pr-hygiene.sh selftest`
 - the sign-off, by committing with `git commit -s` in the first place

@@ -387,7 +387,7 @@
           "xunit.extensibility.core": "[2.9.2]"
         }
       },
-      "jellyfin.plugin.template": {
+      "jellyfin.plugin.invites": {
         "type": "Project",
         "dependencies": {
           "Jellyfin.Controller": "[10.11.11, )",

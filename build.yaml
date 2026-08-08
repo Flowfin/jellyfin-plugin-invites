@@ -13,6 +13,6 @@ description: >
 category: "Administration"
 owner: "Flowfin"
 artifacts:
-- "Jellyfin.Plugin.Template.dll"
+- "Jellyfin.Plugin.Invites.dll"
 changelog: >
   changelog

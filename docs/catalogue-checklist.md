@@ -212,12 +212,11 @@ turns it red.
 
 ### The framework and the artifact list match what is built
 
-Passes today and is tied to a rename that has not happened. The framework is
-`net9.0` in the packaging metadata and in both project files, and the artifact
-list names `Jellyfin.Plugin.Template.dll`, which is the assembly this
-repository currently builds. Issue #2 renames the project off the template, and
-the artifact list has to move in the same change or the packaging job reds on
-the comparison above.
+Passes. The framework is `net9.0` in the packaging metadata and in both project
+files, and the artifact list names `Jellyfin.Plugin.Invites.dll`, which is the
+assembly this repository builds. Issue #2 renamed the project off the template
+and moved the artifact list in the same change, because either one moving alone
+is what the comparison above reds on.
 
 ## What the failing items are waiting on
 

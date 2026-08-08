@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           export NUGET_PACKAGES="${GITHUB_WORKSPACE}/.nuget-packages"
           dotnet restore --locked-mode
-          dotnet build Jellyfin.Plugin.Template.sln --configuration Release --no-restore
+          dotnet build Jellyfin.Plugin.Invites.sln --configuration Release --no-restore
 
       - name: Fetch the image, also with the network
         run: docker pull "${SDK_IMAGE}"
@@ -86,7 +86,7 @@ jobs:
             --env DOTNET_NOLOGO=1 \
             --env DOTNET_CLI_UI_LANGUAGE=en \
             "${SDK_IMAGE}" \
-            dotnet test Jellyfin.Plugin.Template.sln --configuration Release --no-build
+            dotnet test Jellyfin.Plugin.Invites.sln --configuration Release --no-build
 
       - name: Show that the container really had no network
         # The leg above proves nothing if the container could reach out after

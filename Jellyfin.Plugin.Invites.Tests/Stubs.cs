@@ -3,7 +3,7 @@ using System.IO;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Serialization;
 
-namespace Jellyfin.Plugin.Template.Tests;
+namespace Jellyfin.Plugin.Invites.Tests;
 
 /// <summary>
 /// Application paths rooted in a directory the test owns and deletes, so the

@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace Jellyfin.Plugin.Template.Tests;
+namespace Jellyfin.Plugin.Invites.Tests;
 
 /// <summary>
 /// The plugin advertises its configuration page to the server by resource name.
