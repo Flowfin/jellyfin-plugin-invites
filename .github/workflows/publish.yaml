@@ -230,6 +230,12 @@ jobs:
     # able to mint an attestation under this repository's identity.
     permissions:
       contents: read
+    # The project path is named once for the whole job. It was written out in three
+    # steps and eight lines, the rename off the template moved the directory, and
+    # every copy was left behind pointing at a path that no longer exists. One name
+    # is one thing to move.
+    env:
+      PROJECT: Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj
     steps:
       - name: Check out the tagged commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -254,11 +260,15 @@ jobs:
         # does not declare fails there with NETSDK1005, after the gate has passed.
         run: |
           set -euo pipefail
-          singular="$(dotnet msbuild "Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj" -getProperty:TargetFramework -nologo | tr -d '[:space:]')"
-          plural="$(dotnet msbuild "Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj" -getProperty:TargetFrameworks -nologo | tr -d '[:space:]')"
+          if [ ! -f "${PROJECT}" ]; then
+            echo "::error::${PROJECT} does not exist, so this workflow cannot read the project it is about to publish. The path is set once in the build job's env. If the project moved or was renamed, that is the line to change."
+            exit 1
+          fi
+          singular="$(dotnet msbuild "${PROJECT}" -getProperty:TargetFramework -nologo | tr -d '[:space:]')"
+          plural="$(dotnet msbuild "${PROJECT}" -getProperty:TargetFrameworks -nologo | tr -d '[:space:]')"
           declared="${plural:-${singular}}"
           if [ -z "${declared}" ]; then
-            echo "::error::Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj declares neither TargetFramework nor TargetFrameworks."
+            echo "::error::${PROJECT} declares neither TargetFramework nor TargetFrameworks."
             exit 1
           fi
           found=0
@@ -269,7 +279,7 @@ jobs:
             fi
           done
           if [ "${found}" -ne 1 ]; then
-            echo "::error::Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj is built for '${declared}', which does not include ${EXPECTED_FRAMEWORK}. build.yaml and the project disagree about which server line this is. Bring them into line before tagging."
+            echo "::error::${PROJECT} is built for '${declared}', which does not include ${EXPECTED_FRAMEWORK}. build.yaml and the project disagree about which server line this is. Bring them into line before tagging."
             exit 1
           fi
           if [ "${#frameworks[@]}" -gt 1 ]; then
@@ -286,7 +296,7 @@ jobs:
         # is a single command and is written up in docs/RELEASING.md.
         run: |
           set -euo pipefail
-          project="Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj"
+          project="${PROJECT}"
           lock="$(dirname "${project}")/packages.lock.json"
           if [ ! -f "${lock}" ]; then
             echo "::error::${lock} does not exist. The release build restores in locked mode so the shipped bytes come from the dependency graph that was reviewed. Run: dotnet restore ${project} -p:RestorePackagesWithLockFile=true, then commit the file."
@@ -305,15 +315,15 @@ jobs:
         # are compared, because 1.4.0 and 1.4.0.0 are the same version written twice.
         run: |
           set -euo pipefail
-          assembly="$(dotnet msbuild "Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj" \
+          assembly="$(dotnet msbuild "${PROJECT}" \
             -getProperty:AssemblyVersion -nologo \
             -p:TargetFramework="${EXPECTED_FRAMEWORK}" | tr -d '[:space:]')"
           if [ -z "${assembly}" ]; then
-            echo "::error::Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj sets no AssemblyVersion, so the build stamps the SDK default and the shipped DLL will not carry ${MANIFEST_VERSION}."
+            echo "::error::${PROJECT} sets no AssemblyVersion, so the build stamps the SDK default and the shipped DLL will not carry ${MANIFEST_VERSION}."
             exit 1
           fi
           if [[ ! "${assembly}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
-            echo "::error::Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj stamps AssemblyVersion '${assembly}', which is not three or four numeric parts, so it cannot be the manifest version ${MANIFEST_VERSION}."
+            echo "::error::${PROJECT} stamps AssemblyVersion '${assembly}', which is not three or four numeric parts, so it cannot be the manifest version ${MANIFEST_VERSION}."
             exit 1
           fi
           want="${MANIFEST_VERSION}"
