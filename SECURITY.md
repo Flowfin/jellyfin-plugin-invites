@@ -66,10 +66,10 @@ placed against the issue that keeps it:
 > invitation had left, listed for the operator as a redemption of that
 > invitation, and removable by deleting that account.
 
-None of the issues behind those clauses is closed, so today the sentence is what
-this plugin is being built to, and not a report of what it does. A report that
-the plugin exceeds this bound once the code exists is a report this policy wants,
-and the list above is what to measure it against.
+Nothing in this repository redeems an invitation yet, so today the sentence is
+what this plugin is being built to, and not a report of what it does. A report
+that the plugin exceeds this bound once the code exists is a report this policy
+wants, and the list above is what to measure it against.
 
 The default validity is seven days, and a spent invitation is spent for good.
 The threat model carries the reasoning for both, and both are the shortest

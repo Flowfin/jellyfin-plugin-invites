@@ -110,8 +110,11 @@ for word:
 
 Every clause of it is a property some other issue has to make true, and if any
 of them is not true the cost is larger than the sentence claims. Each clause
-below names where it is kept. None of those issues is closed, so today the
-sentence is the specification and not a description.
+below names where it is kept. Nothing in this repository redeems anything yet,
+so today the sentence is the specification and not a description:
+
+    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    exit=1
 
 | Clause | What has to hold for it | Issue |
 | --- | --- | --- |
