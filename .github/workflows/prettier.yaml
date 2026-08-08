@@ -1,0 +1,97 @@
+name: '🎨 Formatting'
+
+on:
+  # Every branch and every pull request. The check is a read-only scan of
+  # tracked text and there is no branch whose served pages should escape it.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+# Read-only. Every invocation below is --check; nothing here runs --write, so
+# CI can never rewrite the tree and land formatting nobody read.
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+env:
+  # Pinned rather than floating: a formatter that changes its mind between two
+  # runs turns an unrelated pull request red for a reason its author did not
+  # cause. Moving this number is a diff somebody reads.
+  PRETTIER_VERSION: 3.6.2
+
+jobs:
+  formatting:
+    name: Non-C# files are formatted
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixture
+        # First, and on every run rather than once at review time. The tree
+        # holds no served page worth speaking of yet, so without this step the
+        # job below would go green against a formatter that had stopped
+        # working and nobody would find out. The pair differs by one
+        # character - the space before the self-closing slash on the meta tag -
+        # which is the drift a person actually types.
+        #
+        # --ignore-path /dev/null because .prettierignore hides the fixture
+        # directory from the tree scan; here it is the subject.
+        run: |
+          set -u
+          FIXTURES=.github/lint/fixtures/prettier
+
+          rc=0
+          npx --yes "prettier@${PRETTIER_VERSION}" --check --ignore-path /dev/null \
+            "$FIXTURES/served-page.clean.html" || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::The clean fixture is not accepted (exit $rc). The check would red every pull request for no reason."
+            exit 1
+          fi
+
+          rc=0
+          npx --yes "prettier@${PRETTIER_VERSION}" --check --ignore-path /dev/null \
+            "$FIXTURES/served-page.trip.html" || rc=$?
+          case "$rc" in
+            1)
+              echo "The one-character fixture is refused, as it must be."
+              ;;
+            0)
+              echo "::error::The misformatted fixture was accepted. The formatting check is decorative; do not trust a green run below."
+              exit 1
+              ;;
+            *)
+              echo "::error::Prettier exited $rc on the fixture, which is neither accepted nor refused. Failing closed rather than reading a tooling error as a clean tree."
+              exit 1
+              ;;
+          esac
+
+      - name: The tree is formatted
+        # Check mode, never write mode. The glob is the served-page surface:
+        # HTML, CSS and JavaScript, which no C# analyzer looks at. Markdown and
+        # the workflow YAML are not in it yet; issue #19 carries what is left
+        # and why.
+        run: |
+          set -u
+          rc=0
+          npx --yes "prettier@${PRETTIER_VERSION}" --check "**/*.{html,css,scss,js}" || rc=$?
+          case "$rc" in
+            0) echo "Every matched file is formatted." ;;
+            1)
+              echo "::error::A tracked file is not formatted. Run: npx prettier@${PRETTIER_VERSION} --write '**/*.{html,css,scss,js}'"
+              exit 1
+              ;;
+            *)
+              echo "::error::Prettier exited $rc rather than deciding. Failing closed."
+              exit 1
+              ;;
+          esac
