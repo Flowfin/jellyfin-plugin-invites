@@ -31,6 +31,7 @@ RULES=(
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
   'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
+  'code-canonicalised-outside-one-function@#49@(?i)\bcode\b[^;\n]*\.(Trim|ToUpper|ToLower)@^[^:]*InvitationCode\.cs:'
 )
 
 # What each rule is about, printed when it fires, so the failure explains itself
@@ -51,6 +52,8 @@ explain() {
       echo "GetSmartApiUrl answers from the request, so a link built through it is still the caller's host. Take the base address from configuration." ;;
     clock-read-outside-the-seam)
       echo "A call site that reads the machine clock can only be tested by a test that sleeps. Take an IClock." ;;
+    code-canonicalised-outside-one-function)
+      echo "A code trimmed or cased anywhere but InvitationCode.Canonicalise is a second definition of which codes are equal. Call it instead." ;;
   esac
 }
 
@@ -66,6 +69,17 @@ explain() {
 # fixture that already trips on the header spelling: the run would print bites
 # whether the new alternative worked or not. A rule of its own gets a fixture
 # pair of its own, and the pair is the only thing that says it fires.
+#
+# The canonicalisation rule exempts InvitationCode.cs the same way, by basename
+# rather than by directory, because that file is the one function the rule
+# exists to keep alone. What the rule matches is a code being trimmed or cased
+# on the same statement it is named on, which is the shape a redemption route
+# reaches for when it wants to be forgiving about what somebody typed. Its bound
+# is the bound every rule here has: it matches a spelling. The same normalisation
+# done to a variable called something other than a code is not matched, and
+# neither is one split across two statements. What it buys is that the obvious
+# spelling of the mistake cannot land quietly, and the reason a second
+# normalisation is a defect at all is in the remarks on Canonicalise.
 #
 # They also forbid different things. The first is a request field read by hand.
 # The second is the server's own helper, which takes a request, a remote address
