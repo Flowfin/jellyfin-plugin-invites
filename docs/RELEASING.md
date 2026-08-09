@@ -12,7 +12,16 @@ name.
 
 ## Cutting a release
 
-1. Update `version` in `build.yaml` on the release branch and merge it.
+The three steps below are done by a person. Everything after the tag is pushed is
+the `Publish Release` workflow, and no step of it waits for a hand.
+
+1. On the release branch, move three things together in one change and merge it:
+   `version` in `build.yaml`, the `changelog` key in the same file, and the entry
+   for that version in `CHANGELOG.md`. The two changelog texts carry the same
+   words, because one is what a catalogue shows an operator deciding whether to
+   upgrade and the other is what somebody reads in the repository.
+   `CHANGELOG.md` holds the rule for what an entry has to say, including the class
+   of change every entry states whether or not the answer is nothing.
 2. Check that the commit you want to release is on that branch.
 3. Push the tag for that commit:
 
@@ -22,6 +31,21 @@ name.
     ```
 
 The `Publish Release` workflow takes it from there.
+
+Only part of step 1 is held by anything but the person doing it. The run fails a
+tag whose numeric part disagrees with `version`, and it fails a `build.yaml` with
+no `changelog` key at all, for a reason that is about the packaging tool rather
+than about release notes:
+
+    $ git grep -n 'changelog' -- .github/workflows/publish.yaml
+    .github/workflows/publish.yaml:147:          # changelog is in this list because the packaging tool reads build_cfg
+    .github/workflows/publish.yaml:148:          # ['changelog'] without a default and dies with a Python KeyError when it is
+    .github/workflows/publish.yaml:152:          for key in name guid version targetAbi framework owner overview description category artifacts changelog; do
+
+Nothing reads what that key says, compares it against `CHANGELOG.md`, or notices
+that neither text moved with the version. A release whose notes still describe the
+previous version passes every check in this repository, so the agreement of those
+three edits is a thing a person keeps.
 
 Push one tag at a time and wait for its run to finish. GitHub keeps at most one
 queued run per concurrency group, and although the group here is keyed on the tag,
@@ -92,7 +116,8 @@ version people have already installed is the failure this prevents, and it is wo
 more than the convenience of a re-run.
 
 So: if a release went out with the wrong contents, fix the problem, raise the version
-in `build.yaml`, and push a new tag.
+in `build.yaml`, write the entry for the new version in both places as step 1 above
+asks, and push a new tag.
 
 If a run failed **before** the release was created, the tag is still clean. Fix the
 cause and re-run the workflow from the Actions page, or delete and re-push the tag.
@@ -102,6 +127,30 @@ the release is incomplete and a re-run will refuse it. What is possible then dep
 on the repository settings below. Without immutable releases you can delete the
 incomplete release, delete the tag, and push it again. With immutable releases you
 cannot, and the version has to be raised.
+
+## Who may release
+
+Whoever can push a tag matching the two patterns above. Nothing else stands in the
+way. The workflow declares no environment, so no reviewer is asked between the push
+and the release:
+
+    $ git grep -c 'environment:' -- .github/workflows/publish.yaml; echo "exit=$?"
+    exit=1
+
+and this repository carries one ruleset, which is about branches:
+
+    $ gh api repos/Flowfin/jellyfin-plugin-invites/rulesets --jq '.[]|[.name,.target]|@tsv'
+    gate	branch
+
+The list below asks for a rule restricting who may push `*-stable` tags. That rule
+is not in place. Until it is, the people who may release are the people who may
+push, and the sentence above is the whole answer rather than a summary of a
+control.
+
+The artefact is authenticated rather than the person. The run signs a build
+provenance statement for the archive, and `gh attestation verify` above is how
+somebody who downloaded it checks that it came from this repository's workflow.
+That says nothing about who pushed the tag.
 
 ## Repository settings this expects
 
