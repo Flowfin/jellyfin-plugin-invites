@@ -29,6 +29,7 @@ RULES=(
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
+  'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
 )
 
@@ -46,6 +47,8 @@ explain() {
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
     link-built-from-a-request-header)
       echo "A link built from what the request says the host is, is a link an attacker chooses." ;;
+    link-built-from-the-request-url-helper)
+      echo "GetSmartApiUrl answers from the request, so a link built through it is still the caller's host. Take the base address from configuration." ;;
     clock-read-outside-the-seam)
       echo "A call site that reads the machine clock can only be tested by a test that sleeps. Take an IClock." ;;
   esac
@@ -56,6 +59,21 @@ explain() {
 # the basename rather than the full path keeps the exemption alive across the
 # rename off the template; naming SystemClock.cs rather than a pattern keeps a
 # second file from joining it by being called something clock-shaped.
+#
+# Two rules carry #50 rather than one, and the split is what makes the second
+# one proven. The selftest reads one tripping fixture per rule id, so a fourth
+# alternative added to link-built-from-a-request-header would be checked by a
+# fixture that already trips on the header spelling: the run would print bites
+# whether the new alternative worked or not. A rule of its own gets a fixture
+# pair of its own, and the pair is the only thing that says it fires.
+#
+# They also forbid different things. The first is a request field read by hand.
+# The second is the server's own helper, which takes a request, a remote address
+# or a hostname and returns a URL for it, and is what somebody reaching for a
+# base address finds first while believing they asked the server. All three
+# overloads answer from what the caller presented, so the helper is refused
+# outright here rather than exempted somewhere: this plugin builds a link at
+# mint time, when there is no request to derive one from.
 
 fail=0
 
