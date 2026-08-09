@@ -4,8 +4,17 @@ name: Publish Release
 # is published. CI builds the plugin from the tagged commit, creates the GitHub release
 # for that tag and uploads the assets. No release is ever created by hand.
 #
+# A tag of the form X.Y.Z-rcN or X.Y.Z.W-rcN runs the same gate and the same build and
+# stops there. Nothing is signed and no release is created, so the checks that would
+# otherwise be met for the first time during a real release are met before one. The
+# gate job decides which of the two a tag is and says so in its `publish` output, and
+# the two jobs that reach outside this run are conditioned on that value.
+#
 # The numeric part of the tag is the plugin version Jellyfin installs. It must equal
-# build.yaml's `version`, and the gate job below fails the run if it does not.
+# build.yaml's `version`, and the gate job below fails the run if it does not. The
+# -rcN suffix is not part of it: a dry run proves the metadata of the version that is
+# in build.yaml right now, which is the version a -stable tag on the same commit would
+# publish.
 #
 # What this workflow publishes is one package for the one server line build.yaml names
 # in `framework` and `targetAbi`. A repository that ships two server lines needs a
@@ -16,6 +25,8 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+-stable"
       - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
+      - "[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
 
 # Deny by default. Each job opts into the smallest scope it needs.
 permissions: {}
@@ -39,6 +50,10 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.metadata.outputs.version }}
+      # "true" only for a -stable tag. Every job below that signs something or writes
+      # to this repository is conditioned on it, so a tag this job did not read as a
+      # release cannot reach them.
+      publish: ${{ steps.metadata.outputs.publish }}
     steps:
       - name: Check out the tagged commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -112,11 +127,23 @@ jobs:
             exit 1
           fi
 
+          # The suffix decides what the rest of this run is allowed to do. -stable
+          # publishes; -rcN builds and stops. Anything else is refused here rather
+          # than treated as one of the two, because the tag patterns on the trigger
+          # and this case statement are two lists that can disagree, and the way they
+          # disagree that matters is a tag arriving with no suffix either recognises.
           tag="${GITHUB_REF_NAME}"
           case "${tag}" in
-            *-stable) numeric="${tag%-stable}" ;;
+            *-stable)
+              numeric="${tag%-stable}"
+              publish=true
+              ;;
+            *-rc[0-9]*)
+              numeric="${tag%-rc*}"
+              publish=false
+              ;;
             *)
-              echo "::error::Tag ${tag} does not end in -stable."
+              echo "::error::Tag ${tag} ends in neither -stable nor -rcN, so this run cannot tell a release from a dry run."
               exit 1
               ;;
           esac
@@ -217,7 +244,12 @@ jobs:
           fi
 
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "Publishing version ${version} from tag ${tag}."
+          echo "publish=${publish}" >> "$GITHUB_OUTPUT"
+          if [ "${publish}" = "true" ]; then
+            echo "Publishing version ${version} from tag ${tag}."
+          else
+            echo "::notice::Dry run. Tag ${tag} carries version ${version} and this run stops after the build. Nothing is signed and no release is created."
+          fi
 
   build:
     name: Build package
@@ -375,7 +407,12 @@ jobs:
 
   attest:
     name: Attest build provenance
-    needs: build
+    needs: [gate, build]
+    # A dry run stops here. An attestation is a signed statement under this
+    # repository's identity about bytes nobody will be able to download, so minting
+    # one for a package that is never released spends the identity on nothing and
+    # leaves a provenance record for an archive that does not exist.
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The only job that can mint an attestation under this repository's identity, and
@@ -401,7 +438,12 @@ jobs:
 
   release:
     name: Publish the release
-    needs: [build, attest]
+    needs: [gate, build, attest]
+    # The one job that creates something outside this run, so it is the one the dry
+    # run route has to be unable to reach. Conditioned on the gate's reading of the
+    # tag rather than on the tag name, so there is one place that decides what a tag
+    # means and the jobs follow it.
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-latest
     # Generous, because this job builds nothing and the time it spends is asset
     # uploads on somebody else's network. A timeout that fires between creating the
