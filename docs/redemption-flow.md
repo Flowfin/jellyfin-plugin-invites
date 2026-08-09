@@ -36,8 +36,9 @@ sign-in-provider answer would change a cell, the cell says so.
 
 ## The routes
 
-Three routes carry the flow. The names below are provisional, and the API
-document under M8 is where they are fixed:
+Three routes carry the flow. The names below are fixed rather than provisional,
+and [docs/api.md](api.md) is where each one has its heading, its parameters and
+its responses:
 
 | Route | Purpose |
 | --- | --- |
