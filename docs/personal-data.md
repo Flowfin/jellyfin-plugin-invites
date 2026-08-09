@@ -80,22 +80,39 @@ memory for as long as its window and no longer, and that the trail does not
 carry it. #43 allows the field if this inventory does, and this inventory does
 not.
 
-## Retention is a parameter, not a number
+## Retention
 
-Decision 8 in #11 has not been answered, so no number appears here. Two named
-parameters are what the record and the trail are built against, and answering
-#11 fills them in without either issue being reopened.
+Two named parameters are what the record and the trail are built against. One
+of them has its answer and the other does not, and the difference is worth
+seeing at a glance rather than being read out of a paragraph.
 
-`record-retention` is how long a spent, expired or revoked invitation record is
-kept after it stops being usable. It has to be long enough that an operator
-investigating an unfamiliar account can still find where it came from, and
-short enough that it is not an indefinite register of who was invited. The
-sweep that applies it is #59.
+`record-retention` is ninety days. It is how long a spent, expired or revoked
+invitation record is kept after it stops being usable, counted from the moment
+it stops being usable rather than from when it was minted. Long enough that an
+operator meeting an account they do not recognise can still find where it came
+from, and short enough that what is left behind is not an indefinite register
+of who was invited. Decision 8 in #11 is where the number was chosen.
 
-`trail-bound` is what bounds the attempt trail. #43 requires it be bounded and
-says why: an endpoint a stranger can hammer, writing an unbounded trail, is a
-disk-filling attack that uses the operator's own record keeping as the weapon.
-The bound is a count or an age, and it names what is dropped first.
+This number is a decision rather than a measurement, so it carries the issue
+that decided it instead of a command. Nothing in this tree can be run to
+produce it, and nothing here should be read as having measured it.
+
+The sweep that applies it is #59. Shortening the period later deletes records on
+the next sweep rather than stopping new ones from being kept, which is the right
+way round and is not reversible.
+
+`trail-bound` is what bounds the attempt trail, and it has no number. Decision 8
+asks how long spent and expired invitation records are kept, which is the
+parameter above, so the answer to it does not set this one.
+`docs/attempt-outcomes.md` reads decision 8 as also covering how long trail
+entries are kept beyond the bound. That reading is not settled here, and either
+way the bound itself is a separate quantity that nothing has chosen.
+
+#43 requires the trail be bounded and says why: an endpoint a stranger can
+hammer, writing an unbounded trail, is a disk-filling attack that uses the
+operator's own record keeping as the weapon. The bound is a count or an age, and
+it names what is dropped first. Until it is chosen, the trail has a requirement
+and no number.
 
 ## What deletes anything
 
