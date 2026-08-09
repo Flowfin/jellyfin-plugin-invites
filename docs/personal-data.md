@@ -101,12 +101,18 @@ The sweep that applies it is #59. Shortening the period later deletes records on
 the next sweep rather than stopping new ones from being kept, which is the right
 way round and is not reversible.
 
-`trail-bound` is what bounds the attempt trail, and it has no answer. It is not
-one of the twelve points in #11, so nothing there will supply it. #43 requires
-the trail be bounded and says why: an endpoint a stranger can hammer, writing an
-unbounded trail, is a disk-filling attack that uses the operator's own record
-keeping as the weapon. The bound is a count or an age, and it names what is
-dropped first. Until it is chosen, the trail has a requirement and no number.
+`trail-bound` is what bounds the attempt trail, and it has no number. Decision 8
+asks how long spent and expired invitation records are kept, which is the
+parameter above, so the answer to it does not set this one.
+`docs/attempt-outcomes.md` reads decision 8 as also covering how long trail
+entries are kept beyond the bound. That reading is not settled here, and either
+way the bound itself is a separate quantity that nothing has chosen.
+
+#43 requires the trail be bounded and says why: an endpoint a stranger can
+hammer, writing an unbounded trail, is a disk-filling attack that uses the
+operator's own record keeping as the weapon. The bound is a count or an age, and
+it names what is dropped first. Until it is chosen, the trail has a requirement
+and no number.
 
 ## What deletes anything
 
