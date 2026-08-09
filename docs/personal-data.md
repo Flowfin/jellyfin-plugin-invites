@@ -5,10 +5,12 @@ person at a particular time, and that a particular account came out of it. That
 is personal data about two people before a single optional field is added, and
 it is worth writing down before the record type exists rather than after.
 
-Nothing below is implemented. The record is #38, the attempt trail is #43, and
-the store they both live in is #39. This document is what those three are built
-against: a field that is not in the inventory does not go in the record, and a
-field in the inventory carries the reason it is there.
+Nothing below holds anybody's data yet. The record is a type under #38 and the
+attempt trail is #43, and the store they would both live in is #39 and does not
+exist, so nothing here has ever been written down about a person. This document
+is what those three are built against: a field that is not in the inventory does
+not go in the record, and a field in the inventory carries the reason it is
+there.
 
 The accounts themselves are not in this inventory. An account created by an
 invitation is an ordinary Jellyfin account in the server's own user database,
@@ -116,28 +118,20 @@ and no number.
 
 ## What deletes anything
 
-Nothing today. There is no store, so there is nothing holding a value that
-could be deleted:
+Nothing today. The record above is a type now and there is nowhere to put one,
+so nothing holds a value that could be deleted:
 
 ```
-$ git ls-files --with-tree=origin/master -- '*.cs' ':!.github/lint/fixtures'
-Jellyfin.Plugin.Invites.Tests/ClockSeamTests.cs
-Jellyfin.Plugin.Invites.Tests/PluginPagesTests.cs
-Jellyfin.Plugin.Invites.Tests/Stubs.cs
-Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
-Jellyfin.Plugin.Invites/Plugin.cs
-Jellyfin.Plugin.Invites/Time/IClock.cs
-Jellyfin.Plugin.Invites/Time/SystemClock.cs
-$ git grep -lE 'Invitation|Redeem' origin/master -- '*.cs' ':!.github/lint/fixtures'
-origin/master:Jellyfin.Plugin.Invites/Plugin.cs
-$ git grep -nE 'Invitation|Redeem' origin/master -- 'Jellyfin.Plugin.Invites/Plugin.cs'
-origin/master:Jellyfin.Plugin.Invites/Plugin.cs:29:    public override string Name => "Account Invitations";
+$ git grep -nE '(class|interface|record) [A-Za-z]*(Store|Repository)' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
+exit=1
+$ git grep -nE '\bRedeem' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
+exit=1
 ```
 
-Seven source files, and the one occurrence of the word invitation in any of
-them is the display name the dashboard shows. No redemption path, no store and
-no record type. The fixtures are excluded because they hold their violations on
-purpose.
+No store and no redemption path. What has arrived since this page was written
+is the record type itself, in `Jellyfin.Plugin.Invites/Invitations/Invitation.cs`
+under #38, which is a shape rather than a thing holding anybody's data. The
+fixtures are excluded because they hold their violations on purpose.
 
 Three deleters are planned and no others. The retention sweep in #59 removes
 records the retention rule allows and never touches an account. Revocation in
@@ -158,9 +152,20 @@ is the `secret-in-a-log-call` rule in `.github/lint/invariants.sh`.
 
 ## What this document does not settle
 
-The record type does not exist, so no field has been removed from it. That
-clause of #34 is met by construction today and has to be checked again when #38
-lands, against this file.
+The record type exists now, so the clause of #34 asking that a field with no
+purpose be removed from it has been checked against this file rather than being
+met by an empty tree. Every member of the type is a row of the invitation record
+table above, and no row that failed the test is a member. That is not a reading
+somebody has to repeat:
+`Jellyfin.Plugin.Invites.Tests.InvitationRecordTests` holds the member list
+against the rows, so a field added to the record without a row here reds the
+suite.
+
+Two rows above each name two things, which is worth knowing before somebody
+reads the table and the type side by side and counts. Uses granted and uses
+remaining are two members, because neither can be worked out from the other.
+Revoked and revoked at are one stored member, `RevokedAt`, and `IsRevoked`
+derived from it, so no record can say it is revoked and fail to say when.
 
 The clause asking that a documentation page carry the same inventory has no
 page to land in. Every issue in M11 was read for one and none of the seven
