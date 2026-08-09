@@ -10,6 +10,40 @@ and it must be exactly the `version` in `build.yaml`, written the same way, with
 same number of parts. The `-stable` suffix lives only in the tag and in the release
 name.
 
+A tag of the form `X.Y.Z-rcN` or `X.Y.Z.W-rcN` is a dry run rather than a release.
+The numeric part means the same thing and is checked the same way; the `-rcN` suffix
+is what tells the run to stop after the build.
+
+## The dry run
+
+Pushing an `-rcN` tag runs the metadata gate and the build and stops. Nothing is
+signed, no release is created, and the archive is left as a build artifact with the
+thirty day retention every other artifact here has.
+
+```
+git tag 1.4.0-rc1 <commit>
+git push origin 1.4.0-rc1
+```
+
+Everything that can refuse a release refuses a dry run in the same words, because it
+is the same gate and the same build reading the same `build.yaml`. What a dry run
+does not exercise is the two jobs it stops before: the provenance statement and the
+release itself, including the refusal to touch a release that already exists. Those
+run for the first time on the first `-stable` tag, and a dry run says nothing about
+them.
+
+Use it after step 1 below and before step 3, when the version and the changelog have
+moved and nobody has yet found out whether the packaging tool is happy with them. The
+cost of the answer arriving late is a spent tag: a `-stable` tag that fails the gate
+cannot be reused, and the fix is a new version rather than a new tag.
+
+The suffix is what the run reads, in one place, and the two jobs that reach outside
+the run are conditioned on what it read:
+
+    $ git grep -n "needs.gate.outputs.publish" -- .github/workflows/publish.yaml
+    .github/workflows/publish.yaml:415:    if: needs.gate.outputs.publish == 'true'
+    .github/workflows/publish.yaml:446:    if: needs.gate.outputs.publish == 'true'
+
 ## Cutting a release
 
 The three steps below are done by a person. Everything after the tag is pushed is
@@ -81,8 +115,8 @@ is gone and no catalog is fed until a manifest generator is added.
 
 ## What fails the run
 
-- The tag does not end in `-stable`, or the workflow was started from something
-  other than a tag.
+- The tag ends in neither `-stable` nor `-rcN`, or the workflow was started from
+  something other than a tag.
 - The numeric part of the tag differs from `version` in `build.yaml`.
 - `build.yaml` is missing a required field, or `version`, `targetAbi`, `framework`
   or `guid` has the wrong shape.
@@ -130,9 +164,10 @@ cannot, and the version has to be raised.
 
 ## Who may release
 
-Whoever can push a tag matching the two patterns above. Nothing else stands in the
-way. The workflow declares no environment, so no reviewer is asked between the push
-and the release:
+Whoever can push a `-stable` tag matching the patterns above. Nothing else stands in
+the way. An `-rcN` tag is not a release and does not need the same answer, since the
+run it starts creates nothing. The workflow declares no environment, so no reviewer is
+asked between the push and the release:
 
     $ git grep -c 'environment:' -- .github/workflows/publish.yaml; echo "exit=$?"
     exit=1
