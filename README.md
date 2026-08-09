@@ -125,6 +125,7 @@ drifts from it.
 | --- | --- |
 | [docs/redemption-flow.md](docs/redemption-flow.md) | Every state and branch from following a link to holding an account |
 | [docs/threat-model.md](docs/threat-model.md) | What is defended, how, and what is not defended |
+| [docs/code-entropy.md](docs/code-entropy.md) | How long an invitation code is, and the calculation the length is read off |
 | [docs/personal-data.md](docs/personal-data.md) | Every field held about an invited person, why it exists and what deletes it |
 | [docs/logging.md](docs/logging.md) | What a log line may carry and what it may never carry, at any level |
 | [docs/expiry-rules.md](docs/expiry-rules.md) | The seven decisions behind what looks like one comparison |
