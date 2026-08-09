@@ -21,6 +21,19 @@ An answer is a decision rather than a description of the directory as it stands.
 row saying removed names where the removal is carried out, and until that lands the
 file is still there.
 
+A workflow this repository has and this ledger does not name is a blank row rather
+than an absence, and it is the failure mode this file has already had: seven of them
+accumulated while the second table stood still. Nothing checks that, so it is checked
+by hand, and the check is written here rather than remembered:
+
+```
+$ git ls-files .github/workflows | sed 's|.*/||' \
+    | while read -r f; do grep -qF "\`$f\`" docs/workflow-parity.md || echo "$f"; done
+```
+
+Empty output is both tables accounting for the directory. It says nothing about
+whether an answer is the right one, which is what a reader is for.
+
 ## What the target gate has
 
 | Workflow | Answer | Reason |
@@ -34,9 +47,9 @@ file is still there.
 | `fuzz.yml` | adopted | #21 fuzzes the invitation code parser on a schedule. |
 | `manifest-freshness.yml` | deferred to M12 | There is no published manifest to keep fresh until a release process exists. |
 | `nightly-betas.yml` | deferred to M12 | Nothing is published yet, and how many publishing workflows survive depends on whether one server line is carried or two. |
-| `opengrep.yml` | adopted | #18 adopts a greppable invariant lint and seeds it with this plugin's invariants. |
-| `pr-hygiene.yml` | adopted | #17 adopts the legs that are decidable by a machine and drops the ones that need a person to judge. |
-| `prettier.yml` | adopted | #19 adopts formatting checks for the non-C# files. |
+| `opengrep.yml` | adopted, landed | #18 adopted a greppable invariant lint and seeded it with this plugin's invariants. It landed at `219935b6` as `invariants.yaml` plus `.github/lint/invariants.sh`, and reports `Invariant lint`. #18 stays open on the required-check clause rather than on the file. |
+| `pr-hygiene.yml` | adopted, landed | #17 adopted the legs that are decidable by a machine and dropped the ones that need a person to judge. It landed at `9f3245fd` as `pr-hygiene.yaml` plus `.github/lint/pr-hygiene.sh`, and reports `Deterministic pull-request hygiene`. |
+| `prettier.yml` | adopted, landed | #19 adopted formatting checks for the non-C# files. It landed at `5c98896b` as `prettier.yaml`, and reports `Non-C# files are formatted`. Its glob is the served-page surface and does not reach markdown, which is written in the file itself. |
 | `publish-beta.yml` | deferred to M12 | Same as the other publishing workflows, there is nothing to publish before a release process exists. |
 | `publish-failure-alert.yml` | deferred to M12 | It alerts on a publishing failure, so it cannot land before publishing does. |
 | `publish-jf12-beta.yml` | deferred to M12 | Whether a second server line is carried at all is an open decision in #11. |
@@ -53,7 +66,14 @@ file is still there.
 
 | Workflow | Answer | Reason |
 | --- | --- | --- |
+| `abi-floor.yaml` | kept | This repository's own, landed by #15 at `b80b85b2`. The shipping build compiles against a package from the middle of the server line while `build.yaml` invites people to install on the oldest version of it, and nothing in the ordinary build notices the gap. Reports `Build against the declared ABI floor`. It is a file of its own rather than a leg inside the build, which is what the `dotnet.yml` row above says #15 does to that workflow on the target gate. |
 | `build.yaml` | kept | Since #14 it calls a reusable workflow this repository owns rather than a shared template one, and its job id is what the required check context is built from. |
+| `configuration-reference.yaml` | kept | This repository's own, landed by #113 at `6e63c3f8`. It holds `docs/configuration.md` to the configuration type in both directions, so a setting without a row and a row without a setting both red. Reports `Every setting has a row`. Nothing on the target gate's list answers to it. |
+| `headless.yaml` | kept | This repository's own, landed by #99 at `7c2fb72d`. It runs the suite in a container with no network interface as an unprivileged user, so the headless rule in `CONTRIBUTING.md` is executed rather than asserted. Reports `Suite runs headless and offline`. Nothing on the target gate's list answers to it, and it is the leg that makes declining `e2e-login.yml` a decision rather than an omission. |
+| `invariants.yaml` | kept | This repository's answer to the target gate's `opengrep.yml`, landed by #18 at `219935b6`. Six greppable rules, each with a fixture pair the workflow re-proves on every run rather than at review time. Reports `Invariant lint`. |
+| `package.yaml` | kept | This repository's own, landed by #20 at `fa2aa6fb`. It packages with JPRM on every pull request and generates a bill of materials, so a packaging mistake is found on the change that caused it rather than at a release. #35 is where the runtime dependency set it records is held empty. |
+| `pr-hygiene.yaml` | kept | This repository's answer to the target gate's `pr-hygiene.yml`, landed by #17 at `9f3245fd`. The legs a machine can decide, in two tiers, with the ones needing a person's judgement deliberately absent. Reports `Deterministic pull-request hygiene`. |
+| `prettier.yaml` | kept | This repository's answer to the target gate's `prettier.yml`, landed by #19 at `5c98896b`. Check mode only, never write mode, and it bites its own fixture before it scans the tree. Reports `Non-C# files are formatted`. |
 | `changelog.yaml` | removed, in #7 | It drafts a release and rewrites the version in `Directory.Build.props` and `build.yaml` with `sed` and `yq`, which puts back the second source of truth #9 removes, and there is nothing to release before M12 writes a release process. |
 | `command-dispatch.yaml` | removed, in #7 | It turns an issue comment into a repository dispatch, which is a write surface driven by untrusted input, and it is carried for slash commands nobody here uses. |
 | `command-rebase.yaml` | removed, in #7 | It exists only to serve the dispatcher above and has no reason to stay once that goes. |
