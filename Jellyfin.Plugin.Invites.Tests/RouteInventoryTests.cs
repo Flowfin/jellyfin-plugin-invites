@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -23,6 +25,56 @@ public sealed class ProbeController : ControllerBase
     /// <returns>Nothing a caller reads. Nothing routes to this type.</returns>
     [HttpGet("probe")]
     public IActionResult Probe() => Ok();
+}
+
+/// <summary>
+/// The shape the requirement check has to refuse: a class-level attribute and
+/// an action carrying nothing of its own. Deleting the class attribute from a
+/// type like this opens every action under it at once, and that is the refactor
+/// the explicit-per-route rule exists against, so it is the fixture the check is
+/// proved on rather than a bare unattributed method.
+/// </summary>
+[Authorize(Policy = "RequiresElevation")]
+public sealed class ProbeClassAttributeOnlyController : ControllerBase
+{
+    /// <summary>
+    /// Covered by the class and by nothing of its own.
+    /// </summary>
+    /// <returns>Nothing a caller reads. Nothing routes to this type.</returns>
+    [HttpGet("probe/class-only")]
+    public IActionResult Mint() => Ok();
+}
+
+/// <summary>
+/// An administrator route written the way the rule asks for: the requirement is
+/// on the action, so it survives the class attribute being removed.
+/// </summary>
+[Authorize(Policy = "RequiresElevation")]
+public sealed class ProbeExplicitlyAuthorizedController : ControllerBase
+{
+    /// <summary>
+    /// Carries its own requirement.
+    /// </summary>
+    /// <returns>Nothing a caller reads. Nothing routes to this type.</returns>
+    [Authorize(Policy = "RequiresElevation")]
+    [HttpGet("probe/explicit")]
+    public IActionResult Mint() => Ok();
+}
+
+/// <summary>
+/// The public side, written the same way. The redemption path is reachable
+/// without authentication by design, and saying so on the action is what tells a
+/// later reader that the absence of a requirement was a decision.
+/// </summary>
+public sealed class ProbeExplicitlyAnonymousController : ControllerBase
+{
+    /// <summary>
+    /// Carries its own declaration that it is public.
+    /// </summary>
+    /// <returns>Nothing a caller reads. Nothing routes to this type.</returns>
+    [AllowAnonymous]
+    [HttpGet("probe/anonymous")]
+    public IActionResult Redeem() => Ok();
 }
 
 /// <summary>
@@ -126,5 +178,105 @@ public class RouteInventoryTests
         var inBoth = AdministratorControllers.Intersect(PublicControllers, StringComparer.Ordinal).ToList();
 
         Assert.Empty(inBoth);
+    }
+
+    /// <summary>
+    /// The actions of a controller that do not declare <typeparamref name="TRequirement"/>
+    /// on themselves.
+    /// <para>
+    /// The attributes read are the action's own and never the declaring type's,
+    /// which is the whole point: a requirement satisfied by a class attribute is
+    /// one deletion away from being gone while every action under it keeps
+    /// answering. <c>inherit: false</c> refuses the smaller version of the same
+    /// thing, a requirement carried only by a base method an override replaced.
+    /// </para>
+    /// <para>
+    /// The methods read are those declared on the controller and on any base of
+    /// it inside the same assembly, which stops at the framework's own
+    /// <see cref="ControllerBase"/>. That is a narrower set than the one the
+    /// framework routes: a public method inherited from a type outside the
+    /// assembly is an action to the framework and is invisible here. This plugin
+    /// declares no such base, and the day it does, this bound is what has to
+    /// move.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TRequirement">
+    /// <see cref="IAuthorizeData"/> for a route that requires something of the
+    /// caller, <see cref="IAllowAnonymous"/> for one that deliberately does not.
+    /// </typeparam>
+    /// <param name="controller">The controller type to read.</param>
+    /// <returns>The names of the actions carrying nothing of their own, ordered.</returns>
+    private static IReadOnlyList<string> ActionsWithoutTheirOwn<TRequirement>(Type controller)
+    {
+        var declared = new List<MethodInfo>();
+        for (var type = controller; type is not null && type.Assembly == controller.Assembly; type = type.BaseType)
+        {
+            declared.AddRange(type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+        }
+
+        return declared
+            .Where(method => !method.IsSpecialName)
+            .Where(method => method.GetCustomAttributes(typeof(NonActionAttribute), inherit: true).Length == 0)
+            .Where(method => !method.GetCustomAttributes(inherit: false).OfType<TRequirement>().Any())
+            .Select(method => (method.DeclaringType?.FullName ?? controller.Name) + "." + method.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// The check bites, and it bites the shape that actually happens. A class
+    /// carrying the requirement over an action carrying none is reported, which
+    /// is what makes the assertions below worth their green mark rather than
+    /// something that would pass over any assembly at all.
+    /// </summary>
+    [Fact]
+    public void AnActionCoveredOnlyByItsClassIsReportedAsCarryingNothingOfItsOwn()
+    {
+        var missing = ActionsWithoutTheirOwn<IAuthorizeData>(typeof(ProbeClassAttributeOnlyController));
+
+        Assert.Equal(
+            new[] { typeof(ProbeClassAttributeOnlyController).FullName + ".Mint" },
+            missing);
+    }
+
+    /// <summary>
+    /// And it does not bite a route written the way the rule asks for, in either
+    /// category. Without this half the assertion above is satisfied by a check
+    /// that reports every action ever written.
+    /// </summary>
+    [Fact]
+    public void AnActionCarryingItsOwnDeclarationIsNotReported()
+    {
+        Assert.Empty(ActionsWithoutTheirOwn<IAuthorizeData>(typeof(ProbeExplicitlyAuthorizedController)));
+        Assert.Empty(ActionsWithoutTheirOwn<IAllowAnonymous>(typeof(ProbeExplicitlyAnonymousController)));
+    }
+
+    /// <summary>
+    /// Every action of every controller the plugin places in a category declares
+    /// its own requirement. This is vacuous today, because the plugin registers
+    /// no controllers at all, and it is landed vacuous for the same reason the
+    /// inventory above was: the first route added has to carry its requirement
+    /// in the change that adds it, rather than inherit one from a class
+    /// attribute that a later refactor can remove without turning anything red.
+    /// </summary>
+    [Fact]
+    public void EveryActionOfEveryPlacedControllerCarriesItsOwnRequirement()
+    {
+        var placed = DiscoverControllers(typeof(Plugin).Assembly)
+            .ToDictionary(name => name, name => typeof(Plugin).Assembly.GetType(name)!, StringComparer.Ordinal);
+
+        var bare = new List<string>();
+        foreach (var (name, type) in placed)
+        {
+            bare.AddRange(AdministratorControllers.Contains(name)
+                ? ActionsWithoutTheirOwn<IAuthorizeData>(type)
+                : ActionsWithoutTheirOwn<IAllowAnonymous>(type));
+        }
+
+        Assert.True(
+            bare.Count == 0,
+            "These actions carry no authorization declaration of their own: "
+            + string.Join(", ", bare.OrderBy(name => name, StringComparer.Ordinal))
+            + ". An administrator route declares what it requires on the action; the redemption route declares that it is public on the action. A requirement held only by the class disappears with the class attribute and takes every action under it with it.");
     }
 }
