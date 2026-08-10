@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: A security problem with this plugin
-    url: https://github.com/iderex/jellyfin-plugin-invites/security/advisories/new
+    url: https://github.com/Flowfin/jellyfin-plugin-invites/security/advisories/new
     about: >-
       Vulnerabilities go down the private route in SECURITY.md. A public issue
       describing one is a working exploit handed to every reader of this

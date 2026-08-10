@@ -8,14 +8,27 @@ reports are wanted and are not a nuisance.
 
 Use GitHub's private vulnerability reporting on this repository:
 
-<https://github.com/iderex/jellyfin-plugin-invites/security/advisories/new>
+<https://github.com/Flowfin/jellyfin-plugin-invites/security/advisories/new>
 
 It is enabled, which anyone can check:
 
 ```
-gh api repos/iderex/jellyfin-plugin-invites/private-vulnerability-reporting
+gh api repos/Flowfin/jellyfin-plugin-invites/private-vulnerability-reporting
 {"enabled":true}
 ```
+
+The name in both is the one this repository answers to today, read back rather
+than copied:
+
+```
+gh repo view --json nameWithOwner --jq .nameWithOwner
+Flowfin/jellyfin-plugin-invites
+```
+
+An older path still reaches here through a rename redirect, so a link written
+against it works until somebody else claims that name. A reporter following one
+would be checking whatever the old path resolves to on the day they run it,
+which is not a check of this repository's setting.
 
 That route is private until an advisory is published, and it is the only route
 this document promises. Please do not open a public issue for something that
