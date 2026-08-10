@@ -55,11 +55,11 @@ imitate.
 
 ## What none of this is yet
 
-There is no page. Nothing in this repository serves anything, which is checkable
-rather than a claim about work not yet done:
+There is no page. Nothing the plugin declares serves anything, which is
+checkable rather than a claim about work not yet done:
 
 ```
-git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
 exit=1
 ```
 

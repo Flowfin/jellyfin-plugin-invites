@@ -15,7 +15,7 @@ renders them.
 Nothing here is enforced. There is no redemption path to produce an outcome and
 no trail to append to:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
     exit=1
 
 `docs/personal-data.md` already names this set as what the outcome field holds,
