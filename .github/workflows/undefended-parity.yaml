@@ -1,0 +1,44 @@
+name: '🔒 Undefended List'
+
+on:
+  # Every branch and every pull request. The drift this refuses arrives in a
+  # documentation change, which is exactly the kind of pull request nobody
+  # thinks to run a check on, and there is no path either document could move to
+  # that should escape it.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  undefended-parity:
+    name: The policy carries every undefended item
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        # The check reads two tracked files at this commit and needs no history.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. The two
+        # documents agree today, so the step below cannot fire against the tree,
+        # and a rule that had stopped finding its heading would go green forever
+        # while the documents it holds together drifted underneath it. That is
+        # the failure that makes a documentation check worse than none: the file
+        # is trusted because a green mark stands behind it.
+        run: bash .github/lint/undefended-parity.sh selftest
+
+      - name: The two documents agree
+        run: bash .github/lint/undefended-parity.sh check .
