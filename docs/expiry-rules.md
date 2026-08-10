@@ -4,10 +4,13 @@ Expiry reads like one comparison and is seven decisions. Each one below is
 settled, with the reason it went that way, so the code that enforces it is built
 against a decision rather than reconciled with one afterwards.
 
-Nothing here is enforced. There is no invitation record and no redemption
-routine:
+Nothing here is enforced. The record these rules judge is in the tree, as
+`Invitation` under #38, and nothing decides anything about it. The plugin
+serves no route and holds no redemption routine:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
+    exit=1
+    git grep -nE 'Redeem|Redemption' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
     exit=1
 
 Each rule names the issue that will enforce it. The clock seam these rules read

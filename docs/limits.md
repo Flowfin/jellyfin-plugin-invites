@@ -11,10 +11,13 @@ adds and it exists nowhere else.
 
 ## What this page is, at the moment you are reading it
 
-None of these behaviours is in the code. The plugin has no store, no invitation
-record and no redemption path:
+None of these behaviours is in the code. The invitation record is in the tree,
+as `Invitation` under #38, and nothing reads it. There is no store and no
+redemption path:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
+    exit=1
+    git ls-files 'Jellyfin.Plugin.Invites' | grep -iE 'store|redemption' ; echo "exit=$?"
     exit=1
 
 So every entry below names the issue that owns the behaviour, and none of them
@@ -148,8 +151,8 @@ It is linked from the readme, in the table of documents, and it is not linked
 from the operator guide, which does not exist. #111 is that guide, and the link
 is its change to make rather than something this file can assert about itself.
 
-    git grep -n 'docs/limits.md' -- README.md
-    README.md:135:| [docs/limits.md](docs/limits.md) | Behaviour that is correct, surprising, and reported as a bug |
+    git grep -c 'docs/limits.md' -- README.md
+    README.md:1
     git ls-files docs | grep -i 'guide' ; echo "exit=$?"
     exit=1
 
