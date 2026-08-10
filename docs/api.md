@@ -221,15 +221,42 @@ The rate limit from #31 applies to the redemption routes and its refusal is a
 member of the outcome set, but what a caller sees when it fires is that issue's
 to fix, not this one's.
 
+## What no controller serves yet
+
+Every heading above is a decision rather than something that answers. Which
+ones is the list below, and it is read by the suite rather than by a person.
+`ApiDocumentTests` requires it to hold exactly the routes this page names and
+the plugin assembly does not register, so a route that starts answering while
+its line is still here reds, and so does a heading with neither a controller nor
+a line behind it.
+
+- `GET /redeem/{code}`
+- `POST /redeem/{code}`
+- `GET /redeem/done`
+- `POST /Invites`
+- `GET /Invites`
+- `GET /Invites/{id}`
+- `POST /Invites/{id}/Revoke`
+
+A line leaves in the change that lands its route, and the last one to leave
+empties the section rather than deleting it. This is not the heading list said
+twice: a heading says the route is decided, a line here says nothing serves it,
+and the day those two stop agreeing is the day this page starts lying about the
+plugin.
+
 ## What is not claimed
 
 Nothing here has been measured against a running server, because none of these
 routes exists. Every sentence above is a decision about what will be built.
 
-Nothing checks this page against the code. #83 landed the inventory that
-enumerates the controllers a plugin assembly registers and refuses one placed in
-neither category, and it is empty today because there are no controllers. A
-check that every controller in that inventory has a heading here is what would
-stop this document and the routes drifting apart, and it does not exist. Until
-it does, the agreement between this page and the source is held by whoever
-writes the route.
+What holds this page against the source is `ApiDocumentTests`, and it reads
+routes rather than files: the controllers are discovered through the same
+feature provider the server uses to decide which types become endpoints, and
+the method and template come off the action's own attributes. It bites against
+a controller the suite declares for the purpose, carrying a route no heading
+here names.
+
+What no check reads is whether a documented parameter, response or refusal is
+the one the route implements. A heading whose body has gone wrong passes every
+route in this repository, and the agreement between the two halves of a section
+is held by whoever writes it.
