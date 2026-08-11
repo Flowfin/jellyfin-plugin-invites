@@ -118,20 +118,28 @@ and no number.
 
 ## What deletes anything
 
-Nothing today. The record above is a type now and there is nowhere to put one,
+Nothing today. There is a place to put a record now and nothing puts one there,
 so nothing holds a value that could be deleted:
 
 ```
-$ git grep -nE '(class|interface|record) [A-Za-z]*(Store|Repository)' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
+$ git grep -nE '(class|interface|record) [A-Za-z]*(Store|Repository)' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:72:public sealed class InvitationStore
+origin/master:Jellyfin.Plugin.Invites/Storage/StoreContents.cs:16:public sealed class StoreContents
+origin/master:Jellyfin.Plugin.Invites/Storage/StorePermissions.cs:16:public sealed class StorePermissions
+$ git grep -n 'InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs'; echo "exit=$?"
 exit=1
-$ git grep -nE '\bRedeem' origin/master -- '*.cs' ':!.github/lint/fixtures'; echo "exit=$?"
+$ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
 exit=1
 ```
 
-No store and no redemption path. What has arrived since this page was written
-is the record type itself, in `Jellyfin.Plugin.Invites/Invitations/Invitation.cs`
-under #38, which is a shape rather than a thing holding anybody's data. The
-fixtures are excluded because they hold their violations on purpose.
+What has arrived since this page was written is the record type, in
+`Jellyfin.Plugin.Invites/Invitations/Invitation.cs` under #38, and the store
+that would hold records of it, under #39. Neither holds anybody's data: nothing
+in the plugin calls the store, so a server running this today has no invitations
+file at all, and there is still no redemption path. The two greps are restricted
+to the plugin's own sources, because the suite declares a controller of its own
+to check the route inventory and the lint fixtures hold their violations on
+purpose, and neither is code this plugin runs.
 
 Three deleters are planned and no others. The retention sweep in #59 removes
 records the retention rule allows and never touches an account. Revocation in

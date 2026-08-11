@@ -101,5 +101,11 @@ is that an invitation was hammered. If it appends on every refusal, the limiter
 stops bounding the writes the trail's own bound exists to bound. #31 and this
 issue need one answer between them rather than two.
 
-Retention is a parameter with no value. How long entries are kept beyond the
-bound is decision 8 in #11 and has no answer.
+Retention is a parameter with no value, and decision 8 in #11 is not what fills
+it. That decision has an answer now, ninety days, and it is about how long a
+spent or expired invitation record is kept.
+[docs/personal-data.md](personal-data.md#retention) holds it, and says in place
+that the answer does not set the trail's bound, which is a separate quantity
+nothing has chosen. So this page still has no number and the reason has moved:
+it is not that the decision is open, it is that the decision was about the other
+parameter.
