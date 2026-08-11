@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Text.Json;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Xunit;
@@ -112,6 +113,29 @@ public class InvitationStoreTests
     }
 
     /// <summary>
+    /// A second invitation, for the cases that need two records in one
+    /// document. Its keyed hash is three bytes whose base64 is four plain
+    /// letters, so a test that has to find that value in the file can look for
+    /// it literally: the writer escapes a plus on the way out and a fixture
+    /// searching for one would match nothing and assert nothing.
+    /// </summary>
+    /// <returns>One invitation, not equal to <see cref="AnInvitation"/>.</returns>
+    private static Invitation AnotherInvitation()
+    {
+        return new Invitation(
+            id: Guid.Parse("2c9f7b41-0d5e-4a63-8b12-7e4d3f6a9c05"),
+            codeHash: ImmutableArray.Create<byte>(0xaa, 0xbb, 0xcc),
+            mintedBy: Guid.Parse("11112222-3333-4444-5555-666677778888"),
+            mintedAt: new DateTimeOffset(2026, 4, 1, 10, 0, 0, TimeSpan.Zero),
+            expiresAt: new DateTimeOffset(2026, 4, 8, 10, 0, 0, TimeSpan.Zero),
+            usesGranted: 1,
+            usesRemaining: 1,
+            revokedAt: null,
+            templateLabel: "Friends",
+            accountsProduced: ImmutableArray<Guid>.Empty);
+    }
+
+    /// <summary>
     /// What is written comes back field for field. The equality this leans on
     /// is the one the record type wrote for this comparison, which compares the
     /// two sequence fields by their contents rather than by the identity of the
@@ -181,6 +205,132 @@ public class InvitationStoreTests
         File.WriteAllText(store.Path, "{ this is not the document");
 
         Assert.ThrowsAny<Exception>(() => store.Read());
+    }
+
+    /// <summary>
+    /// A store file with nothing in it, and one holding only the whitespace a
+    /// half-finished write left behind. Both are files somebody will hit, and
+    /// neither is a store holding no invitations: that one is written as an
+    /// empty list.
+    /// </summary>
+    /// <param name="contents">What the file holds.</param>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   \n")]
+    public void AnEmptyFileIsRaisedRatherThanReadAsEmpty(string contents)
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        Directory.CreateDirectory(directory.Path);
+        File.WriteAllText(store.Path, contents);
+
+        Assert.Throws<JsonException>(() => store.Read());
+    }
+
+    /// <summary>
+    /// A store cut off part way through a write. This is the state the store's
+    /// own remarks name as the cost of writing in place, so it is asserted here
+    /// rather than left as a sentence: what a truncated document must not do is
+    /// come back as the invitations that happened to be written before the
+    /// server died.
+    /// </summary>
+    [Fact]
+    public void AFileTruncatedMidWriteIsRaisedRatherThanReadAsEmpty()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation(), AnotherInvitation() });
+
+        var whole = File.ReadAllText(store.Path);
+        File.WriteAllText(store.Path, whole.Substring(0, whole.Length / 2));
+
+        Assert.Throws<JsonException>(() => store.Read());
+    }
+
+    /// <summary>
+    /// A file that parses as JSON and carries no invitation list. Both spellings
+    /// are here because they arrive by different routes: a bare null is what a
+    /// serializer somewhere else writes for nothing, and an object with the
+    /// member spelled some other way is what an edit by hand produces.
+    /// </summary>
+    /// <param name="contents">What the file holds.</param>
+    [Theory]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("{\"invitation\":[]}")]
+    public void ADocumentWithNoInvitationListIsRaisedRatherThanReadAsEmpty(string contents)
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        Directory.CreateDirectory(directory.Path);
+        File.WriteAllText(store.Path, contents);
+
+        Assert.Throws<JsonException>(() => store.Read());
+    }
+
+    /// <summary>
+    /// And the case that must stay readable, because it is what the store
+    /// itself writes when it holds nothing. Without this the rule above would
+    /// be free to harden into one that refuses an empty store, which is a
+    /// server that cannot mint its first invitation.
+    /// </summary>
+    [Fact]
+    public void AnEmptyListReadsAsNoInvitations()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+
+        store.Write(Array.Empty<Invitation>());
+
+        Assert.Empty(store.Read().Invitations);
+    }
+
+    /// <summary>
+    /// A document holding a member this store does not know about, beside a
+    /// record it does. The unknown member is ignored and the invitation comes
+    /// back, which is what the store does today rather than what it must do:
+    /// whether a store written by a later version may be read by an earlier one
+    /// at all is the version field in #42 and the migration rule in #93, and
+    /// neither exists. This asserts the current answer so that changing it is a
+    /// change somebody makes on purpose.
+    /// </summary>
+    [Fact]
+    public void AnUnknownMemberBesideTheRecordsIsIgnored()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation() });
+
+        var written = File.ReadAllText(store.Path);
+        File.WriteAllText(store.Path, "{\n  \"somethingLater\": 7," + written.Substring(written.IndexOf('{') + 1));
+
+        Assert.Equal(AnInvitation(), Assert.Single(store.Read().Invitations));
+    }
+
+    /// <summary>
+    /// One record in the document is not an invitation. The read raises rather
+    /// than returning the ones that parsed, because a partial load is a load
+    /// where some revocations are missing and nothing downstream can tell it
+    /// from a complete one. The record chosen is one with no keyed hash, which
+    /// is the state the record type refuses and the shape a half-written record
+    /// has.
+    /// </summary>
+    [Fact]
+    public void OneRecordThatIsNotAnInvitationRaisesRatherThanReturningTheOthers()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation(), AnotherInvitation() });
+
+        // The second record's keyed hash is three bytes chosen so that its
+        // base64 is four plain letters, which the writer emits verbatim. A
+        // value carrying a plus or a slash would be escaped on the way out and
+        // this surgery would silently match nothing.
+        var whole = File.ReadAllText(store.Path);
+        Assert.Contains("\"qrvM\"", whole, StringComparison.Ordinal);
+        File.WriteAllText(store.Path, whole.Replace("\"qrvM\"", "\"\"", StringComparison.Ordinal));
+
+        Assert.Throws<ArgumentException>(() => store.Read());
     }
 
     /// <summary>
