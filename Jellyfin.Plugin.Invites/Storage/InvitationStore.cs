@@ -168,7 +168,17 @@ public sealed class InvitationStore
     /// <exception cref="JsonException">
     /// The file is there and is not the document this store writes. It is
     /// raised rather than swallowed: an unreadable store answered as an empty
-    /// one is a server that has quietly forgotten every live invitation.
+    /// one is a server that has quietly forgotten every live invitation. That
+    /// covers a file that is not JSON, a file cut off part way through one, and
+    /// a document that parses and carries no invitation list. A document
+    /// carrying an empty list is a store holding nothing and reads as one.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// The document is this store's and one of the records in it is not an
+    /// invitation. It reaches the caller rather than being caught here, so a
+    /// store with one damaged record raises instead of returning the others: a
+    /// partial load of invitations is a load where some revocations are
+    /// missing, and nothing downstream can tell it from a complete one.
     /// </exception>
     public StoreContents Read()
     {
@@ -182,7 +192,19 @@ public sealed class InvitationStore
         var stored = document?.Invitations;
         if (stored is null)
         {
-            return new StoreContents(ImmutableArray<Invitation>.Empty, permissions);
+            // A file that parses as JSON and carries no invitation list is not
+            // this store's document, whether it came out as a bare null or as
+            // an object whose one member is spelled some other way. Answering
+            // that as no invitations is the quiet form of the failure the
+            // paragraph above refuses loudly: nothing is missing from the
+            // store, the store is simply gone, and every redemption after it is
+            // a refusal nobody can explain. A store holding nothing is written
+            // as an empty list and still reads as one.
+            throw new JsonException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0} is there and carries no invitation list, so it is not this store's document. A store that holds no invitations carries an empty list.",
+                    Path));
         }
 
         var invitations = ImmutableArray.CreateBuilder<Invitation>(stored.Count);
