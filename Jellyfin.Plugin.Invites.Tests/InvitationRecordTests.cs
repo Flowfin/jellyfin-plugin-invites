@@ -265,6 +265,36 @@ public class InvitationRecordTests
     }
 
     /// <summary>
+    /// A keyed hash that is a prefix of the other one is not equal to it. The
+    /// case above moves a byte and leaves the length alone, so this is the one
+    /// where the two hashes are different lengths, and it is the only place a
+    /// fixed-time comparison could have behaved differently from the sequence
+    /// comparison it replaced. Both answer false; this says so rather than
+    /// leaving it as a reading of the framework's documentation.
+    /// </summary>
+    [Fact]
+    public void AKeyedHashThatIsAPrefixOfTheOtherIsNotEqual()
+    {
+        var full = SomeHashBytes(0x10);
+        var prefix = ImmutableArray.Create(full[0], full[1], full[2]);
+
+        var truncated = new Invitation(
+            id: new Guid("11111111-1111-1111-1111-111111111111"),
+            codeHash: prefix,
+            mintedBy: new Guid("22222222-2222-2222-2222-222222222222"),
+            mintedAt: new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero),
+            expiresAt: new DateTimeOffset(2026, 3, 8, 9, 0, 0, TimeSpan.Zero),
+            usesGranted: 1,
+            usesRemaining: 1,
+            revokedAt: null,
+            templateLabel: "Household",
+            accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
+
+        Assert.NotEqual(Baseline(), truncated);
+        Assert.NotEqual(truncated, Baseline());
+    }
+
+    /// <summary>
     /// Revoked and revoked-at cannot disagree, because there is one of them.
     /// The inventory names two rows and a record holding two independent fields
     /// can say it is revoked and not say when, which a partial write and a

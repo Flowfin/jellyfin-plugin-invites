@@ -26,6 +26,7 @@ FIXTURES=".github/lint/fixtures"
 RULES=(
   'weak-random@#49@\bnew\s+Random\s*\(|\bRandom\.Shared\b|\bSystem\.Random\b@'
   'secret-compared-with-equality@#29@(?i)\b\w*(secret|token|hash)\w*\s*[=!]=|(?i)\b\w*(secret|token|hash)\w*\.Equals\s*\(@'
+  'secret-compared-by-sequence@#29@(?i)^(?=.*\b\w*(secret|token|hash)\w*\b).*\.SequenceEqual\s*\(@'
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
@@ -42,6 +43,8 @@ explain() {
       echo "An invitation code from a non-cryptographic source is guessable. Use RandomNumberGenerator." ;;
     secret-compared-with-equality)
       echo "Comparing a stored secret with == leaks its prefix through timing. Use CryptographicOperations.FixedTimeEquals." ;;
+    secret-compared-by-sequence)
+      echo "A keyed hash is bytes, and a sequence comparison of it stops at the first differing byte. Use CryptographicOperations.FixedTimeEquals." ;;
     secret-in-a-log-call)
       echo "An invitation code, a password or the hash secret in a log line is that secret written to disk in clear." ;;
     policy-written-outside-the-template)
@@ -69,6 +72,23 @@ explain() {
 # fixture that already trips on the header spelling: the run would print bites
 # whether the new alternative worked or not. A rule of its own gets a fixture
 # pair of its own, and the pair is the only thing that says it fires.
+#
+# Two rules carry #29 for the same reason. The first refuses the string
+# spellings, an identifier compared with == or handed to .Equals(. The second
+# refuses the one the plugin actually writes: the stored keyed hash is bytes, so
+# what a comparison of it reaches for is .SequenceEqual, which no part of the
+# first rule's pattern reaches. It matches a line that names something
+# secret-shaped anywhere on it and calls .SequenceEqual anywhere on it, so the
+# secret is seen on either side of the call, and a sequence comparison of
+# something that is not a secret is left alone.
+#
+# What neither of them refuses is written here rather than left to be
+# discovered. A hash held in a variable called digest, mac, tag or expected is
+# outside both vocabularies. A comparison written as string.Equals(stored,
+# presented, StringComparison.Ordinal), or through StringComparer.Ordinal, puts
+# the secret in an argument where the first rule's pattern cannot see it. And
+# the first rule reds on a null check written as hash == null, which is correct
+# code. All three are recorded on #29.
 #
 # The canonicalisation rule exempts InvitationCode.cs the same way, by basename
 # rather than by directory, because that file is the one function the rule
