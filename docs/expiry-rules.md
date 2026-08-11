@@ -122,8 +122,11 @@ consequence can be edited.
 ## What is not settled here
 
 How long expired and spent records are kept once they stop being redeemable is
-the retention question, which is decision 8 in #11 and has no answer. Expiry is
-not deletion, and the difference is an entry in
+the retention question, and it is answered: ninety days from the moment an
+invitation stops being usable, in
+[docs/personal-data.md](personal-data.md#retention). That page owns the number
+and this one does not restate the reasoning. Nothing on this page moves because
+of it, because expiry is not deletion, and the difference is an entry in
 [docs/limits.md](limits.md).
 
 Whether the account an invitation created expires along with it is a separate

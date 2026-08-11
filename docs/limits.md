@@ -11,13 +11,23 @@ adds and it exists nowhere else.
 
 ## What this page is, at the moment you are reading it
 
-None of these behaviours is in the code. The invitation record is in the tree,
-as `Invitation` under #38, and nothing reads it. There is no store and no
-redemption path:
+None of these behaviours is in the code. Two of the pieces they are about are:
+the invitation record, as `Invitation` under #38, and the file that holds
+records, as `InvitationStore` under #39.
+
+    git ls-files 'Jellyfin.Plugin.Invites' | grep -iE 'store|redemption'
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs
+    Jellyfin.Plugin.Invites/Storage/StoreContents.cs
+    Jellyfin.Plugin.Invites/Storage/StorePermissionState.cs
+    Jellyfin.Plugin.Invites/Storage/StorePermissions.cs
+
+Nothing calls either of them. There is no redemption path and nothing in the
+plugin so much as names the store outside the file that declares it, so a server
+running this plugin today has no invitations file at all:
 
     git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
     exit=1
-    git ls-files 'Jellyfin.Plugin.Invites' | grep -iE 'store|redemption' ; echo "exit=$?"
+    git grep -n 'InvitationStore' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs' ; echo "exit=$?"
     exit=1
 
 So every entry below names the issue that owns the behaviour, and none of them
@@ -141,9 +151,30 @@ that marked records expired would create a second authority and a window in whic
 an expired invitation is still honoured because the task has not run yet. The
 task removes records and changes nothing the redemption decision reads.
 
-If you want the record gone rather than expired, that is the retention rule and
-it is not yet chosen: how long spent and expired records are kept is decision 8
-in #11 and has no answer. Owned by #59, with the expiry rules in #51.
+If you want the record gone rather than expired, that is the retention rule, and
+it is ninety days from the moment an invitation stops being usable. The number
+and the reasoning behind it are in
+[docs/personal-data.md](personal-data.md#retention), which is the page that owns
+it; this entry points there rather than holding a second copy. Owned by #59,
+which is the sweep that applies it, with the expiry rules in #51.
+
+## Removing the plugin leaves every account it created
+
+Uninstalling removes the plugin and the plugin's own state. The accounts it
+created stay on the server with the access they have, and after the uninstall
+nothing tells them apart from an account an operator made by hand.
+
+They are the server's accounts and always were. Deleting somebody's account as a
+side effect of removing a plugin is not a thing software should do quietly, and
+a deleted account does not come back. That is decision 7 in #11 and it is the
+same one-way direction as the revocation entry above.
+
+What goes with the plugin is the answer to which accounts came from invitations.
+That link lives in the invitation records and nowhere else, so the moment before
+an uninstall is the last moment it exists. If it matters to you, take a copy of
+the store file out of the plugin's data directory first, and expect to read it
+yourself: the view that presents the trail is #89 and the export is #91, and
+neither is built. Owned by #91, with the account side in #45 and #94.
 
 ## What this page does not do yet
 
