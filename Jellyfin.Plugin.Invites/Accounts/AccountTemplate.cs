@@ -196,11 +196,21 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// the template grants no ceiling.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <c>null</c> is a stated grant of an unlimited bitrate and is not the
     /// server's default creeping back in: a field this template declines to
     /// decide is named in <see cref="ServerDefaultsLeftAlone"/> instead, and
     /// the two are different answers a reader can tell apart. #65 owns the
     /// number and the bound on it.
+    /// </para>
+    /// <para>
+    /// It is handed to <c>RemoteClientBitrateLimit</c> on the server's own user
+    /// policy, which is an <c>Int32</c> rather than a nullable one, so no
+    /// ceiling is written there as zero. The plugin is never in the request
+    /// path for it. What being over it costs is processor time on the server
+    /// rather than a refusal, because the answer to a client asking for more
+    /// than the ceiling is a transcode down to it.
+    /// </para>
     /// </remarks>
     public int? RemoteBitrateCeiling { get; }
 
@@ -210,7 +220,11 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// </summary>
     /// <remarks>
     /// Reads the same way as <see cref="RemoteBitrateCeiling"/>: <c>null</c> is
-    /// unlimited by decision. #65 owns the number.
+    /// unlimited by decision, and #65 owns the number. It is handed to
+    /// <c>MaxActiveSessions</c> on the server's user policy, which is also an
+    /// <c>Int32</c> where zero is the unlimited value. Being over this one
+    /// costs the person their evening rather than the server its processor: the
+    /// stream that would have been the next one is refused.
     /// </remarks>
     public int? SimultaneousStreamCeiling { get; }
 
@@ -219,7 +233,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// where the template sets no limit.
     /// </summary>
     /// <remarks>
-    /// Reads the same way as the two ceilings above. #65 owns the number.
+    /// Reads the same way as the two ceilings above, and #65 owns the number.
+    /// It is handed to <c>MaxParentalRating</c> on the server's user policy,
+    /// which is the one of the three that is nullable, so no limit travels as
+    /// <c>null</c> at both ends. Being over it hides the item rather than
+    /// refusing a stream. The server's line also carries
+    /// <c>MaxParentalSubRating</c> beside it, which this template does not set
+    /// and which is named in <see cref="ServerDefaultsLeftAlone"/> by whoever
+    /// builds a template rather than being left unmentioned.
     /// </remarks>
     public int? ParentalRatingCeiling { get; }
 
