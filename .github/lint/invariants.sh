@@ -29,6 +29,7 @@ RULES=(
   'secret-compared-by-sequence@#29@(?i)^(?=.*\b\w*(secret|token|hash)\w*\b).*\.SequenceEqual\s*\(@'
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
+  'policy-field-written-outside-the-template@#69@\.Policy\s*\.\s*\w+\s*=[^=]@^[^:]*AccountTemplate[^:]*:'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
   'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
@@ -49,6 +50,8 @@ explain() {
       echo "An invitation code, a password or the hash secret in a log line is that secret written to disk in clear." ;;
     policy-written-outside-the-template)
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
+    policy-field-written-outside-the-template)
+      echo "One field of a user policy set outside that routine is the same grant, made one field at a time. IsAdministrator is the one this plugin may never set." ;;
     link-built-from-a-request-header)
       echo "A link built from what the request says the host is, is a link an attacker chooses." ;;
     link-built-from-the-request-url-helper)
@@ -89,6 +92,25 @@ explain() {
 # the secret in an argument where the first rule's pattern cannot see it. And
 # the first rule reds on a null check written as hash == null, which is correct
 # code. All three are recorded on #29.
+#
+# Two rules carry #69, and the second one was found inside the first one's own
+# tripping fixture. That fixture holds two lines, a policy field set and a whole
+# policy handed to UpdatePolicy, and only the second is a spelling the first
+# rule matches: .Policy followed by = is not .Policy followed by a field. So the
+# rule printed bites off a fixture whose first line walked straight through it,
+# which is what a fixture proving one alternative of a multi-alternative rule
+# looks like from the outside. The second rule is about the single field, which
+# is what somebody writes when they mean to change one thing and leave the rest,
+# and the field it exists for is IsAdministrator.
+#
+# Its bounds, in the same spirit. It reads a write and not a read, so a
+# comparison against a policy field is left alone, which is how the refusal to
+# widen an existing account gets written. It sees one statement, so the same
+# write through a local, var p = user.Policy followed by p.IsAdministrator on
+# the next line, is invisible to it and to any text pattern over one line. And
+# UpdatePolicyAsync is still unmatched by either rule, because the first one
+# spells the call UpdatePolicy followed by an open bracket. All three are
+# recorded on #69.
 #
 # The canonicalisation rule exempts InvitationCode.cs the same way, by basename
 # rather than by directory, because that file is the one function the rule
