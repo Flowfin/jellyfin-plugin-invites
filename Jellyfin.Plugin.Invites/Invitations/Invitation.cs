@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Security.Cryptography;
 
 namespace Jellyfin.Plugin.Invites.Invitations;
 
@@ -128,8 +129,10 @@ public sealed class Invitation : IEquatable<Invitation>
     /// with. It is here so that a presented code can be checked without the
     /// code being held, which is the whole of why this field is bytes and why
     /// there is no neighbouring field holding what they are a hash of.
-    /// Comparing it is a fixed-time comparison rather than an equality test,
-    /// and that comparison belongs to #29 rather than to this type.
+    /// Comparing it is a fixed-time comparison rather than an equality test.
+    /// The comparison a presented code is checked by belongs to #29 and is not
+    /// here; the one comparison of this field that is here, in
+    /// <see cref="Equals(Invitation?)"/>, is fixed-time for the same reason.
     /// </remarks>
     public ImmutableArray<byte> CodeHash { get; }
 
@@ -253,6 +256,7 @@ public sealed class Invitation : IEquatable<Invitation>
     /// <param name="other">The invitation to compare with, or <c>null</c>.</param>
     /// <returns><c>true</c> when every field matches.</returns>
     /// <remarks>
+    /// <para>
     /// Written out rather than taken from a record declaration on purpose. The
     /// equality a record synthesises would compare the two sequence fields by
     /// the identity of their backing arrays, so a record read back out of a
@@ -260,6 +264,20 @@ public sealed class Invitation : IEquatable<Invitation>
     /// store was. That comparison is the last clause of #38 and #39 is what
     /// makes it, so an equality that could not pass it would be a trap laid for
     /// whoever writes the store.
+    /// </para>
+    /// <para>
+    /// <b>The keyed hash is the one field compared in fixed time.</b> A
+    /// sequence comparison stops at the first pair of bytes that differ, so how
+    /// long it takes says how much of the stored hash the other value got
+    /// right. Nothing today hands this method a hash somebody chose, so no
+    /// timing leak is being closed here; what is being kept out of the tree is
+    /// the spelling, because value equality is where a byte-by-byte compare of
+    /// a secret gets written without anybody deciding to write one.
+    /// <c>secret-compared-by-sequence</c> in .github/lint/invariants.sh refuses
+    /// it coming back. The accounts are compared as a sequence and stay that
+    /// way: a list of account identifiers is not a secret, and comparing it in
+    /// fixed time would say this type could not tell the two fields apart.
+    /// </para>
     /// </remarks>
     public bool Equals(Invitation? other)
     {
@@ -274,7 +292,7 @@ public sealed class Invitation : IEquatable<Invitation>
         }
 
         return Id.Equals(other.Id)
-            && CodeHash.AsSpan().SequenceEqual(other.CodeHash.AsSpan())
+            && CryptographicOperations.FixedTimeEquals(CodeHash.AsSpan(), other.CodeHash.AsSpan())
             && MintedBy.Equals(other.MintedBy)
             && MintedAt.Equals(other.MintedAt)
             && ExpiresAt.Equals(other.ExpiresAt)
