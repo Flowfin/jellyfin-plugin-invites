@@ -4,3 +4,8 @@ obj/
 .idea/
 artifacts
 publish/
+
+# The coverage collector writes its report beside the test project. It is a
+# measurement of one run rather than something a reader of the tree needs, and
+# the run that produced it keeps it as an artifact.
+coverage.json
