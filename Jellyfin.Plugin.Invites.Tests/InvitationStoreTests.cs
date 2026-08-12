@@ -508,4 +508,74 @@ public class InvitationStoreTests
 
         Assert.Equal(new[] { first, second }, read.ToArray());
     }
+
+    /// <summary>
+    /// A write that cannot finish leaves the store exactly as it was. This is
+    /// the property #40 asks for, stated as what is observable on disk rather
+    /// than as which call was made to get there.
+    /// </summary>
+    /// <remarks>
+    /// The failure is arranged rather than waited for. A directory is put where
+    /// the unfinished file goes, so opening it raises and the write cannot even
+    /// begin, and the assertion is that the previous records are still all
+    /// there. A store that wrote into its own file would sail past this: the
+    /// arrangement would stop nothing, the write would succeed, and the second
+    /// invitation would be in the file. So both halves matter, and the throw is
+    /// asserted as well as the contents.
+    /// </remarks>
+    [Fact]
+    public void AWriteThatCannotFinishLeavesTheStoreAsItWas()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var kept = AnInvitation();
+        store.Write(new[] { kept });
+
+        Directory.CreateDirectory(store.WritingPath);
+
+        Assert.ThrowsAny<Exception>(() => store.Write(new[] { kept, AnotherInvitation() }));
+        Assert.Equal(kept, Assert.Single(store.Read().Invitations));
+    }
+
+    /// <summary>
+    /// The store the plugin reads is the only file a finished write leaves
+    /// behind, so a write does not accumulate debris in a directory an operator
+    /// looks at.
+    /// </summary>
+    [Fact]
+    public void AFinishedWriteLeavesNothingBesideTheStore()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+
+        store.Write(new[] { AnInvitation() });
+
+        Assert.Equal(
+            new[] { InvitationStore.FileName },
+            Directory.GetFiles(directory.Path).Select(Path.GetFileName).ToArray());
+        Assert.False(File.Exists(store.WritingPath));
+    }
+
+    /// <summary>
+    /// A store left holding an unfinished file from a write that died is read
+    /// as the records it committed. The unfinished file is not the store and is
+    /// not treated as one, whatever is in it.
+    /// </summary>
+    [Fact]
+    public void AnUnfinishedFileLeftBehindIsNotTheStore()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var committed = AnInvitation();
+        store.Write(new[] { committed });
+
+        File.WriteAllText(store.WritingPath, "{ \"invitations\": [ this is not json");
+
+        Assert.Equal(committed, Assert.Single(store.Read().Invitations));
+
+        store.Write(new[] { committed });
+
+        Assert.Equal(committed, Assert.Single(store.Read().Invitations));
+        Assert.False(File.Exists(store.WritingPath));
+    }
 }

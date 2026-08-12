@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.Invites.Storage;
 /// rather than deciding it. Holding a keyed hash and never the code is a
 /// property of what is written, and it is <see cref="Invitation"/> that carries
 /// it. Surviving a kill mid-write is a property of how it is written, and it is
-/// not this type's yet: see what is left undone, below.
+/// this type's: see <see cref="Write"/>.
 /// </para>
 /// <para>
 /// <b>The means.</b> A JSON document through <c>System.Text.Json</c>, which the
@@ -57,16 +57,13 @@ namespace Jellyfin.Plugin.Invites.Storage;
 /// record type does not silently rewrite everybody's store file.
 /// </para>
 /// <para>
-/// <b>What this type does not do, so a reader does not assume it.</b> The write
-/// is a plain write rather than a write into a temporary file renamed over the
-/// target, so a server killed part-way through one leaves a truncated document
-/// and the next read fails on it rather than returning half the invitations.
-/// Nothing serialises two writers either. Both belong to the issue that makes
-/// writes atomic and correct under concurrent redemptions, and this type is
-/// written to be replaced there rather than around it. The document also
-/// carries no version field: what that field is called and what reading an
-/// older one does belong to the migration issue, and inventing either here
-/// would decide it by hand.
+/// <b>What this type does not do, so a reader does not assume it.</b> Nothing
+/// here serialises two writers. The lock covering read, decide and write is the
+/// other half of the issue that made the write survive a kill, and it belongs
+/// to whoever redeems rather than to the file. The document also carries no
+/// version field: what that field is called and what reading an older one does
+/// belong to the migration issue, and inventing either here would decide it by
+/// hand.
 /// </para>
 /// </remarks>
 public sealed class InvitationStore
@@ -75,6 +72,25 @@ public sealed class InvitationStore
     /// The name of the file inside the directory this store was given.
     /// </summary>
     public const string FileName = "invitations.json";
+
+    /// <summary>
+    /// The name of the file a write is built up in before it becomes the store.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It sits in the same directory as the store rather than in a temporary
+    /// one, because the last step is a rename over the store and a rename only
+    /// replaces a file within one filesystem. A temporary directory elsewhere
+    /// turns that step into a copy, which is the truncate-and-rewrite this
+    /// exists to remove, moved one level down.
+    /// </para>
+    /// <para>
+    /// It is a constant rather than a random name so a store left holding one
+    /// is readable as a write that did not finish, and so the suite can arrange
+    /// that failure.
+    /// </para>
+    /// </remarks>
+    public const string WritingFileName = FileName + ".writing";
 
     /// <summary>
     /// The mode the store file is created with on a platform that has file
@@ -115,12 +131,23 @@ public sealed class InvitationStore
 
         _directory = directory;
         Path = System.IO.Path.Combine(directory, FileName);
+        WritingPath = System.IO.Path.Combine(directory, WritingFileName);
     }
 
     /// <summary>
     /// Gets the full path of the file this store reads and writes.
     /// </summary>
     public string Path { get; }
+
+    /// <summary>
+    /// Gets the full path of the file a write is built up in.
+    /// </summary>
+    /// <remarks>
+    /// Nothing reads it. It is exposed so a caller inspecting a data directory,
+    /// and the suite arranging a write that cannot finish, name the same path
+    /// this class does rather than rebuilding it from the constant and hoping.
+    /// </remarks>
+    public string WritingPath { get; }
 
     /// <summary>
     /// The store belonging to a plugin, in that plugin's own data directory.
@@ -226,6 +253,38 @@ public sealed class InvitationStore
     /// so a caller that only ever writes still learns about a store somebody
     /// else widened.
     /// </returns>
+    /// <remarks>
+    /// <para>
+    /// A whole store at a time, and never a field or a record at a time. The
+    /// record type is immutable for this reason: a redemption, a revocation and
+    /// the retention sweep each produce records and hand the whole set here.
+    /// </para>
+    /// <para>
+    /// <b>What is claimed about the write, and what is not.</b> The store file
+    /// is never opened for writing, so nothing that happens during a write can
+    /// shorten or half-fill it, and what is on disk at any instant is either
+    /// exactly what was there before or exactly what was handed in. What is not
+    /// claimed is that the final move is atomic on every filesystem: on a POSIX
+    /// filesystem it is a rename, on Windows it is a replace, and whether either
+    /// survives a power loss indivisibly is a property of the filesystem
+    /// underneath rather than of the call made here. That has not been measured.
+    /// </para>
+    /// <para>
+    /// <b>One writer at a time is the caller's.</b> Nothing here serialises two
+    /// writers, and two processes writing one store are two moves racing, where
+    /// the loser's records are lost rather than mixed in. The lock covering
+    /// read, decide and write belongs to whoever redeems, which is #40's other
+    /// half and has no caller yet, and two servers over one store is #96.
+    /// </para>
+    /// <para>
+    /// A write that fails leaves its unfinished file behind under
+    /// <see cref="WritingPath"/>. It is not cleaned up, because the failure that
+    /// leaves one is the failure that also stops any cleanup from running, so
+    /// tidying here would only handle the case nobody minds. Nothing reads it,
+    /// the next write overwrites it, and a store directory holding one is
+    /// readable as a write that did not finish.
+    /// </para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException">The invitations are null.</exception>
     public StorePermissions Write(IReadOnlyCollection<Invitation> invitations)
     {
@@ -256,11 +315,38 @@ public sealed class InvitationStore
             options.UnixCreateMode = CreatedMode;
         }
 
-        using (var file = new FileStream(Path, options))
+        // The whole document is built up beside the store and then moved over
+        // it. The store is never opened for writing, so there is no moment in
+        // which it is shorter than it was: a process that dies anywhere in the
+        // lines below leaves the old store exactly as it was, and one that dies
+        // after the move leaves the new one. #40 is why, and what it prevents is
+        // the truncate-then-rewrite this replaced, where dying between the two
+        // leaves an empty file where every live invitation used to be.
+        using (var file = new FileStream(WritingPath, options))
         using (var writer = new StreamWriter(file))
         {
             writer.Write(json);
+            writer.Flush();
+
+            // The bytes are pushed to the device before the move, so a machine
+            // losing power just after it does not come back to a store entry
+            // pointing at a file whose contents never arrived.
+            file.Flush(true);
         }
+
+        // A store that is already there keeps the mode it has, which is the rule
+        // a read follows too: a mode an operator widened is reported and never
+        // repaired, and one they tightened is theirs. Without this the move
+        // would carry the created mode over the top of theirs and quietly
+        // repair it, which is a decision this file already made the other way.
+        // Only the first write of a store, where there is nothing to carry,
+        // leaves the created mode in place.
+        if (!OperatingSystem.IsWindows() && File.Exists(Path))
+        {
+            File.SetUnixFileMode(WritingPath, File.GetUnixFileMode(Path));
+        }
+
+        File.Move(WritingPath, Path, overwrite: true);
 
         return InspectPermissions();
     }
