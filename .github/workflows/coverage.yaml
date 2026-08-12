@@ -1,0 +1,73 @@
+# A single coverage number over the whole assembly is a number people raise by
+# testing the easy parts. This leg reads one number per area and refuses the area
+# that falls below its own floor, so the redemption decision and the store cannot
+# be carried by the configuration class.
+#
+# The floors and the reason for each are in docs/coverage-floors.md. This file
+# runs the gate; it decides nothing.
+#
+# This is not in the branch ruleset's required set. Raising that set is #24, and
+# the context name to put there is the job name below.
+name: '📏 Coverage floors'
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  floors:
+    name: Every area is above its coverage floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes, so do not leave the token in .git/config where a
+          # later step or a build task could read it.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        # Locked, like every other leg in this repository, so a run resolves the
+        # versions the lock file names rather than whatever is newest.
+        run: dotnet restore Jellyfin.Plugin.Invites.sln --locked-mode
+
+      - name: The gate refuses what it says it refuses
+        # First, and on every run. A gate whose comparison has stopped biting
+        # reports green against every area forever, and the two ways this one
+        # can be wrong while looking right are both cheap to prove: a filter
+        # matching no file, which the collector scores as 100%, and a floor that
+        # is not met.
+        run: bash .github/lint/coverage-floors.sh selftest .
+
+      - name: Every area is above its floor
+        run: bash .github/lint/coverage-floors.sh check .
+
+      - name: Keep the report
+        # The numbers this run compared against the floors, kept so a later
+        # reader can see what moved rather than only that something did.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage
+          path: Jellyfin.Plugin.Invites.Tests/coverage.json
+          if-no-files-found: warn
+          retention-days: 14
