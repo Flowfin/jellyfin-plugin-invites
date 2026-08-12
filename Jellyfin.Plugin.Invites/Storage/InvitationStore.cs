@@ -60,10 +60,11 @@ namespace Jellyfin.Plugin.Invites.Storage;
 /// <b>What this type does not do, so a reader does not assume it.</b> Nothing
 /// here serialises two writers. The lock covering read, decide and write is the
 /// other half of the issue that made the write survive a kill, and it belongs
-/// to whoever redeems rather than to the file. The document also carries no
-/// version field: what that field is called and what reading an older one does
-/// belong to the migration issue, and inventing either here would decide it by
-/// hand.
+/// to whoever redeems rather than to the file. The document carries a version
+/// and refuses one it does not know, and it carries no migration: no second
+/// shape has ever existed, so there is no transition for one to be written
+/// against, and a migration written before the shape it migrates from is a
+/// guess.
 /// </para>
 /// </remarks>
 public sealed class InvitationStore
@@ -91,6 +92,25 @@ public sealed class InvitationStore
     /// </para>
     /// </remarks>
     public const string WritingFileName = FileName + ".writing";
+
+    /// <summary>
+    /// The shape of the document this build writes and the newest one it reads.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One number for the whole document rather than one per record. What a
+    /// migration has to reason about is the file it met, and a file whose
+    /// records disagree about their shape is a state no writer here can produce
+    /// and no migration could sensibly repair.
+    /// </para>
+    /// <para>
+    /// It is read before any record is parsed, which is the ordering that makes
+    /// it worth having: a version discovered after a parser has already read a
+    /// newer file's records arrives too late to refuse anything, and by then the
+    /// fields it did not understand are already defaults.
+    /// </para>
+    /// </remarks>
+    public const int Version = 1;
 
     /// <summary>
     /// The mode the store file is created with on a platform that has file
@@ -215,7 +235,10 @@ public sealed class InvitationStore
             return new StoreContents(ImmutableArray<Invitation>.Empty, permissions);
         }
 
-        var document = JsonSerializer.Deserialize<StoredDocument>(File.ReadAllText(Path), _format);
+        var text = File.ReadAllText(Path);
+        RefuseAVersionThisBuildDoesNotRead(text);
+
+        var document = JsonSerializer.Deserialize<StoredDocument>(text, _format);
         var stored = document?.Invitations;
         if (stored is null)
         {
@@ -298,7 +321,9 @@ public sealed class InvitationStore
             stored.Add(StoredInvitation.From(invitation));
         }
 
-        var json = JsonSerializer.Serialize(new StoredDocument { Invitations = stored }, _format);
+        var json = JsonSerializer.Serialize(
+            new StoredDocument { Version = Version, Invitations = stored },
+            _format);
 
         // The mode is set as the file is created rather than afterwards, so
         // there is no instant in which the store exists and is readable by
@@ -349,6 +374,75 @@ public sealed class InvitationStore
         File.Move(WritingPath, Path, overwrite: true);
 
         return InspectPermissions();
+    }
+
+    /// <summary>
+    /// Reads the version off the document and refuses one this build does not
+    /// know.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The version is taken off the text before anything else is made of it, so
+    /// the refusal happens before a record is parsed rather than after. That is
+    /// a separate pass over the same string, which costs a parse of a file
+    /// bounded by the number of live invitations and buys the ordering the
+    /// refusal is worthless without.
+    /// </para>
+    /// <para>
+    /// A document with no version at all is read as version 1. Exactly one
+    /// shape has ever been written, because nothing has been released, so an
+    /// absent version is not ambiguous here and reading it as the shape it
+    /// certainly is costs nobody a store. That answer is only correct while
+    /// that is true, and a second shape makes it a migration rather than a
+    /// default.
+    /// </para>
+    /// <para>
+    /// It refuses and never writes. A plugin that will not load has to leave the
+    /// file exactly as it found it, or a downgrade somebody could recover from
+    /// by putting the newer plugin back becomes one they cannot.
+    /// </para>
+    /// <para>
+    /// An older version is not refused and has nowhere to go yet, because there
+    /// is no older shape. When one exists it is migrated here, and a version
+    /// this build does not read is the only refusal.
+    /// </para>
+    /// </remarks>
+    /// <param name="text">The document as it was read off disk.</param>
+    /// <exception cref="StoreVersionRefusedException">
+    /// The document declares a version newer than <see cref="Version"/>.
+    /// </exception>
+    private void RefuseAVersionThisBuildDoesNotRead(string text)
+    {
+        int declared;
+
+        try
+        {
+            using var document = JsonDocument.Parse(text);
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty("version", out var version)
+                || !version.TryGetInt32(out declared))
+            {
+                // No readable version. Whether the document is this store's at
+                // all is the next step's question, and it says so with the file
+                // named; answering it here would give two different messages for
+                // one broken file depending on which check noticed first.
+                return;
+            }
+        }
+        catch (JsonException)
+        {
+            // A file that is not JSON has no version to read and is not this
+            // step's to report. Swallowed narrowly and only here: the next line
+            // of the caller parses the same text and raises on it, so the file
+            // is refused either way and with one message rather than two that
+            // depend on which pass noticed first.
+            return;
+        }
+
+        if (declared > Version)
+        {
+            throw new StoreVersionRefusedException(Path, declared, Version);
+        }
     }
 
     private void CreateDirectory()
@@ -431,6 +525,16 @@ public sealed class InvitationStore
     /// </summary>
     private sealed class StoredDocument
     {
+        /// <summary>
+        /// Gets or sets the shape this document is in.
+        /// </summary>
+        /// <remarks>
+        /// It is nullable so a document written before the version existed
+        /// parses rather than raising here. What an absent version means is
+        /// decided in one place, and it is not this one.
+        /// </remarks>
+        public int? Version { get; set; }
+
         /// <summary>
         /// Gets or sets the invitations the file holds.
         /// </summary>
