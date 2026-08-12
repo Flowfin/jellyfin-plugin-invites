@@ -6,9 +6,13 @@ set up once, into a backup, and to whoever is helping with an unrelated problem
 that day. Whatever this plugin writes there is disclosed to all of them, so the
 never list is decided before there is a log call to argue with.
 
-Nothing in this plugin writes a log line about an invitation today. Every rule
-below is a constraint on code that #43, #56 and the routes in M8 have yet to
-write, and the one greppable half of it is in `.github/lint/invariants.sh`.
+One thing in this plugin writes a log line today, and it is the load the server
+makes when it starts: what the store claims about the accounts it created,
+against the accounts the server has, plus the refusal when another process
+already holds the store directory. Those lines carry invitation identifiers and
+account identifiers and nothing else out of a record. Everything else below is a
+constraint on code that #43 and the routes in M8 have yet to write, and the one
+greppable half of it is in `.github/lint/invariants.sh`.
 
 ## The never list
 
