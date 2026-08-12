@@ -79,12 +79,18 @@ public class FreshInstallConfigurationTests
     /// install is worth and why that is the closed answer.
     /// </summary>
     /// <remarks>
-    /// Empty because the type has no settings. The two assertions that read it
-    /// are vacuous for exactly as long as that is true and not one change
-    /// longer.
+    /// One row, since #50 landed the first setting. The table was landed empty
+    /// before that on purpose, so the first setting to arrive turned this red
+    /// and its author had to state the fresh-install value and the reason it is
+    /// the closed one in the same change.
     /// </remarks>
     private static readonly IReadOnlyDictionary<string, FreshInstallValue> FreshInstall =
-        new Dictionary<string, FreshInstallValue>(StringComparer.Ordinal);
+        new Dictionary<string, FreshInstallValue>(StringComparer.Ordinal)
+        {
+            [nameof(PluginConfiguration.PublicBaseUrl)] = new FreshInstallValue(
+                string.Empty,
+                "Empty, which builds no invitation link at all. The closed answer here is not a safe address, it is no address: anything this plugin could pick without being told would be right on some networks and wrong on the operator's, and a link that resolves somewhere unintended is the failure #50 exists against. An unset address refuses at the moment a link is asked for, naming the setting, which is a support question with an answer."),
+        };
 
     /// <summary>
     /// The settings a configuration type declares.

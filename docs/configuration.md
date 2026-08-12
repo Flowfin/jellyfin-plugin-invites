@@ -20,49 +20,64 @@ the review is for.
 
 ## The settings
 
-There are none. The configuration type carries no settings today:
-
-    git grep -n 'get;' -- '*/Configuration/PluginConfiguration.cs'
-    exit=1
-
-The table below is the shape a row takes. It stays empty until a setting lands,
-and the check above is what makes the first one arrive with its row rather than
-without it.
-
 | Setting | What it does | Default | Bounds | At the bound | If it is set badly |
 | ------- | ------------ | ------- | ------ | ------------ | ------------------ |
+| `PublicBaseUrl` | The address invitation links are built from, as a stranger outside the network reaches this server | Empty | An absolute `http` or `https` address, with an optional path prefix and no query or fragment | Empty refuses to build a link at all, naming this setting | Every link points somewhere the invited person cannot reach, or reaches a server that is not this one. Nothing is minted wrongly and no account is affected, because the address is used only to write the link down |
+
+## The public base address
+
+This is the setting whose misconfiguration produces links that do not work, and
+it is the one a reverse proxy makes awkward, so it gets more than a row.
+
+The address is configuration and never the incoming request. Building a link
+from the request's host header is the easy way and it is the vulnerability: a
+minting call carrying a forged host produces a link pointing at somebody else's
+server, and the invited person types their new password into it. A link is also
+minted for a person who is not on the other end of any request, so there is no
+correct version of deriving one from a request even where the request is honest.
+Two rules in `.github/lint/invariants.sh` refuse the two spellings, and
+`InvitationLink` takes no request-shaped parameter at all, which is the shape
+those rules cannot see.
+
+Set it to what somebody outside the network types to reach this server, scheme
+included. A path prefix belongs here where a proxy serves the server under a
+subdirectory, and it survives into the link. A trailing slash makes no
+difference, and neither does an explicit `:443` on an `https` address.
+
+The fallback when it is not set is a refusal rather than a guess. The plugin
+does not read the server's own published address, and that is a decision rather
+than an omission: the case this setting exists for is a server behind a proxy,
+which is exactly the case where the server's own idea of its address is the
+wrong one, and the member a server answers that question with has already been
+measured moving between the two lines this plugin loads on. A refusal naming this
+setting is a support question with an answer. A link built from the wrong address
+is a support question without one.
+
+An address that is not absolute, is not `http` or `https`, or carries a query or
+a fragment is refused the same way, because appending a path to any of them
+produces something that looks like a link and does not reach the redemption
+route.
 
 ## A fresh install
 
 A server that installs the plugin and never opens the configuration page runs
-with no settings, because there are none to run with. The class exists so the
-plumbing is in place and the page exists so the operator can find it, and there
-is nothing on that page to set. Nothing is minted and no account is created,
-because none of that is built yet.
+with an empty public address, which builds no invitation links. The closed
+answer for this setting is not a safe address, it is no address, and the reason
+is in the row above.
 
-That is a closed posture by absence rather than by decision, and it is not the
-one #87 asks for. That issue wants the fresh-install configuration asserted
-field by field in a test, so that moving a default generously turns a test red
-and somebody has to say so. A test asserting the absence of fields would go
-green today and would keep going green while fields were added around it, which
-is the shape of guard this repository refuses. It lands with the fields.
+`Jellyfin.Plugin.Invites.Tests.FreshInstallConfigurationTests` holds the type to
+that answer, which is what #87 asks for. It is a table every setting has to be
+in, so a setting arriving without a decided fresh-install value reds the suite
+rather than shipping whatever the default happened to be.
 
 ## What is not in this file yet
 
-Two settings will need more than a row when they exist, and #113 asks for a
-section for each. Neither is written here, because neither setting exists and a
-document describing a setting the code does not have is the drift this file is
-built to refuse in the other direction.
-
-The public base address is one, because it is the setting whose misconfiguration
-produces links that do not work, and its interaction with a reverse proxy is
-where most support questions will come from. It arrives with #50, which decides
-that a link is never built from what the request says the host is.
-
-The ceilings are the other, because a reader needs to know that they are
-enforced when the configuration loads and that an out-of-range value refuses the
-load rather than being clamped quietly. They arrive with #33, which decides the
-three numbers and the reasoning for each.
+The ceilings, because a reader needs to know that they are enforced when the
+configuration loads and that an out-of-range value refuses the load rather than
+being clamped quietly. They arrive with #33, which decides the three numbers and
+the reasoning for each. Nothing about them is written here, because the settings
+do not exist and a document describing a setting the code does not have is the
+drift this file is built to refuse in the other direction.
 
 The check refuses a setting with no row. It does not refuse a setting with no
 section, because which settings need more than a row is a judgement about what a
