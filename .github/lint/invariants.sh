@@ -34,6 +34,7 @@ RULES=(
   'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
   'code-canonicalised-outside-one-function@#49@(?i)\bcode\b[^;\n]*\.(Trim|ToUpper|ToLower)@^[^:]*InvitationCode\.cs:'
+  'expiry-or-use-count-judged-outside-the-decision@#56@^(?!\s*(?:///|//|\*)).*?(?:\b(?:ExpiresAt|UsesRemaining)\b\s*(?:<=|>=|<|>)|(?:<=|>=|<|>)\s*\w*\.?\b(?:ExpiresAt|UsesRemaining)\b|\bUsesRemaining\b\s*[=!]=\s*\d|\b\d+\s*[=!]=\s*\w*\.?\bUsesRemaining\b)@^[^:]*RedemptionDecision\.cs:'
 )
 
 # What each rule is about, printed when it fires, so the failure explains itself
@@ -60,6 +61,8 @@ explain() {
       echo "A call site that reads the machine clock can only be tested by a test that sleeps. Take an IClock." ;;
     code-canonicalised-outside-one-function)
       echo "A code trimmed or cased anywhere but InvitationCode.Canonicalise is a second definition of which codes are equal. Call it instead." ;;
+    expiry-or-use-count-judged-outside-the-decision)
+      echo "An expiry or a use count compared anywhere but RedemptionDecision is a second answer to whether an invitation may be honoured. Call Decide instead." ;;
   esac
 }
 
@@ -122,6 +125,31 @@ explain() {
 # neither is one split across two statements. What it buys is that the obvious
 # spelling of the mistake cannot land quietly, and the reason a second
 # normalisation is a defect at all is in the remarks on Canonicalise.
+#
+# The expiry and use-count rule is the third of the exempt-one-file kind, and it
+# is the one whose pattern had to be narrowed rather than widened. A comparison
+# of those two members is what a decision is made of, and it is also what an
+# equality is made of: Invitation.Equals compares both members against another
+# record, and the constructor refuses a remaining count outside the granted one.
+# Neither is a judgement about whether an invitation may be honoured, and a rule
+# that reddened both would be routed around within a day. So it matches the
+# ordering operators, which is what a judgement is written with, plus a use count
+# compared against a number, which is how spent is spelled. An equality between
+# two records is left alone because it compares a member against a member and
+# never against a literal.
+#
+# What it therefore does not see, recorded here rather than discovered later: a
+# comparison against a value pulled into a local on an earlier line, an expiry
+# compared through CompareTo, a count tested with .Equals, and any of it written
+# on a commented line, because doc comments carry these member names constantly
+# and a rule that read them would fire on the documentation of the thing it
+# protects. All of that is on #56.
+#
+# The clock rule's own fixtures hold an expiry comparison, in both halves of the
+# pair, and they are not a violation of this rule for one reason worth stating:
+# check mode drops everything under the fixtures directory, and selftest reads
+# only the pair named after the rule it is running. A fixture is a fixture to
+# every rule but its own.
 #
 # They also forbid different things. The first is a request field read by hand.
 # The second is the server's own helper, which takes a request, a remote address
