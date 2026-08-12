@@ -228,11 +228,11 @@ public class InvitationStoreTests
     }
 
     /// <summary>
-    /// A store cut off part way through a write. This is the state the store's
-    /// own remarks name as the cost of writing in place, so it is asserted here
-    /// rather than left as a sentence: what a truncated document must not do is
-    /// come back as the invitations that happened to be written before the
-    /// server died.
+    /// A store cut off part way through. The write path no longer produces this
+    /// state, since the document is built beside the store and moved over it,
+    /// but a full disk, a damaged filesystem and a half-copied backup all still
+    /// do. What a truncated document must not do is come back as the
+    /// invitations that happened to be readable.
     /// </summary>
     [Fact]
     public void AFileTruncatedMidWriteIsRaisedRatherThanReadAsEmpty()
@@ -577,5 +577,124 @@ public class InvitationStoreTests
 
         Assert.Equal(committed, Assert.Single(store.Read().Invitations));
         Assert.False(File.Exists(store.WritingPath));
+    }
+
+    /// <summary>
+    /// Every write carries the shape the document is in, from the first one. A
+    /// store written without a version is one a later reader has to guess
+    /// about, and the usual guess is that a missing field means the default.
+    /// </summary>
+    [Fact]
+    public void TheStoreCarriesItsVersionFromTheFirstWrite()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+
+        store.Write(new[] { AnInvitation() });
+
+        using var document = JsonDocument.Parse(File.ReadAllText(store.Path));
+
+        Assert.Equal(InvitationStore.Version, document.RootElement.GetProperty("version").GetInt32());
+    }
+
+    /// <summary>
+    /// A store newer than the plugin reading it is refused, and the message
+    /// names both versions so an operator can tell which way round the problem
+    /// is.
+    /// </summary>
+    [Fact]
+    public void AStoreNewerThanThisBuildIsRefusedWithBothVersionsNamed()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation() });
+        var newer = File.ReadAllText(store.Path).Replace(
+            "\"version\": 1",
+            "\"version\": 2",
+            StringComparison.Ordinal);
+        File.WriteAllText(store.Path, newer);
+
+        var refused = Assert.Throws<StoreVersionRefusedException>(() => store.Read());
+
+        Assert.Equal(2, refused.Found);
+        Assert.Equal(InvitationStore.Version, refused.Understood);
+        Assert.Contains("version 2", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("version 1", refused.Message, StringComparison.Ordinal);
+        Assert.Contains(store.Path, refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The refusal writes nothing. A plugin that will not load has to leave the
+    /// file as it found it, or a downgrade somebody could undo by putting the
+    /// newer plugin back becomes one they cannot.
+    /// </summary>
+    [Fact]
+    public void ARefusedStoreIsLeftExactlyAsItWas()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation() });
+        var newer = File.ReadAllText(store.Path).Replace(
+            "\"version\": 1",
+            "\"version\": 2",
+            StringComparison.Ordinal);
+        File.WriteAllText(store.Path, newer);
+
+        Assert.Throws<StoreVersionRefusedException>(() => store.Read());
+
+        Assert.Equal(newer, File.ReadAllText(store.Path));
+        Assert.Equal(
+            new[] { InvitationStore.FileName },
+            Directory.GetFiles(directory.Path).Select(Path.GetFileName).ToArray());
+    }
+
+    /// <summary>
+    /// A document declaring a version this build knows is read, and one
+    /// declaring an older one would be too. There is no older shape to build a
+    /// fixture from, because nothing has been released, so what this covers is
+    /// that the refusal is of a newer version rather than of any version that
+    /// is not exactly this one.
+    /// </summary>
+    /// <param name="declared">The version the document declares.</param>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void AVersionThisBuildKnowsIsRead(int declared)
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var written = AnInvitation();
+        store.Write(new[] { written });
+        File.WriteAllText(
+            store.Path,
+            File.ReadAllText(store.Path).Replace(
+                "\"version\": 1",
+                FormattableString.Invariant($"\"version\": {declared}"),
+                StringComparison.Ordinal));
+
+        Assert.Equal(written, Assert.Single(store.Read().Invitations));
+    }
+
+    /// <summary>
+    /// A document with no version at all is read as the shape it certainly is.
+    /// Exactly one has ever been written, because nothing has been released, so
+    /// an absent version is not ambiguous yet. It becomes a migration the day a
+    /// second shape exists, and this test is where that day is noticed.
+    /// </summary>
+    [Fact]
+    public void ADocumentWrittenBeforeTheVersionExistedIsStillRead()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var written = AnInvitation();
+        store.Write(new[] { written });
+        var withoutAVersion = File.ReadAllText(store.Path).Replace(
+            "\"version\": 1,",
+            string.Empty,
+            StringComparison.Ordinal);
+        File.WriteAllText(store.Path, withoutAVersion);
+
+        Assert.DoesNotContain("version", withoutAVersion, StringComparison.Ordinal);
+        Assert.Equal(written, Assert.Single(store.Read().Invitations));
     }
 }
