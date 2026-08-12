@@ -135,6 +135,7 @@ drifts from it.
 | [docs/refusal-response.md](docs/refusal-response.md) | The one page every unusable invitation produces, and what identical means |
 | [docs/configuration.md](docs/configuration.md) | One row per setting, its default, its bounds and what breaks |
 | [docs/limits.md](docs/limits.md) | Behaviour that is correct, surprising, and reported as a bug |
+| [docs/what-an-invitation-can-never-do.md](docs/what-an-invitation-can-never-do.md) | Seven sentences an invitation may never break, and what refuses each one |
 | [docs/disaster-cases.md](docs/disaster-cases.md) | Restore from backup, a cloned server, two servers on one store |
 | [docs/migration-from-jfa-go.md](docs/migration-from-jfa-go.md) | Whether this replaces jfa-go, answered in both directions |
 | [docs/versioning.md](docs/versioning.md) | Where the version number lives and which part moves when |
