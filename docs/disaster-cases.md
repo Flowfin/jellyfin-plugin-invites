@@ -5,12 +5,14 @@ change what a live invitation means. None of them is prevented by getting the
 invitation logic right, so they are written down here rather than left to be
 discovered by whoever meets one.
 
-Nothing described below is implemented. The store, the keyed hash secret and
-the redemption decision are all held by open issues, and each case names the
-issue where its handling lands. What this document fixes now is what each case
-does and which of them the plugin is expected to notice, because that decides
-work in the issues that build the store rather than being read off them
-afterwards.
+One of the three is detected and the other two are not, which is what this
+document has said from the day it was written rather than a position taken since.
+The third case below, two servers over one store, is refused when the server
+starts. The keyed hash secret and the redemption caller are still held by open
+issues, and each case names the issue where its handling lands. What this
+document fixes is what each case does and which of them the plugin is expected to
+notice, because that decides work in the issues that build the store rather than
+being read off them afterwards.
 
 ## The shape they share
 
@@ -44,6 +46,14 @@ belongs to.
 
 Detected: no. Owned by #46 for what a restore does to live invitations, and #54
 for what a revocation leaves behind.
+
+What the load does report is narrower than detection and is not to be read as it.
+When the server starts, the store is compared against the accounts the server
+has, and a record claiming an account that is not there is written to the log. A
+restore far enough back produces that, so does an account an operator deleted by
+hand, and nothing distinguishes the two. It says the store and the server
+disagree. It does not say a restore happened, and a restore that revived a
+revocation without touching any account produces no disagreement at all.
 
 ## A cloned server
 
@@ -100,6 +110,13 @@ check on a network filesystem is a promise the filesystem does not keep.
 
 Detected: yes, at startup, refusing rather than continuing. Owned by #40 for the
 atomicity the lock protects and #96 for the refusal itself.
+
+The claim is taken by the load the server starts, which is the same moment the
+store is read and compared against the server's accounts. A server that arrives
+second writes an error naming the holder and the file to remove, and it reads
+nothing: a comparison taken out of a directory another process is writing to
+describes a store that moved while it was being read, and nobody can tell that
+from a store that really disagrees.
 
 ## What this document is not
 
