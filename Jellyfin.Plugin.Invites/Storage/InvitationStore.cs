@@ -334,6 +334,18 @@ public sealed class InvitationStore
             file.Flush(true);
         }
 
+        // A store that is already there keeps the mode it has, which is the rule
+        // a read follows too: a mode an operator widened is reported and never
+        // repaired, and one they tightened is theirs. Without this the move
+        // would carry the created mode over the top of theirs and quietly
+        // repair it, which is a decision this file already made the other way.
+        // Only the first write of a store, where there is nothing to carry,
+        // leaves the created mode in place.
+        if (!OperatingSystem.IsWindows() && File.Exists(Path))
+        {
+            File.SetUnixFileMode(WritingPath, File.GetUnixFileMode(Path));
+        }
+
         File.Move(WritingPath, Path, overwrite: true);
 
         return InspectPermissions();
