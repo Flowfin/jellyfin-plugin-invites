@@ -1,0 +1,100 @@
+# The invitation code parser and the redemption decision, driven with generated
+# input on a schedule rather than on a pull request.
+#
+# Why not on a pull request: a fuzz run that has to finish inside a merge gate is
+# a fuzz run that finds nothing. The suite carries the same harness at a small
+# budget, so it cannot rot unnoticed, and this job is where it is given minutes
+# instead of milliseconds.
+#
+# What it covers is printed by the run itself, in the harness's own output, so a
+# run that reached one of the two targets cannot be read as one that reached
+# both and found nothing.
+#
+# On a finding this job fails and does nothing else. It opens no issue and files
+# no report: an automatic filing turns a crash into a ticket nobody reads, and
+# the input that produced it is in the log with the seed that reproduces it.
+#
+# This is not in the branch ruleset's required set and must not be: it does not
+# run on a pull request, so requiring it would block every merge on a check that
+# never reports. Raising that set is #24.
+name: '🎲 Fuzz'
+
+on:
+  schedule:
+    # Weekly, early on a Monday. The target is a pure function with no network
+    # and no store behind it, so a run costs one runner-minute and finds what it
+    # is going to find in the first seconds; a nightly run would spend seven
+    # times as much to re-derive the same answer.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      inputs-to-generate:
+        description: 'How many inputs to generate beyond the committed corpus'
+        required: false
+        default: '20000000'
+        type: string
+      seed:
+        description: 'The seed to replay, to reproduce a failing run from its log'
+        required: false
+        default: ''
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz the code parser and the redemption decision
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the lock file
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: The seed corpus is present
+        # The corpus is committed rather than kept on the runner, and a run that
+        # read no seeds is a run that fuzzed only what it generated. The harness
+        # refuses an absent directory; this says how many files it will read
+        # before the run starts, so the number is in the log beside the verdict.
+        run: |
+          set -u
+          count=$(find fuzz/corpus -name '*.txt' -type f | wc -l)
+          echo "The committed corpus holds ${count} seeds."
+          if [ "$count" -eq 0 ]; then
+            echo "::error::fuzz/corpus holds no seeds. Failing rather than reporting a run that fuzzed only what it generated."
+            exit 1
+          fi
+
+      - name: Fuzz
+        # The seed is the run number unless one was given, so two runs are two
+        # sequences and a failing one can be replayed by dispatching this
+        # workflow with the seed from its log. Detailed console output because
+        # the harness prints what it covered and with what budget, and a run
+        # whose coverage is invisible is one that gets read as covering
+        # everything.
+        env:
+          INVITES_FUZZ_ITERATIONS: '${{ inputs.inputs-to-generate || 20000000 }}'
+          INVITES_FUZZ_SEED: '${{ inputs.seed || github.run_number }}'
+        run: |
+          dotnet test --configuration Release --no-build \
+            --filter 'Category=Fuzz' \
+            --logger 'console;verbosity=detailed'
