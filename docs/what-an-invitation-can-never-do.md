@@ -97,6 +97,20 @@ The three are one routine on purpose, which is #56, and
 count judged anywhere else. A second place that decides whether an invitation
 may be honoured is a second answer, and the two drift.
 
+The line has a second way of being broken, and it does not go through that
+routine at all. A record read back from a file that does not mention a member
+arrives with that member at its default, and the default for a revocation is an
+invitation nobody revoked, so a store written by a build that spelled the
+revocation some other way hands the decision a record it will honour. That is
+#93 and it is refused by a test: `RemovingAMemberNeverMakesAnUnusableInvitationUsable`
+removes each member of a written document in turn and refuses any removal that
+turns an unusable invitation into a usable one, and
+`RemovingBothRevocationMembersNeverMakesARevokedInvitationUsable` covers the
+pair together, which is the shape an older store would have. The store requires
+the revocation members to be present rather than defaulting them, and
+`ARecordCarryingAnEmptyRevocationStillReadsAndIsUsable` is what keeps that from
+refusing every live invitation.
+
 ### An invitation can never be recovered from the store, a log, a backup or an error message
 
 Refused by a test, for the store. The record holds the keyed hash of the code
