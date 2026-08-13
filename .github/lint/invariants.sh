@@ -27,6 +27,7 @@ RULES=(
   'weak-random@#49@\bnew\s+Random\s*\(|\bRandom\.Shared\b|\bSystem\.Random\b@'
   'secret-compared-with-equality@#29@(?i)\b\w*(secret|token|hash)\w*\s*[=!]=|(?i)\b\w*(secret|token|hash)\w*\.Equals\s*\(@'
   'secret-compared-by-sequence@#29@(?i)^(?=.*\b\w*(secret|token|hash)\w*\b).*\.SequenceEqual\s*\(@'
+  'secret-compared-through-a-comparer@#29@(?i)^(?=.*\b(?!hashset\b)\w*(secret|token|hash)\w*\b).*(\bstring\.Equals\s*\(|\bStringComparer\.)@'
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'policy-field-written-outside-the-template@#69@\.Policy\s*\.\s*\w+\s*=[^=]@^[^:]*AccountTemplate[^:]*:'
@@ -49,6 +50,8 @@ explain() {
       echo "Comparing a stored secret with == leaks its prefix through timing. Use CryptographicOperations.FixedTimeEquals." ;;
     secret-compared-by-sequence)
       echo "A keyed hash is bytes, and a sequence comparison of it stops at the first differing byte. Use CryptographicOperations.FixedTimeEquals." ;;
+    secret-compared-through-a-comparer)
+      echo "string.Equals and StringComparer are the same early-returning comparison with the secret moved into an argument. Use CryptographicOperations.FixedTimeEquals." ;;
     secret-in-a-log-call)
       echo "An invitation code, a password or the hash secret in a log line is that secret written to disk in clear." ;;
     policy-written-outside-the-template)
@@ -94,13 +97,30 @@ explain() {
 # secret is seen on either side of the call, and a sequence comparison of
 # something that is not a secret is left alone.
 #
-# What neither of them refuses is written here rather than left to be
+# A third carries #29, and it is the argument case the two above cannot see. The
+# first rule reads an identifier in front of an operator or in front of .Equals(,
+# so a comparison written as string.Equals(stored, presented,
+# StringComparison.Ordinal) walks past it with the secret one comma along, and so
+# does StringComparer.Ordinal.Equals(a, b). Both are the same early-returning
+# comparison as ==, and the first is what somebody writes after an analyser asks
+# them to say which comparison they meant, so it arrives looking like the careful
+# version.
+#
+# It takes the second rule's shape rather than the first's: a line naming
+# something secret-shaped anywhere and either spelling anywhere, so the secret is
+# seen whichever argument it is in. Its vocabulary carries one exclusion the other
+# two do not need. HashSet contains the word hash, and a set built on
+# StringComparer.Ordinal is the ordinary way to hold labels, which the tree
+# already does in four places, so the rule refuses that one word by name. The cost
+# is stated rather than hidden: a line that holds a HashSet and compares a secret
+# on the same statement is invisible to it.
+#
+# What none of the three refuses is written here rather than left to be
 # discovered. A hash held in a variable called digest, mac, tag or expected is
-# outside both vocabularies. A comparison written as string.Equals(stored,
-# presented, StringComparison.Ordinal), or through StringComparer.Ordinal, puts
-# the secret in an argument where the first rule's pattern cannot see it. And
-# the first rule reds on a null check written as hash == null, which is correct
-# code. All three are recorded on #29.
+# outside every vocabulary, and widening one is not free: the selftest reads one
+# tripping fixture per rule id, so a word added to a rule that already trips is a
+# word nothing proves. And the first rule reds on a null check written as
+# hash == null, which is correct code. Both are recorded on #29.
 #
 # Two rules carry #69, and the second one was found inside the first one's own
 # tripping fixture. That fixture holds two lines, a policy field set and a whole
