@@ -1,0 +1,92 @@
+# Mutation testing over the routines that decide whether an invitation is
+# honoured, from #22.
+#
+# Coverage says a line ran. This says a test would have noticed if that line
+# were wrong, by planting a defect and asking the suite about it. The two are
+# not the same measure and neither replaces the other, which is why this runs
+# beside the coverage floors rather than instead of them.
+#
+# Why not on a pull request: the scope, the threshold and the reason for the
+# number are in docs/mutation-testing.md, and the run costs a runner-minute and
+# a half against a suite that changes far more often than the four routines it
+# measures. A schedule catches the week a test stopped biting; a merge gate
+# would pay that cost on every change to a document.
+#
+# This is not in the branch ruleset's required set and must not be: it does not
+# run on a pull request, so requiring it would hold every merge on a check that
+# never reports. Raising that set is #24.
+#
+# What is mutated is stryker-config.json's decision rather than this file's. A
+# scope written here as well would be a second place that could answer
+# differently.
+name: '🧬 Mutation testing'
+
+on:
+  schedule:
+    # Weekly, early on a Tuesday, a day after the fuzz run so two long jobs do
+    # not land on one morning. The subject is four routines that change with an
+    # issue rather than with a commit, so a nightly run would re-derive the same
+    # answer six more times a week.
+    - cron: '41 3 * * 2'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  mutants:
+    name: Every planted defect is caught
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes, so do not leave the token in .git/config where a
+          # later step or a build task could read it.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore the tool at the version the manifest pins
+        # dotnet-tools.json names one version and refuses to roll forward, so a
+        # run measures the suite with the same mutator set the last one used. A
+        # score that moved because the tool moved is a score nobody can act on.
+        run: dotnet tool restore
+
+      - name: Restore against the lock file
+        run: dotnet restore Jellyfin.Plugin.Invites.sln --locked-mode
+
+      - name: The suite is green before anything is mutated
+        # A mutation score is meaningless against a red suite: every mutant
+        # reads as killed by a test that was already failing. This is the
+        # precondition rather than a duplicate of the test workflow.
+        run: dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release --no-restore
+
+      - name: Every mutant in the scope is killed
+        # The break threshold is 100 and the reason is in
+        # docs/mutation-testing.md: a threshold below it is a budget for
+        # survivors nobody has to look at, and one survivor is one rule the
+        # suite states and does not enforce.
+        run: dotnet stryker --config-file stryker-config.json
+
+      - name: Keep the report
+        # What the run mutated and what became of each mutant, kept so a later
+        # reader can see which rule stopped being enforced rather than only that
+        # the number moved.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report
+          path: StrykerOutput/*/reports/
+          if-no-files-found: warn
+          retention-days: 14

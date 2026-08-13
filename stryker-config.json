@@ -1,0 +1,19 @@
+{
+  "stryker-config": {
+    "solution": "Jellyfin.Plugin.Invites.sln",
+    "project": "Jellyfin.Plugin.Invites.csproj",
+    "test-projects": ["Jellyfin.Plugin.Invites.Tests/Jellyfin.Plugin.Invites.Tests.csproj"],
+    "mutate": [
+      "Redemption/**/*.cs",
+      "Invitations/**/*.cs",
+      "Accounts/**/*.cs",
+      "!Accounts/ServerAccounts.cs",
+      "Codes/InvitationCode.cs"
+    ],
+    "ignore-mutations": ["string"],
+    "reporters": ["json", "html", "cleartext"],
+    "thresholds": { "high": 100, "low": 100, "break": 100 },
+    "coverage-analysis": "off",
+    "disable-bail": true
+  }
+}

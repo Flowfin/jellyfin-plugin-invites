@@ -169,8 +169,14 @@ DROP_FIXTURES=0
 matches() {
   local pattern="$1" exempt="$2"; shift 2
   local out rc=0
+  # StrykerOutput is excluded for the same reason as bin and obj: it is
+  # untracked output of a run rather than source. Its report embeds the whole
+  # of every mutated file, including the deliberately broken copies, so a tree
+  # somebody ran the mutation testing in reds every rule at once. Added with
+  # #22, which is what puts the directory there.
   out=$(grep -rnHP --include='*.cs' --include='*.csproj' --include='*.html' \
-        --exclude-dir=bin --exclude-dir=obj -- "$pattern" "$@" 2>/dev/null) || rc=$?
+        --exclude-dir=bin --exclude-dir=obj --exclude-dir=StrykerOutput \
+        -- "$pattern" "$@" 2>/dev/null) || rc=$?
   if [ "$rc" -ge 2 ]; then
     return 2
   fi
