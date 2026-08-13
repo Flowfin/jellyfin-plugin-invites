@@ -9,3 +9,8 @@ publish/
 # measurement of one run rather than something a reader of the tree needs, and
 # the run that produced it keeps it as an artifact.
 coverage.json
+
+# Stryker writes one directory per mutation run, holding the report and the
+# mutated copies of the tree it built. It is the output of one measurement and
+# the run that produced it keeps the report as an artifact.
+StrykerOutput/

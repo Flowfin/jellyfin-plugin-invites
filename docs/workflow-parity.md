@@ -57,7 +57,7 @@ whether an answer is the right one, which is what a reader is for.
 | `publish.yml` | deferred to M12 | The release process is written in M12 and this is the workflow that runs it. |
 | `regenerate-manifest.yml` | deferred to M12 | It maintains the manifest a catalogue reads, which does not exist until something is published. |
 | `scorecard.yml` | adopted, landed | Already in the tree at `e776ccf`. |
-| `stryker-mutation.yml` | adopted | #22 measures the test suite with mutation testing on the redemption decision. |
+| `stryker-mutation.yml` | adopted, landed | #22 measures the test suite with mutation testing on the redemption decision. It landed as `stryker-mutation.yaml` plus `stryker-config.json`, and reports `Every planted defect is caught`. That context never appears on a pull request head, because the run is weekly and on demand rather than on a change, which is what #24 has to read this row for. |
 | `unicode-guard.yml` | adopted, landed | Already in the tree at `e776ccf`. |
 | `wiki-lint.yml` | declined | This repository has no wiki and its documentation lives in the tree where the ordinary checks already see it. |
 | `zizmor.yml` | adopted, landed | Already in the tree at `e776ccf`. |
@@ -87,6 +87,7 @@ whether an answer is the right one, which is what a reader is for.
 | `publish.yaml` | deferred to M12 | It publishes on a release, and what it does is decided when the release process it belongs to is written. Its call is pinned by commit and its job carries its own permissions block, under #14, which changes nothing about the release path. |
 | `scan-codeql.yaml` | kept | #7 corrected the input so the scan ran against this repository at all, and #16 replaced the shared call with the analysis written out in this file. It is this repository's answer to the target gate's `codeql.yml`. |
 | `scorecard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
+| `stryker-mutation.yaml` | kept | This repository's answer to the target gate's `stryker-mutation.yml`, landed by #22. It plants a defect in the routines that decide a redemption and asks whether the suite notices, weekly and on demand. Reports `Every planted defect is caught`, and on no pull request, so it is a check that finds a weak test after a merge rather than one a merge can be held on. The scope, the threshold and the mutator class it leaves out are in `docs/mutation-testing.md`. |
 | `sync-labels.yaml` | removed, here | It replaces this repository's labels with a shared list and deletes every label that list does not name, and two labels this plugin's issues lean on are not named there. |
 | `test.yaml` | kept | Since #14 it calls the first-party test leg rather than a shared template one. |
 | `unicode-guard.yml` | kept | Adopted from the target gate, landed at `e776ccf`. |
