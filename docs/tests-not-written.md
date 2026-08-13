@@ -79,7 +79,13 @@ the shape in source, and it has a fixture that trips it:
 $ bash .github/lint/invariants.sh selftest
 ```
 
-Status: the lint rule exists. #50 is open, so the unit test does not.
+Status: both parts exist. The lint rule is there, and the unit test is
+`AForgedHostDoesNotReachTheLink` in `InvitationLinkTests`, which builds a link
+while a request carrying a forged host sits in the same process and asserts the
+configured address comes out. #50 is open, and it says of that test itself that
+the builder never sees the request, so nothing in the process could have
+carried the forged host into the link and the test could not have failed. What
+this row asks is that the replacement exist, and it does at that strength.
 
 ### A test that an invitation mail arrives
 
@@ -132,22 +138,41 @@ an assignment, so the replacement is not a weaker version of the refused test.
 It is a stronger one, because a sleep can only test the far side of a boundary
 and an injected clock can test the instant itself.
 
-Status: neither exists. #41 and #104 are open.
+Status: the seam exists and one of the four behaviours is driven by it. #41 is
+closed, `IClock` and `SystemClock` are in the tree, and
+`TheExpiryBoundaryIsExclusive` in `RedemptionDecisionTests` asserts the expiry
+one tick before the boundary, at it, and one tick after, without sleeping.
+`ClockJumpTests` steps the clock backwards across an expiry and forwards past
+several at once. #104 is open because the other three clock-driven behaviours,
+the rate-limit window, the retention sweep and the optional account expiry, are
+not in the tree to be driven.
 
 ## What this list is measured against
 
-Four of the six replacements do not exist. That is a statement about the state
-of this repository rather than about the list, and it is written here rather
-than left to be discovered:
+This section counted four of six replacements absent, against a suite of two
+files holding two facts about the template's plugin class. Both numbers have
+moved, and one number is no longer the right shape of answer: most rows carry
+more than one replacement and the rows are no longer all in one state, so a
+single count hides which half of a row is missing.
+
+Row by row, which is the same thing each status line above says at more length.
+The setup page has neither of its two, because #107 is open and no manual check
+has been recorded. The real-server row has its two workflows and not its manual
+install. The reverse-proxy row has both. The mail row has nothing to replace and
+says so. The dashboard row has both for the configuration page and neither for
+the setup page, which has no page yet. The sleeping row has the seam and the
+expiry boundary cases, and not the three behaviours that do not exist.
+
+The suite those replacements join is not the two files this section used to
+count:
 
 ```
 $ git ls-files -- '*.cs' ':!.github/lint/fixtures' | grep -c 'Tests/'
-2
+30
 ```
 
-Two test files, holding two facts about the template's plugin class. This list
-is what the suite is built against as it grows, and #100 is where the count of
-existing replacements is checked again.
+This list is what the suite is built against as it grows, and #100 is where the
+statuses are read against the tree again.
 
 ## When a refusal is added
 
