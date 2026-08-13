@@ -219,6 +219,10 @@ public sealed class InvitationStore
     /// covers a file that is not JSON, a file cut off part way through one, and
     /// a document that parses and carries no invitation list. A document
     /// carrying an empty list is a store holding nothing and reads as one.
+    /// It also covers a record that leaves out a member whose absence would be
+    /// read as a grant, which today is the revocation pair: see
+    /// <see cref="StoredInvitation.RevokedAt"/> for which members those are and
+    /// why the rest are not among them.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// The document is this store's and one of the records in it is not an
@@ -575,14 +579,51 @@ public sealed class InvitationStore
         public int UsesRemaining { get; set; }
 
         /// <summary>Gets or sets when it was revoked, or null.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Required, and it is the one member here whose absence would be
+        /// read as a grant.</b> A document that does not carry this member
+        /// parses with the member at its default, which is null, which is an
+        /// invitation nobody revoked. So a store written by a build that spelled
+        /// revocation some other way, or a file an editor mangled, would come
+        /// back with every revocation silently undone and the redemption path
+        /// would honour a link an operator had taken away. Required here means
+        /// the member has to be present in the document; carrying it as null is
+        /// how a live invitation says it was never revoked, and that still
+        /// reads.
+        /// </para>
+        /// <para>
+        /// This is #93's rule and it is per member rather than per document:
+        /// absence is an error wherever the default would be more permissive
+        /// than the value it replaces could have been. The other members here
+        /// are not required, and that is a decision rather than an omission. An
+        /// absent expiry defaults to the start of the calendar, which is
+        /// expired; an absent count of uses remaining defaults to zero, which is
+        /// spent; an absent keyed hash reads as no bytes, which no presented
+        /// code matches. Each of those loses an invitation rather than granting
+        /// an account, which is the direction #53 asks for.
+        /// </para>
+        /// <para>
+        /// A member added to this shape later gets the same question asked of
+        /// it by <c>StoreFieldAbsenceTests</c> rather than by somebody
+        /// remembering this paragraph: the property there removes each member
+        /// of a written document in turn and refuses any removal that turns an
+        /// unusable invitation into a usable one.
+        /// </para>
+        /// </remarks>
+        [JsonRequired]
         public DateTimeOffset? RevokedAt { get; set; }
 
         /// <summary>Gets or sets the operator who revoked it, or null.</summary>
         /// <remarks>
         /// Written and read beside <see cref="RevokedAt"/> rather than
         /// separately. A file carrying one of the two is refused by the record
-        /// type as it is built, which is where that rule lives.
+        /// type as it is built, which is where that rule lives. Required for the
+        /// same reason as its pair: a document carrying the instant and not the
+        /// operator would be refused by the record type, and one carrying
+        /// neither would read as an invitation nobody revoked.
         /// </remarks>
+        [JsonRequired]
         public Guid? RevokedBy { get; set; }
 
         /// <summary>Gets or sets the template the operator picked.</summary>
