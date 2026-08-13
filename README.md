@@ -131,6 +131,7 @@ drifts from it.
 | [docs/logging.md](docs/logging.md) | What a log line may carry and what it may never carry, at any level |
 | [docs/expiry-rules.md](docs/expiry-rules.md) | The seven decisions behind what looks like one comparison |
 | [docs/attempt-outcomes.md](docs/attempt-outcomes.md) | The fixed set of outcomes a redemption attempt records |
+| [docs/rate-limit.md](docs/rate-limit.md) | Where the redemption counter lives, and what a restart does to it |
 | [docs/setup-never-asks.md](docs/setup-never-asks.md) | What the guided setup may never put a box on the page for |
 | [docs/refusal-response.md](docs/refusal-response.md) | The one page every unusable invitation produces, and what identical means |
 | [docs/configuration.md](docs/configuration.md) | One row per setting, its default, its bounds and what breaks |
