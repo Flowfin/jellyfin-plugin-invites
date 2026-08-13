@@ -56,12 +56,14 @@ public sealed class Invitation : IEquatable<Invitation>
     /// <param name="usesGranted">How many accounts it was good for. See <see cref="UsesGranted"/>.</param>
     /// <param name="usesRemaining">How many are left. See <see cref="UsesRemaining"/>.</param>
     /// <param name="revokedAt">When it was revoked, or <c>null</c>. See <see cref="RevokedAt"/>.</param>
+    /// <param name="revokedBy">Who revoked it, or <c>null</c>. See <see cref="RevokedBy"/>.</param>
     /// <param name="templateLabel">The template name the operator picked. See <see cref="TemplateLabel"/>.</param>
     /// <param name="accountsProduced">The accounts it created. See <see cref="AccountsProduced"/>.</param>
     /// <exception cref="ArgumentException">
-    /// The keyed hash is absent, or the remaining count is outside the granted
-    /// one. Both are states no invitation can be in rather than rules about
-    /// what may be minted.
+    /// The keyed hash is absent, the remaining count is outside the granted
+    /// one, or the two revocation fields disagree about whether there was one.
+    /// All three are states no invitation can be in rather than rules about
+    /// what may be minted or revoked.
     /// </exception>
     public Invitation(
         Guid id,
@@ -72,6 +74,7 @@ public sealed class Invitation : IEquatable<Invitation>
         int usesGranted,
         int usesRemaining,
         DateTimeOffset? revokedAt,
+        Guid? revokedBy,
         string templateLabel,
         ImmutableArray<Guid> accountsProduced)
     {
@@ -96,6 +99,20 @@ public sealed class Invitation : IEquatable<Invitation>
                 nameof(usesRemaining));
         }
 
+        // A revocation is one event, and the two fields that describe it are
+        // the instant and the operator. A record carrying one without the
+        // other says a revocation happened and cannot say who made it, or
+        // names somebody and cannot say when, and neither is an answer an
+        // operator reading the administrator view can act on. The same
+        // reasoning already keeps the revoked flag derived from the instant
+        // instead of stored beside it.
+        if (revokedAt is null != revokedBy is null)
+        {
+            throw new ArgumentException(
+                "A revocation is an instant and the operator who made it. A record carrying one of the two describes an event nobody can read back.",
+                revokedAt is null ? nameof(revokedBy) : nameof(revokedAt));
+        }
+
         Id = id;
         CodeHash = codeHash;
         MintedBy = mintedBy;
@@ -104,6 +121,7 @@ public sealed class Invitation : IEquatable<Invitation>
         UsesGranted = usesGranted;
         UsesRemaining = usesRemaining;
         RevokedAt = revokedAt;
+        RevokedBy = revokedBy;
         TemplateLabel = templateLabel ?? throw new ArgumentNullException(nameof(templateLabel));
         AccountsProduced = accountsProduced.IsDefault ? ImmutableArray<Guid>.Empty : accountsProduced;
     }
@@ -204,6 +222,22 @@ public sealed class Invitation : IEquatable<Invitation>
     public DateTimeOffset? RevokedAt { get; }
 
     /// <summary>
+    /// Gets the operator account that revoked this invitation, or <c>null</c>
+    /// where it has not been revoked.
+    /// </summary>
+    /// <remarks>
+    /// Revocation is #54, which asks that the revoking operator be recorded
+    /// beside the time. It is personal data about the operator in the same way
+    /// <see cref="MintedBy"/> is, and it exists for the same reason: an
+    /// invitation that stopped working is answerable to whoever stopped it or
+    /// to nobody. The pair is kept whole by the constructor rather than by
+    /// whoever writes the next caller, and it is one revocation rather than a
+    /// history: <see cref="Revocation"/> keeps the first of them, so this names
+    /// the operator who ended the invitation and not the last one to ask.
+    /// </remarks>
+    public Guid? RevokedBy { get; }
+
+    /// <summary>
     /// Gets a value indicating whether this invitation has been revoked.
     /// </summary>
     /// <remarks>
@@ -299,6 +333,7 @@ public sealed class Invitation : IEquatable<Invitation>
             && UsesGranted == other.UsesGranted
             && UsesRemaining == other.UsesRemaining
             && Nullable.Equals(RevokedAt, other.RevokedAt)
+            && Nullable.Equals(RevokedBy, other.RevokedBy)
             && string.Equals(TemplateLabel, other.TemplateLabel, StringComparison.Ordinal)
             && AccountsProduced.AsSpan().SequenceEqual(other.AccountsProduced.AsSpan());
     }
@@ -316,7 +351,7 @@ public sealed class Invitation : IEquatable<Invitation>
     /// </remarks>
     public override int GetHashCode()
     {
-        var first = HashCode.Combine(Id, MintedBy, MintedAt, ExpiresAt, UsesGranted, UsesRemaining, RevokedAt);
+        var first = HashCode.Combine(Id, MintedBy, MintedAt, ExpiresAt, UsesGranted, UsesRemaining, RevokedAt, RevokedBy);
         return HashCode.Combine(first, TemplateLabel, CodeHash.Length, AccountsProduced.Length);
     }
 }

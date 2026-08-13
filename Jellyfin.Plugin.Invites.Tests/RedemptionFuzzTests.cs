@@ -451,6 +451,7 @@ public class RedemptionFuzzTests
                 usesGranted: granted,
                 usesRemaining: left,
                 revokedAt: revoked ? _minted : null,
+                revokedBy: revoked ? Guid.Parse("44445555-6666-7777-8888-99990000aaaa") : null,
                 templateLabel: "Household",
                 accountsProduced: ImmutableArray<Guid>.Empty);
 

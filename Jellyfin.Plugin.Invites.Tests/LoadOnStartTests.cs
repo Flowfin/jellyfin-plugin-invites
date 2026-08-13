@@ -313,6 +313,7 @@ public class LoadOnStartTests
             usesGranted: 4,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: [.. accounts]);
     }

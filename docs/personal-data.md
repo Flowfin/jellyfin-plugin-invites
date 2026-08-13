@@ -39,6 +39,7 @@ address a redemption arrived from.
 | Expires at | Read by the expiry comparison in #51. | The record |
 | Uses granted, uses remaining | The count #52 makes authoritative. | The record |
 | Revoked, revoked at | Revocation is #54, and the time is what tells an operator a restore undid it. | The record |
+| Revoked by | The operator account answerable for the revocation, which #54 asks be recorded beside the time. Personal data about the operator on the same footing as minted by, and it exists for the same reason: an invitation that stopped working is answerable to whoever stopped it or to nobody. Only the first revocation is kept, so this is one identifier and not a history. | The record |
 | Template name | Which grant this invitation carries, from #61. | The record |
 | Accounts produced | The link between an invitation and the accounts it created. This is the most identifying row here, and it is also the one an operator needs when an account they do not recognise appears. | The record |
 | Operator label | Failed the test. See below. | Not stored |
