@@ -30,6 +30,7 @@ RULES=(
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'policy-field-written-outside-the-template@#69@\.Policy\s*\.\s*\w+\s*=[^=]@^[^:]*AccountTemplate[^:]*:'
+  'administrator-flag-set@#62@\bIsAdministrator\s*=(?!=)@'
   'server-wide-grant-flag-set@#63@\b(EnableAllFolders|EnableAllChannels)\s*=(?!=)@'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
   'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
@@ -54,6 +55,8 @@ explain() {
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
     policy-field-written-outside-the-template)
       echo "One field of a user policy set outside that routine is the same grant, made one field at a time. IsAdministrator is the one this plugin may never set." ;;
+    administrator-flag-set)
+      echo "No account this plugin creates is an administrator, whatever the template says, so there is no place here where that flag is written in either direction." ;;
     server-wide-grant-flag-set)
       echo "A server-wide flag grants every library, or every channel, including the ones added after the invitation was minted. Grant the resolved list the template carries." ;;
     link-built-from-a-request-header)
@@ -117,6 +120,34 @@ explain() {
 # UpdatePolicyAsync is still unmatched by either rule, because the first one
 # spells the call UpdatePolicy followed by an open bracket. All three are
 # recorded on #69.
+#
+# The administrator rule exists because of the two above rather than despite
+# them. Both exempt the routine that applies an account template, by path, so
+# that grants are reviewed in one file instead of annotated in place. That
+# exemption is right, and it is also the only place an account is ever granted
+# anything, so the one field this plugin may never write was unrefused in
+# exactly the file where somebody would write it. The failure message the second
+# rule prints has named IsAdministrator as that field since it landed, and a
+# sentence in a failure message is not a rule: for a write inside the exemption
+# it is not printed at all.
+#
+# So this rule carries no exemption of its own. There is no routine here allowed
+# to make an account an administrator, which is what #62 decides and what
+# docs/what-an-invitation-can-never-do.md carries as its first line.
+#
+# It refuses the flag in both directions, for the reason the server-wide rule
+# below gives for the same choice: writing it false is this plugin deciding a
+# field it has decided not to decide, and the template names such a field in
+# ServerDefaultsLeftAlone rather than writing it.
+#
+# Its bounds. It matches an assignment on the line the field is named on, so the
+# same write reached through a local, or a policy built by a helper handed a
+# boolean, is invisible to it, as it is to any text pattern over one line. A
+# whole policy object handed to the server with the flag already set is the same
+# blind spot, and it is what the two rules above refuse everywhere except inside
+# their exemption. It reads a write and not a read, so the guard asking whether
+# an account is already an administrator is left alone, which is how the refusal
+# to widen an existing account gets written. All of that is on #62.
 #
 # The server-wide grant rule is about what the grant is rather than where it is
 # made, which is what makes it a rule of its own beside the two above. Those two
