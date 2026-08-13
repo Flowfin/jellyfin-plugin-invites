@@ -30,6 +30,7 @@ RULES=(
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'policy-field-written-outside-the-template@#69@\.Policy\s*\.\s*\w+\s*=[^=]@^[^:]*AccountTemplate[^:]*:'
+  'server-wide-grant-flag-set@#63@\b(EnableAllFolders|EnableAllChannels)\s*=(?!=)@'
   'link-built-from-a-request-header@#50@(?i)\brequest\.headers\s*\[|(?i)\brequest\.host\b|X-Forwarded-(Host|Proto)@'
   'link-built-from-the-request-url-helper@#50@\bGetSmartApiUrl\s*\(@'
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
@@ -53,6 +54,8 @@ explain() {
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
     policy-field-written-outside-the-template)
       echo "One field of a user policy set outside that routine is the same grant, made one field at a time. IsAdministrator is the one this plugin may never set." ;;
+    server-wide-grant-flag-set)
+      echo "A server-wide flag grants every library, or every channel, including the ones added after the invitation was minted. Grant the resolved list the template carries." ;;
     link-built-from-a-request-header)
       echo "A link built from what the request says the host is, is a link an attacker chooses." ;;
     link-built-from-the-request-url-helper)
@@ -114,6 +117,37 @@ explain() {
 # UpdatePolicyAsync is still unmatched by either rule, because the first one
 # spells the call UpdatePolicy followed by an open bracket. All three are
 # recorded on #69.
+#
+# The server-wide grant rule is about what the grant is rather than where it is
+# made, which is what makes it a rule of its own beside the two above. Those two
+# refuse a policy written outside the routine that applies a template; a template
+# routine setting EnableAllFolders passes both of them and grants every library
+# on the server, present and future, to somebody who was invited months earlier.
+# So this rule carries no exemption at all, not even for the routine that is
+# allowed to write policies: there is no place in this plugin where the flag is
+# the right grant.
+#
+# It names the channel flag beside the library one because the pair has the same
+# shape and the same failure, and a rule refusing only the library half would
+# leave the other spelling of the same grant green. Both are on the server's user
+# policy on the line this plugin compiles against, beside the resolved lists
+# EnabledFolders and EnabledChannels, which are what a template's Libraries are
+# handed to and which this rule leaves alone.
+#
+# It refuses the flag in both directions rather than only when it is set true.
+# Writing it false is this plugin deciding a field it has decided not to decide,
+# and the template carries ServerDefaultsLeftAlone so that such a field is named
+# as left alone rather than written. The value is also not always on the same
+# line as the name, so a rule reading the value would be a rule about formatting.
+#
+# Its bounds. It matches an assignment on the line the field is named on, so the
+# same write reached through a local, or a policy built by a helper handed a
+# boolean, is invisible to it, as it is to any text pattern over one line. It
+# reads a write and not a read, spelled as an = that is not part of ==, which is
+# why the clean fixture returns the flag from a method and stays quiet. And it
+# says nothing about EnableAllDevices or any third flag of that shape: what is
+# refused here is the two this plugin's grants are made of. All of that is
+# recorded on #63.
 #
 # The canonicalisation rule exempts InvitationCode.cs the same way, by basename
 # rather than by directory, because that file is the one function the rule
