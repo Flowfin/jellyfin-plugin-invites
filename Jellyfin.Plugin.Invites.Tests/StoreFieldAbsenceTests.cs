@@ -277,6 +277,111 @@ public class StoreFieldAbsenceTests
     }
 
     /// <summary>
+    /// Every document committed under <c>StoreShapes</c>, by file name.
+    /// </summary>
+    /// <remarks>
+    /// Read off the directory rather than listed here, so a shape committed for
+    /// a later store version is run through the property below on the day it
+    /// arrives. #105 is where that directory's contents are decided.
+    /// </remarks>
+    /// <returns>One committed shape per row.</returns>
+    public static IEnumerable<object[]> EveryCommittedShape()
+    {
+        foreach (var path in Directory.GetFiles(TheShapes, "version-*.json"))
+        {
+            yield return new object[] { Path.GetFileName(path) };
+        }
+    }
+
+    /// <summary>
+    /// The directory the committed documents are copied to beside the test
+    /// host.
+    /// </summary>
+    private static string TheShapes => Path.Combine(AppContext.BaseDirectory, "StoreShapes");
+
+    /// <summary>
+    /// A store over a directory the test owns, holding a committed document.
+    /// </summary>
+    /// <param name="directory">The directory.</param>
+    /// <param name="shape">The committed document, by path under the shapes directory.</param>
+    /// <returns>The store.</returns>
+    private static InvitationStore AStoreHolding(OwnedDirectory directory, string shape)
+    {
+        var path = Path.Combine(TheShapes, shape);
+        Assert.True(File.Exists(path), path + " is not beside the test host, so this would assert nothing.");
+
+        var store = new InvitationStore(directory.Path);
+        Directory.CreateDirectory(directory.Path);
+        File.WriteAllText(store.Path, File.ReadAllText(path));
+
+        return store;
+    }
+
+    /// <summary>
+    /// No record a committed document says is revoked comes back usable.
+    /// </summary>
+    /// <remarks>
+    /// The property #93 asks for, run over the committed shapes rather than
+    /// over a document the test wrote a moment earlier. What each record was
+    /// before the read is taken from the file rather than from an expectation
+    /// written here, so a fixture added later brings its own answer with it.
+    /// </remarks>
+    /// <param name="shape">Which committed document.</param>
+    [Theory]
+    [MemberData(nameof(EveryCommittedShape))]
+    public void NoRecordACommittedShapeSaysIsRevokedComesBackUsable(string shape)
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, shape);
+
+        var records = JsonNode.Parse(File.ReadAllText(store.Path))!["invitations"]!.AsArray();
+        var revokedInTheFile = records
+            .Select((record, position) => new { record, position })
+            .Where(pair => pair.record!["revokedAt"] is not null)
+            .Select(pair => pair.position)
+            .ToArray();
+
+        Assert.NotEmpty(revokedInTheFile);
+
+        var read = store.Read().Invitations;
+        Assert.Equal(records.Count, read.Length);
+
+        foreach (var position in revokedInTheFile)
+        {
+            Assert.True(
+                read[position].IsRevoked,
+                shape + " says the record at position " + position
+                + " was revoked, and reading it back produced one that is not.");
+        }
+    }
+
+    /// <summary>
+    /// A committed document in the shape an older build would have written,
+    /// with no revocation members at all, is refused rather than migrated
+    /// forward into invitations nobody revoked.
+    /// </summary>
+    /// <remarks>
+    /// The fixture #93's done condition asks for, as a file rather than as
+    /// bytes a test assembles. It is the committed version one document with
+    /// the two revocation members taken out of every record, which is what a
+    /// store written before revocation existed would look like. It sits under
+    /// <c>damaged</c> so the count of shapes #105 derives from the store's
+    /// version is not moved by it.
+    /// </remarks>
+    [Fact]
+    public void ACommittedShapeWithNoRevocationMembersIsRefused()
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, Path.Combine("damaged", "version-1-with-no-revocation.json"));
+
+        Assert.DoesNotContain("revoked", File.ReadAllText(store.Path), StringComparison.OrdinalIgnoreCase);
+
+        var refused = Assert.Throws<JsonException>(() => store.Read());
+
+        Assert.Contains("revoked", refused.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// An invitation nobody revoked still reads, and is still usable.
     /// </summary>
     /// <remarks>
