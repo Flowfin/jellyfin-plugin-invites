@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Xunit;
@@ -13,10 +14,19 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// manifest. A page holding a stale copy still loads, and reads and writes the
 /// configuration of whatever plugin now owns that identifier, or of nothing at
 /// all. Nothing about that failure is loud, so it is asserted here instead.
+/// The same goes for where the page loads from, which is the last test here.
 /// </summary>
 public class ConfigurationPageTests
 {
     private const string PageResource = "Jellyfin.Plugin.Invites.Configuration.configPage.html";
+
+    /// <summary>
+    /// The spellings an address somewhere else is written in. A scheme and two
+    /// slashes covers every absolute address, and a quote or a bracket in front
+    /// of two slashes covers the protocol-relative form, which is the one that
+    /// looks like a path until it is read twice.
+    /// </summary>
+    private static readonly string[] Elsewhere = ["://", "\"//", "'//", "(//"];
 
     /// <summary>
     /// The identifier the page hands to the dashboard is this plugin's own.
@@ -68,6 +78,51 @@ public class ConfigurationPageTests
             Assert.Contains("id=\"" + id + "\"", page, StringComparison.Ordinal);
             Assert.Contains("querySelector(\"#" + id + "\")", page, StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>
+    /// The page fetches nothing from anywhere but the server it was served
+    /// from. A dashboard page that pulls a script or a stylesheet off another
+    /// host gives that host the run of an administrator's browser, on every
+    /// installation at once rather than on the one somebody attacked, and it
+    /// does so silently while the page keeps working.
+    /// </summary>
+    /// <remarks>
+    /// This is a spelling and not a fetch. It refuses an address in a comment
+    /// or in an attribute nothing loads from as readily as one in a script tag,
+    /// because a page with no address in it at all is a thing a reader can
+    /// check in a second and a page with some is an argument. The page carries
+    /// none, so the cost of the wider rule is a sentence the day somebody wants
+    /// one.
+    /// </remarks>
+    [Fact]
+    public void PageFetchesFromNowhereElse()
+    {
+        var lines = ReadPage().Split('\n');
+        var found = new List<string>();
+
+        for (var line = 0; line < lines.Length; line++)
+        {
+            foreach (var spelling in Elsewhere)
+            {
+                if (lines[line].Contains(spelling, StringComparison.Ordinal))
+                {
+                    found.Add(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "line {0} carries {1}: {2}",
+                        line + 1,
+                        spelling,
+                        lines[line].Trim()));
+                    break;
+                }
+            }
+        }
+
+        Assert.True(
+            found.Count == 0,
+            "The configuration page names an address somewhere else:"
+                + Environment.NewLine
+                + string.Join(Environment.NewLine, found));
     }
 
     private static string ReadPage()
