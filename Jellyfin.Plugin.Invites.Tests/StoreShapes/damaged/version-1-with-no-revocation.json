@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "invitations": [
+    {
+      "id": "0f1e2d3c-4b5a-4968-8776-65544332211a",
+      "codeHash": "AX\u002BA/wBC",
+      "mintedBy": "11112222-3333-4444-5555-666677778888",
+      "mintedAt": "2026-03-04T05:06:07+02:00",
+      "expiresAt": "2026-03-11T05:06:07+02:00",
+      "usesGranted": 3,
+      "usesRemaining": 1,
+      "templateLabel": "Household",
+      "accountsProduced": [
+        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "99999999-8888-7777-6666-555555555555"
+      ]
+    },
+    {
+      "id": "2c9f7b41-0d5e-4a63-8b12-7e4d3f6a9c05",
+      "codeHash": "qrvM",
+      "mintedBy": "11112222-3333-4444-5555-666677778888",
+      "mintedAt": "2026-04-01T10:00:00+00:00",
+      "expiresAt": "2026-04-08T10:00:00+00:00",
+      "usesGranted": 1,
+      "usesRemaining": 0,
+      "templateLabel": "Friends",
+      "accountsProduced": [
+        "12345678-90ab-cdef-1234-567890abcdef"
+      ]
+    }
+  ]
+}
