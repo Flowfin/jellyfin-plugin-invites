@@ -40,6 +40,11 @@ public class InvitationRecordTests
         ["RevokedAt"] = "Revoked, revoked at",
         ["IsRevoked"] = "Revoked, revoked at",
 
+        // Its own row. The operator who revoked is a separate answer from when
+        // it happened, and the two are kept whole by the constructor rather
+        // than by the caller.
+        ["RevokedBy"] = "Revoked by",
+
         ["TemplateLabel"] = "Template name",
         ["AccountsProduced"] = "Accounts produced",
     };
@@ -66,6 +71,7 @@ public class InvitationRecordTests
         usesGranted: 1,
         usesRemaining: 1,
         revokedAt: null,
+        revokedBy: null,
         templateLabel: "Household",
         accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
 
@@ -150,6 +156,7 @@ public class InvitationRecordTests
             usesGranted: 1,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
@@ -177,6 +184,7 @@ public class InvitationRecordTests
             usesGranted: granted,
             usesRemaining: remaining,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
@@ -202,6 +210,7 @@ public class InvitationRecordTests
             usesGranted: 2,
             usesRemaining: 1,
             revokedAt: new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero),
+            revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
             accountsProduced: ImmutableArray.Create(accounts));
 
@@ -214,6 +223,7 @@ public class InvitationRecordTests
             usesGranted: 2,
             usesRemaining: 1,
             revokedAt: new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero),
+            revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
             accountsProduced: ImmutableArray.Create(accounts));
 
@@ -227,6 +237,13 @@ public class InvitationRecordTests
     /// exactly that field on the way back would pass its round trip. The cases
     /// are one per field, which is why they are named rather than numbered.
     /// </summary>
+    /// <remarks>
+    /// The revocation is not among the cases and is covered by the two facts
+    /// below instead. Its instant and its operator are one event that the
+    /// constructor keeps whole, so neither can be moved on its own from a
+    /// baseline that carries no revocation, and a case moving both would pass
+    /// for an equality that had forgotten either one.
+    /// </remarks>
     /// <param name="field">The field the variant moves.</param>
     [Theory]
     [InlineData("Id")]
@@ -236,7 +253,6 @@ public class InvitationRecordTests
     [InlineData("ExpiresAt")]
     [InlineData("UsesGranted")]
     [InlineData("UsesRemaining")]
-    [InlineData("RevokedAt")]
     [InlineData("TemplateLabel")]
     [InlineData("AccountsProduced")]
     public void ARecordDifferingInOneFieldIsNotEqual(string field)
@@ -252,7 +268,8 @@ public class InvitationRecordTests
             expiresAt: field == "ExpiresAt" ? later : new DateTimeOffset(2026, 3, 8, 9, 0, 0, TimeSpan.Zero),
             usesGranted: field == "UsesGranted" ? 2 : 1,
             usesRemaining: field == "UsesRemaining" ? 0 : 1,
-            revokedAt: field == "RevokedAt" ? later : null,
+            revokedAt: null,
+            revokedBy: null,
             templateLabel: field == "TemplateLabel" ? "Friends" : "Household",
             // Same length as the baseline's and a different value in it, so an
             // equality comparing these two fields by their length rather than
@@ -287,6 +304,7 @@ public class InvitationRecordTests
             usesGranted: 1,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
 
@@ -315,11 +333,74 @@ public class InvitationRecordTests
             usesGranted: live.UsesGranted,
             usesRemaining: live.UsesRemaining,
             revokedAt: revokedAt,
+            revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: live.TemplateLabel,
             accountsProduced: live.AccountsProduced);
 
         Assert.False(live.IsRevoked);
         Assert.True(revoked.IsRevoked);
         Assert.Equal(revokedAt, revoked.RevokedAt);
+    }
+
+    /// <summary>
+    /// A revocation is an instant and the operator who made it, and a record
+    /// carrying one of the two describes an event nobody can read back. Both
+    /// halves of the refusal are asserted, because a guard written in one
+    /// direction only lets the other half through. Delete the pairing guard in
+    /// the constructor and this goes red.
+    /// </summary>
+    [Fact]
+    public void ARecordCarryingHalfARevocationIsRefused()
+    {
+        Assert.Throws<ArgumentException>(() => Revoked(
+            at: new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero),
+            by: null));
+
+        Assert.Throws<ArgumentException>(() => Revoked(
+            at: null,
+            by: new Guid("66666666-6666-6666-6666-666666666666")));
+    }
+
+    /// <summary>
+    /// Two records revoked at the same instant by different operators are not
+    /// equal. The one-field theory above cannot carry this case, because a
+    /// variant moving the operator alone against an unrevoked baseline is not a
+    /// record the constructor will build. Drop <c>RevokedBy</c> from
+    /// <see cref="Invitation.Equals(Invitation)"/> and this goes red.
+    /// </summary>
+    [Fact]
+    public void TwoRecordsRevokedByDifferentOperatorsAreNotEqual()
+    {
+        var at = new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero);
+
+        var one = Revoked(at, new Guid("66666666-6666-6666-6666-666666666666"));
+        var other = Revoked(at, new Guid("77777777-7777-7777-7777-777777777777"));
+
+        Assert.NotEqual(one, other);
+    }
+
+    /// <summary>
+    /// The baseline with a revocation put on it, so a test that changes one
+    /// half of that revocation is changing one half of it.
+    /// </summary>
+    /// <param name="at">The instant, or null.</param>
+    /// <param name="by">The operator, or null.</param>
+    /// <returns>The record.</returns>
+    private static Invitation Revoked(DateTimeOffset? at, Guid? by)
+    {
+        var live = Baseline();
+
+        return new Invitation(
+            id: live.Id,
+            codeHash: live.CodeHash,
+            mintedBy: live.MintedBy,
+            mintedAt: live.MintedAt,
+            expiresAt: live.ExpiresAt,
+            usesGranted: live.UsesGranted,
+            usesRemaining: live.UsesRemaining,
+            revokedAt: at,
+            revokedBy: by,
+            templateLabel: live.TemplateLabel,
+            accountsProduced: live.AccountsProduced);
     }
 }

@@ -358,6 +358,7 @@ public class HashSecretTests
             usesGranted: 3,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
@@ -373,6 +374,7 @@ public class HashSecretTests
             usesGranted: 1,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Friends",
             accountsProduced: ImmutableArray<Guid>.Empty);
     }

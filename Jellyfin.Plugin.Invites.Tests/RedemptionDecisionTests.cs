@@ -89,6 +89,10 @@ public class RedemptionDecisionTests
             usesGranted: 3,
             usesRemaining: usesRemaining,
             revokedAt: revokedAt,
+            // The pair is whole or absent, which the record refuses to be
+            // asked otherwise. Which operator revoked is nothing the decision
+            // reads, so it is one value rather than a parameter.
+            revokedBy: revokedAt is null ? null : Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty);
     }

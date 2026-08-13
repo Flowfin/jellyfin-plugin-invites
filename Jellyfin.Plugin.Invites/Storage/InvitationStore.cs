@@ -577,6 +577,14 @@ public sealed class InvitationStore
         /// <summary>Gets or sets when it was revoked, or null.</summary>
         public DateTimeOffset? RevokedAt { get; set; }
 
+        /// <summary>Gets or sets the operator who revoked it, or null.</summary>
+        /// <remarks>
+        /// Written and read beside <see cref="RevokedAt"/> rather than
+        /// separately. A file carrying one of the two is refused by the record
+        /// type as it is built, which is where that rule lives.
+        /// </remarks>
+        public Guid? RevokedBy { get; set; }
+
         /// <summary>Gets or sets the template the operator picked.</summary>
         public string? TemplateLabel { get; set; }
 
@@ -595,6 +603,7 @@ public sealed class InvitationStore
                 UsesGranted = invitation.UsesGranted,
                 UsesRemaining = invitation.UsesRemaining,
                 RevokedAt = invitation.RevokedAt,
+                RevokedBy = invitation.RevokedBy,
                 TemplateLabel = invitation.TemplateLabel,
                 AccountsProduced = new List<Guid>(invitation.AccountsProduced),
             };
@@ -611,6 +620,7 @@ public sealed class InvitationStore
                 UsesGranted,
                 UsesRemaining,
                 RevokedAt,
+                RevokedBy,
                 TemplateLabel ?? string.Empty,
                 AccountsProduced is null ? ImmutableArray<Guid>.Empty : ImmutableArray.CreateRange(AccountsProduced));
         }

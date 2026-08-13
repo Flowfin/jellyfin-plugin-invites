@@ -87,6 +87,13 @@ public class RedemptionDecisionTableTests
     private static readonly DateTimeOffset _minted = new(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset _expires = new(2026, 5, 8, 12, 0, 0, TimeSpan.Zero);
 
+    /// <summary>
+    /// The operator a revoked row was revoked by. The decision reads neither
+    /// half of a revocation beyond whether there is one, so this is here to
+    /// keep the record buildable rather than to be asserted against.
+    /// </summary>
+    private static readonly Guid _revoker = Guid.Parse("44445555-6666-7777-8888-99990000aaaa");
+
     private static readonly IInvitationCodeHash _codeHash = new TestCodeHash();
 
     private const string MintedCode = "23456789234567892345678923";
@@ -298,6 +305,7 @@ public class RedemptionDecisionTableTests
             usesGranted: UsesGranted,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
@@ -357,6 +365,7 @@ public class RedemptionDecisionTableTests
             usesGranted: UsesGranted,
             usesRemaining: usesLeft,
             revokedAt: revoked ? _minted : null,
+            revokedBy: revoked ? _revoker : null,
             templateLabel: "Household",
             accountsProduced: ImmutableArray<Guid>.Empty);
     }

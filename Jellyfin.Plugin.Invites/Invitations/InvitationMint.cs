@@ -125,6 +125,7 @@ public static class InvitationMint
             usesGranted: uses,
             usesRemaining: uses,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: templateLabel,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }

@@ -106,6 +106,7 @@ public class InvitationStoreTests
             usesGranted: 3,
             usesRemaining: 1,
             revokedAt: new DateTimeOffset(2026, 3, 5, 8, 9, 10, TimeSpan.Zero),
+            revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
             accountsProduced: ImmutableArray.Create(
                 Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
@@ -131,6 +132,7 @@ public class InvitationStoreTests
             usesGranted: 1,
             usesRemaining: 1,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Friends",
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
@@ -499,6 +501,7 @@ public class InvitationStoreTests
             usesGranted: 1,
             usesRemaining: 0,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: "Guest",
             accountsProduced: ImmutableArray<Guid>.Empty);
 

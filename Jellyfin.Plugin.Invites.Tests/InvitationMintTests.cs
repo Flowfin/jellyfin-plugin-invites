@@ -186,6 +186,7 @@ public class InvitationMintTests
             usesGranted: minted.UsesGranted,
             usesRemaining: 0,
             revokedAt: null,
+            revokedBy: null,
             templateLabel: minted.TemplateLabel,
             accountsProduced: [.. accounts]);
     }
@@ -211,6 +212,7 @@ public class InvitationMintTests
             usesGranted: record.UsesGranted,
             usesRemaining: record.UsesRemaining,
             revokedAt: record.RevokedAt,
+            revokedBy: record.RevokedBy,
             templateLabel: record.TemplateLabel,
             accountsProduced: [.. record.AccountsProduced.Where(account => !gone.Contains(account))]);
     }
