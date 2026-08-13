@@ -31,6 +31,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- One committed document per shape the store has ever declared, which is
+         #105. They are read rather than generated: a fixture the suite writes
+         out of the current writer moves whenever the writer does, and a
+         migration fixture whose bytes follow the code it is meant to catch
+         proves nothing. Copied beside the test host because a test may not read
+         the source tree it happens to have been built from. -->
+    <Content Include="StoreShapes\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The plugin excludes the runtime assets of these packages because the
          server supplies them at load time. Nothing supplies them to a test
          host, so the suite carries them itself. The versions must stay equal to
