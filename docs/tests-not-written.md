@@ -101,13 +101,24 @@ A test that asserts the shape of rendered markup is also a test that breaks on
 every styling change and catches nothing, which is the reason this one is
 refused twice over.
 
-Replaced by the formatting check over the non-C# files, which is #19, and by a
-route-level assertion that the page loads no external origin, which is part of
-#74 for the setup page and #84 for the configuration page. Between them they
-cover the two things about the page that are worth failing a build for: that it
-is readable, and that it fetches nothing from anywhere else.
+Replaced by the formatting check over the non-C# files, which is #19, and by an
+assertion that the page loads no external origin, which is part of #74 for the
+setup page and #84 for the configuration page. Between them they cover the two
+things about the page that are worth failing a build for: that it is readable,
+and that it fetches nothing from anywhere else.
 
-Status: neither exists. #19, #74 and #84 are all open.
+The second replacement said route-level until the configuration page got one,
+and that word was wrong for this half of it. A configuration page is an embedded
+resource the dashboard asks for, so what is served is bytes in the assembly and
+a test reads them without a route anywhere. The setup page is a route and its
+half of this row stays route-level.
+
+Status: both parts exist for the configuration page and neither does for the
+setup page. #19 is closed and the formatter reads the configuration page like
+every other tracked non-C# file, since nothing in `.prettierignore` covers it.
+`PageFetchesFromNowhereElse` in `ConfigurationPageTests` refuses four spellings
+of an address somewhere else and names the line it found. The setup page has no
+test because it has no page, which is #74 and is open.
 
 ### A test that waits for an invitation to expire
 
