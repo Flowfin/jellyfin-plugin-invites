@@ -6,14 +6,20 @@ because a number of characters looks long. It is read off a calculation whose
 inputs are written down, so that a later disagreement is a disagreement about an
 input rather than about a preference.
 
-This page is the calculation. It does not decide the character set, and it is
-not enforced by anything. There is no minting routine:
+This page is the calculation, and #28 is where the requirement it states is
+stated. The routine that requirement is on exists now. #49 landed
+`InvitationCode.Mint`, which draws from the platform's cryptographic source and
+carries the number below as a length and an alphabet rather than as a comment:
 
-    git grep -lE 'Invitation|Redeem' -- '*.cs' ':!.github/lint/fixtures'
-    Jellyfin.Plugin.Invites/Plugin.cs
+    $ git grep -n 'public const int Length\|private const string Alphabet\|RandomNumberGenerator.Fill' -- Jellyfin.Plugin.Invites/Codes/InvitationCode.cs
+    Jellyfin.Plugin.Invites/Codes/InvitationCode.cs:62:    public const int Length = 26;
+    Jellyfin.Plugin.Invites/Codes/InvitationCode.cs:68:    private const string Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    Jellyfin.Plugin.Invites/Codes/InvitationCode.cs:77:        RandomNumberGenerator.Fill(draws);
 
-and the one match there is the display name. #49 is where the number below is
-encoded, and #28 is where the requirement is stated.
+Twenty-six independent uniform draws over thirty-two characters is 130 bits,
+which clears the requirement below with two bits to spare. What the page still
+does not do is enforce anything, and the last section says exactly how far the
+suite reaches instead.
 
 ## The model
 
@@ -130,9 +136,15 @@ full 128 bits and differ only in what they do to somebody transcribing one:
     128 bits at 5 bits a character = 26 characters
     128 bits at 6 bits a character = 22 characters
 
-That choice is #49's. Whatever it picks, the requirement this page states is the
+That choice was #49's and it took the first row: thirty-two characters, one
+case, with the four most transcribable-wrong letters left out, and twenty-six of
+them. The reasoning for the alphabet is at the routine rather than here, because
+it is about somebody reading a code off a screen and not about the arithmetic.
+
+Recording the answer changes nothing this page requires. The requirement is the
 entropy and not the length, so an encoding that adds characters without adding
-bits satisfies nothing here.
+bits satisfies nothing here, and a later change to either constant is checked
+against the arithmetic above rather than against the number in this paragraph.
 
 The comparison the code is subjected to once it arrives is #29, and the four
 failures being indistinguishable to the caller is #55 and
@@ -143,10 +155,31 @@ into something else entirely.
 
 ## What is not claimed
 
-Nothing on this page is enforced. No check reads it, no test asserts the number,
-and #49 could mint a sixteen-bit code without any route noticing. The greppable
-rule that exists nearby refuses a non-cryptographic source, which is a different
-failure:
+Nothing reads this page. No check derives the requirement from the arithmetic
+above, so raising the requirement here and leaving the constants where they are
+passes every route, and that direction is the one nothing covers.
+
+The other direction is covered, and it is worth saying how far rather than
+leaving it as "there are tests". `AMintedCodeIsTwentySixCharactersFromTheAlphabet`
+asserts the length against the literal twenty-six and every character of a
+minted code against the alphabet, and `EveryCharacterOfTheAlphabetIsMinted`
+asserts the draw reaches all thirty-two. The second is the one that catches the
+near-miss, because the mask that turns a byte into a position is one character
+away from halving the alphabet without touching the length, the shape or
+anything else on this page. Measured by making that one-character change and
+running the suite:
+
+    $ dotnet test --configuration Release --nologo
+    Jellyfin.Plugin.Invites.Tests.InvitationCodeTests.EveryCharacterOfTheAlphabetIsMinted [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 342, übersprungen: 8, gesamt: 351
+
+One test, and it names the alphabet rather than the entropy, so what the suite
+holds is the two constants the number was encoded as. That the twenty-six draws
+are independent and uniform is a property of the source and of a mask over a
+byte, and no test asserts it.
+
+The greppable rule that exists nearby refuses a non-cryptographic source, which
+is a different failure again:
 
     $ bash .github/lint/invariants.sh selftest | grep weak-random
     bites weak-random (#49): .github/lint/fixtures/weak-random.trip.cs trips it, .github/lint/fixtures/weak-random.clean.cs does not
