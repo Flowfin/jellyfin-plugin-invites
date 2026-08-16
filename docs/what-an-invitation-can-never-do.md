@@ -49,19 +49,43 @@ than on the template, so that one rule does not live in two places.
 
 ### An invitation can never modify an account that already exists
 
-Not refused by a test, for the same reason: no account is created, fetched or
-written.
+Not refused by a test. No account is created and none is written.
+
+This paragraph said the plugin named the server's user operations nowhere, and
+that stopped being true. The command it offered as evidence returns two lines:
 
     git grep -n 'IUserManager' -- '*.cs' ':!.github'
+    Jellyfin.Plugin.Invites.Tests/RevocationTests.cs:132:    /// something after the next edit. Add an <c>IUserManager</c> parameter and
+    Jellyfin.Plugin.Invites/Accounts/ServerAccounts.cs:56:    public ServerAccounts(IUserManager users)
 
-returns nothing outside a lint fixture, and a fixture is a string written to
-trip a grep rather than code anything calls.
+The second is the plugin. `ServerAccounts` asks the user manager for the
+identifier of every account and for nothing else, which is what
+`IServerAccounts` declares and what the load-time comparison landed under #46
+reads. It is not a type waiting for a caller: it is registered, and the hosted
+service that reads it runs when the server starts.
+
+    git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:36:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:37:        serviceCollection.AddHostedService<LoadOnStart>();
+
+That narrows the reason this line is undefended without moving it. An identifier
+is not an account: nothing here hands back a user object to modify, and the type
+has no member that writes. What is gone is the argument that no path in the
+plugin could reach an account at all, and what is left is the smaller one, that
+the path which exists reads identifiers.
+
+The first line is prose inside a test file, and the test it belongs to is the
+nearest thing in the tree to a defence of this sentence.
+`NothingHereCanBeHandedAnAccount` holds the parameters of the revocation routine
+to a fixed set, so a later change that starts passing an account into it goes
+red before anything is written with one. It covers that one routine, and this
+line is about every routine.
 
 The line has two halves and they need different mechanisms. That the routine
 does not modify an account it was handed is a test, and it waits on the routine
-in #69 and the seam in #103. That no other path in the plugin ever calls the
-server's update method is not a test at all: it is a greppable invariant, and
-`policy-written-outside-the-template` is the half that exists.
+in #69 and the write side of the seam in #103. That no other path in the plugin
+ever calls the server's update method is not a test at all: it is a greppable
+invariant, and `policy-written-outside-the-template` is the half that exists.
 
 ### An invitation can never grant a library, a permission or a quota that its template does not name
 
@@ -168,7 +192,7 @@ sections:
 | Line | What is missing | Where it lands |
 | --- | --- | --- |
 | Never create an administrator | Any execution path, and the decision that a grant may not manage | #62, #69 |
-| Never modify an existing account | The routine and the seam a test would drive it through | #69, #103 |
+| Never modify an existing account | The routine, and the write side of the seam a test would drive it through | #69, #103 |
 | Never grant beyond the template | The account the template was applied to | #69, #103 |
 | Never be recovered, for a backup | A check somebody makes by hand, and a register to record it in | #100 |
 | Never be recovered, for an error message | The refusal response | #77 |
