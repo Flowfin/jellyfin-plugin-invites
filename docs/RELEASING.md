@@ -121,9 +121,9 @@ no `changelog` key at all, for a reason that is about the packaging tool rather
 than about release notes:
 
     $ git grep -n 'changelog' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:147:          # changelog is in this list because the packaging tool reads build_cfg
-    .github/workflows/publish.yaml:148:          # ['changelog'] without a default and dies with a Python KeyError when it is
-    .github/workflows/publish.yaml:152:          for key in name guid version targetAbi framework owner overview description category artifacts changelog; do
+    .github/workflows/publish.yaml:174:          # changelog is in this list because the packaging tool reads build_cfg
+    .github/workflows/publish.yaml:175:          # ['changelog'] without a default and dies with a Python KeyError when it is
+    .github/workflows/publish.yaml:179:          for key in name guid version targetAbi framework owner overview description category artifacts changelog; do
 
 Nothing reads what that key says, compares it against `CHANGELOG.md`, or notices
 that neither text moved with the version. A release whose notes still describe the
