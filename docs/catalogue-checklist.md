@@ -9,6 +9,10 @@ metadata declares at the commit this record lands on:
 A pass recorded against one version says nothing about a later one, so this
 record is re-run when the version moves rather than re-read.
 
+A second pass is at the end of this file. It was made because the tree moved and
+not because the version did, and it changes the verdict on seven of the items
+below. Read it before taking any verdict in this record as current.
+
 ## There is no published checklist to work through
 
 Issue #121 asks for the current checklist to be read from the current
@@ -241,3 +245,188 @@ fail and each names the issue that owns it. It does not say an official
 checklist was passed, because no official checklist was found. It does not
 cover whether this plugin should be submitted anywhere, which is a decision
 this record has no part in.
+
+## Re-run on 2026-08-16, against the same version
+
+The pass above is recorded against version 0.1.0.0 and its rule is that it is
+re-run when the version moves. The version has not moved:
+
+    git grep -n '^version:' -- build.yaml
+    build.yaml:5:version: "0.1.0.0"
+
+Seven items above read `Fails`. Six of those failures are no longer true, and
+one more item, the image, records a field as absent that is now present. The
+rule did not catch any of it, because what moved was the tree rather than the
+number the rule watches, so somebody opening this record to find out whether the
+plugin is ready for a catalogue is told it still ships the template's
+identifier, name, overview, description, owner, category and changelog. That is
+what this second pass is for.
+
+The rule wants a second half, that a pass is also re-run when the fields it read
+have changed. Adding it changes how this record works rather than re-running it,
+and that is not decided here.
+
+Nothing above is edited. It is what was true on 2026-08-07 and the commands it
+quotes are the ones that were run then. Two of them name this repository under
+an owner it no longer has and answer nothing today, and they are re-run below
+under the owner it does have. Fields have also been added to `build.yaml` since,
+so the line numbers in the quotations above are not the line numbers a reader
+gets now.
+
+The items below are in the order of the items above, and one that has not moved
+says so rather than repeating its evidence.
+
+### The identifier is this plugin's own
+
+Passes. The identifier is this plugin's, it is one value, and it is in the three
+places that have to agree: the plugin class, the packaging metadata, and the
+configuration page that asks the dashboard for this plugin's settings.
+
+    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' -- build.yaml 'Jellyfin.Plugin.Invites/'
+    Jellyfin.Plugin.Invites/Configuration/configPage.html:32:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+    Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
+    build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
+
+The item above quotes two paths under the template's project name, and the
+rename took both of them:
+
+    git ls-files 'Jellyfin.Plugin.Template*' | wc -l
+    0
+
+A count rather than an exit status, because `git ls-files` answers a pattern it
+matches nothing for with a clean exit and says nothing, which reads the same as
+a command that was never run.
+
+### The display name is this plugin's own
+
+Passes, in the packaging metadata and in the plugin class, and it is one value
+in both:
+
+    git grep -n '^name:' -- build.yaml
+    build.yaml:2:name: "Account Invitations"
+    git grep -n 'public override string Name' -- Jellyfin.Plugin.Invites/Plugin.cs
+    Jellyfin.Plugin.Invites/Plugin.cs:29:    public override string Name => "Account Invitations";
+
+### The overview and the description say what the plugin does
+
+Passes, and both say what the plugin does today rather than what it is planned
+to do:
+
+    git grep -n '^overview:' -- build.yaml
+    build.yaml:8:overview: "Invitation links that let somebody set up their own account. Under development, nothing of it works yet."
+
+The description is two paragraphs under `description:` at line 9 and the second
+of them says that nothing is built yet and that the page the plugin installs has
+nothing on it to set. A catalogue entry that claimed working invitations would
+be the one field on this list a reader acts on before installing.
+
+### The owner names whoever publishes it
+
+Passes:
+
+    git grep -n '^owner:' -- build.yaml
+    build.yaml:14:owner: "Flowfin"
+
+### The category is one the catalogue renders
+
+Passes, and it is now a value chosen for a plugin that creates accounts rather
+than the template's untouched one:
+
+    git grep -n '^category:' -- build.yaml
+    build.yaml:13:category: "Administration"
+
+### An image
+
+Passes, and the item above records it as not applying because the field was
+absent. The field is present, the file it names is in this repository, and the
+address answers:
+
+    git grep -n '^imageUrl:' -- build.yaml
+    build.yaml:4:imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-invites/master/img/logo.png"
+    git ls-files img/
+    img/logo.png
+    img/social-preview.png
+    curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}\n' -L "$(git grep -h '^imageUrl:' -- build.yaml | cut -d'"' -f2)"
+    200 image/png 5961
+
+The address names `master` rather than a tag, so it follows the branch and a
+later commit that moved or removed that file would change what a published
+entry renders without the entry changing.
+
+### A version, and a scheme behind it
+
+Unchanged. Passes for the reason recorded above.
+
+### A declared server line
+
+Unchanged, and the field has moved down one line since:
+
+    git grep -n '^targetAbi:' -- build.yaml
+    build.yaml:6:targetAbi: "10.11.0.0"
+
+What it is not evidence of is unchanged too: the floor build proves every member
+the plugin calls exists at the declared floor, and not that a packaged plugin
+loads on a server of that line.
+
+### A changelog
+
+Passes. It is four sentences about this plugin, and what they say is that
+nothing an operator can use is in it yet:
+
+    git grep -n '^changelog:' -- build.yaml
+    build.yaml:17:changelog: |
+
+### A checksum, a source address and a timestamp per version
+
+Fails, and it is the one item on this list that still does. Nothing is
+published:
+
+    gh api repos/Flowfin/jellyfin-plugin-invites/releases --jq 'length'
+    0
+
+A count rather than an empty listing, for the reason under the identifier item:
+a query that answered nothing and a query that failed print the same thing.
+
+The three fields are produced by publishing rather than written into the
+repository, so this cannot move until something is published.
+
+### The licence permits linking against the server packages
+
+Passes, and the command in the item above names an owner this repository no
+longer has. Re-run under the owner it does:
+
+    gh api repos/Flowfin/jellyfin-plugin-invites --jq .license.spdx_id
+    GPL-3.0
+
+### The source is available
+
+Passes, with the same correction to the owner:
+
+    gh api repos/Flowfin/jellyfin-plugin-invites --jq .private
+    false
+
+### Nothing ships that is not declared
+
+Unchanged. Passes, and it is the one item on this list checked by a step rather
+than by reading.
+
+### The framework and the artifact list match what is built
+
+Unchanged. Passes for the reason recorded above.
+
+## What this pass leaves
+
+One failing item, the per-version checksum, source address and timestamp. What
+it waits on is unchanged from the paragraph above: where the manifest is hosted
+is the eleventh entry in #11, and #119 cannot generate a manifest into a
+location nobody has chosen.
+
+The paragraph above headed `What the failing items are waiting on` describes a
+state with seven failures in it and is not a description of this pass. Six of
+the seven have landed since it was written, and the twelfth entry in #11, which
+it names as the thing five of them wait on, has been answered.
+
+This pass says no more about a catalogue than the one above it. No official
+checklist was found then and none was looked for again here, so the items remain
+derived rather than quoted, and nothing here says the packaged plugin loads on a
+server. No server was run for this pass either.
