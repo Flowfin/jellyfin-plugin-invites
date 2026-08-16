@@ -88,12 +88,37 @@ The alternation holds four words. A log call whose argument is named `code`,
 rows above. So a green `Invariant lint` says none of the four spellings appear,
 which is a much smaller claim than the never list holding.
 
-Widening the pattern is deliberately not done here. There is no invitation code
-in the tree to measure a wider rule against, and `code` appears in ordinary C#
-that has nothing to do with an invitation, a status code first. A rule that
-fires on a status code is a rule somebody switches off, and switching it off
-costs the four spellings it does catch. The measurement to make it wider is
-available once #43 and #56 have written real log calls, and #32 is where it is
+Widening the pattern is deliberately not done here, and the reason is a cost
+rather than an absence of one. `code` appears in ordinary C# that has nothing to
+do with an invitation, a status code first. A rule that fires on a status code
+is a rule somebody switches off, and switching it off costs the four spellings
+it does catch.
+
+That cost was a prediction and it has now been measured, because there are real
+log calls to measure it against. There are eight, all in the routine that reads
+the store when the server starts:
+
+    $ git grep -cPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)\s*\(' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs:8
+
+Adding `code`, `url` and `link` to the alternation fires on none of them, and on
+nothing else the plugin ships:
+
+    $ git grep -nPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b' -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
+    exit=1
+
+Over the whole tracked tree it fires once, on the rule's own tripping fixture,
+which is the file that exists to be fired on:
+
+    $ git grep -nPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b' -- '*.cs'
+    .github/lint/fixtures/secret-in-a-log-call.trip.cs:8:        logger.LogInformation("Redeeming {Code}", invitationCode);
+
+So the widening costs nothing today. What that does not say is that it costs
+nothing, and the difference is the whole reason it is not done here: eight calls
+in one file is a small population, and the objection was always about the log
+calls the redemption path has not written yet, where a status code and an
+invitation code sit closest together. The measurement is recorded so that
+whoever decides is deciding against a number, and #32 is where the decision is
 held.
 
 ## What this document does not settle
