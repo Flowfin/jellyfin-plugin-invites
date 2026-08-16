@@ -11,24 +11,49 @@ adds and it exists nowhere else.
 
 ## What this page is, at the moment you are reading it
 
-None of these behaviours is in the code. Two of the pieces they are about are:
-the invitation record, as `Invitation` under #38, and the file that holds
-records, as `InvitationStore` under #39.
+None of these behaviours is in the code. More of the pieces they are about are
+than this paragraph used to say: the invitation record as `Invitation` under
+#38, the file that holds records as `InvitationStore` under #39, the routine
+that judges a presented code as `RedemptionDecision` under #56, and the claim on
+the store directory as `StoreLock` under #96.
 
     git ls-files 'Jellyfin.Plugin.Invites' | grep -iE 'store|redemption'
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs
+    Jellyfin.Plugin.Invites/Redemption/RedemptionVerdict.cs
+    Jellyfin.Plugin.Invites/Storage/IStoreDirectory.cs
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs
+    Jellyfin.Plugin.Invites/Storage/PluginStoreDirectory.cs
     Jellyfin.Plugin.Invites/Storage/StoreContents.cs
+    Jellyfin.Plugin.Invites/Storage/StoreInUseException.cs
+    Jellyfin.Plugin.Invites/Storage/StoreLoad.cs
+    Jellyfin.Plugin.Invites/Storage/StoreLock.cs
     Jellyfin.Plugin.Invites/Storage/StorePermissionState.cs
     Jellyfin.Plugin.Invites/Storage/StorePermissions.cs
+    Jellyfin.Plugin.Invites/Storage/StoreVersionRefusedException.cs
 
-Nothing calls either of them. There is no redemption path and nothing in the
-plugin so much as names the store outside the file that declares it, so a server
-running this plugin today has no invitations file at all:
+The store is called now, and this paragraph said nothing called it. `StoreLoad`
+claims the directory and reads the store when the server starts, under #46 and
+#96:
+
+    git grep -n 'InvitationStore' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs' | grep -c ''
+    12
+
+So a server running this plugin today does get a directory and a claim file in
+it. What it still does not get is an invitations file, and the reason has moved
+from nothing calling the store to nothing writing it. There is no redemption
+path, and the only call that writes the records file is inside the file that
+declares it:
 
     git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
     exit=1
-    git grep -n 'InvitationStore' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs' ; echo "exit=$?"
-    exit=1
+    git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
+    Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
+
+`InvitationStore.Read` answers a directory with no file as no invitations rather
+than creating one, so reading at startup does not bring the file into being.
 
 So every entry below names the issue that owns the behaviour, and none of them
 is held by a test. That is the honest status and it is not a formality: an entry
