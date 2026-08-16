@@ -41,11 +41,27 @@ admission.
 ```
 ### <version>, <commit sha>
 
+Archive: <file name>
+Checksum: <md5 of the archive that was installed>
+
 | Check | Server line | Result | Notes |
 | --- | --- | --- | --- |
 | Setup page renders | | | |
 | Packaged plugin loads | | | |
 ```
+
+The checksum is above the table rather than a column in it because both checks
+are run against one archive, and a value repeated per row is a value two rows can
+disagree about. It is the archive's `md5` because that is the digest a Jellyfin
+catalogue serves as the plugin checksum, so an operator comparing what they
+installed against what this record covers compares the same kind of value:
+
+    git grep -n 'md5sum' -- .github/workflows/publish.yaml
+    .github/workflows/publish.yaml:514:          md5sum "${zip}" > "${zip%.zip}.md5"
+
+Compute it from the archive that was actually installed rather than copying it
+out of a release. The run these checks belong to is the dry run, which creates no
+release, and `docs/RELEASING.md` is where that order is set out.
 
 ## Runs
 
@@ -55,6 +71,7 @@ None. Nothing has been released, and no packaged build exists to check:
 $ gh release list --repo Flowfin/jellyfin-plugin-invites
 ```
 
-The release process is #118 and the first release is #155. This section stays
-empty until one of them lands, and an empty section here is the honest state
-rather than a missing file.
+The release process now names these checks as a step of cutting a release, in
+`docs/RELEASING.md`, so what this section is waiting on is a release rather than
+a procedure. That is #155. An empty section here is the honest state rather than
+a missing file, and it stops being empty the first time somebody pushes a tag.

@@ -32,10 +32,12 @@ release itself, including the refusal to touch a release that already exists. Th
 run for the first time on the first `-stable` tag, and a dry run says nothing about
 them.
 
-Use it after step 1 below and before step 3, when the version and the changelog have
-moved and nobody has yet found out whether the packaging tool is happy with them. The
-cost of the answer arriving late is a spent tag: a `-stable` tag that fails the gate
-cannot be reused, and the fix is a new version rather than a new tag.
+Use it after step 1 below and before step 4, when the version and the changelog have
+moved and nobody has yet found out whether the packaging tool is happy with them. Its
+archive is also what the manual checks are run against, which is step 3 and the other
+reason the dry run comes first. The cost of the answer arriving late is a spent tag: a
+`-stable` tag that fails the gate cannot be reused, and the fix is a new version
+rather than a new tag.
 
 The suffix is what the run reads, in one place, and the two jobs that reach outside
 the run are conditioned on what it read:
@@ -44,9 +46,54 @@ the run are conditioned on what it read:
     .github/workflows/publish.yaml:415:    if: needs.gate.outputs.publish == 'true'
     .github/workflows/publish.yaml:446:    if: needs.gate.outputs.publish == 'true'
 
+## The manual checks
+
+Two things this plugin has to be right about are checked by a person rather than
+by the suite: that the setup page renders in a browser, and that the packaged
+plugin loads into a clean Jellyfin server. `docs/tests-not-written.md` is where
+the suite refuses them and `docs/manual-checks.md` is the form a run is recorded
+on. They are a step of this procedure rather than a good habit beside it, and a
+release cut without them is a release nobody has installed.
+
+Run them against the dry run's archive, which is what the `-rcN` tag leaves as a
+build artifact, and record the run before the `-stable` tag is pushed. That order
+is the whole point: a check made after publication finds a broken package that
+people can already install.
+
+The record names the checksum of the archive it was installed from, which is the
+cell `docs/manual-checks.md` asks for above the table. Two things about it are
+worth stating rather than leaving to be worked out. The `-stable` run builds the
+archive again from the same commit, so the record covers the artefact it was run
+against and nothing here claims the two are byte-identical. And the `.md5` a
+catalogue serves is produced by the release job, so the value in the record is
+computed from the downloaded archive rather than copied from a release that does
+not exist yet.
+
+Which server lines the second check is run on is item 1 in #11 and is not
+answered. `build.yaml` declares `targetAbi` as a floor and no field names a
+ceiling, so there is no count to satisfy today, and #97 is where that gets a
+shape. Until it does, the check is run on the line the floor names and the record
+says which line it was.
+
+A check that could not be run says so on the record, with the reason. A row
+admitting a check was skipped stays an admission and is not rewritten later into
+a result.
+
+Nothing enforces any of this, and the sentence is stronger than it sounds. No job
+reads `docs/manual-checks.md`:
+
+    $ git grep -n 'manual-checks' -- .github/ ; echo "exit=$?"
+    exit=1
+
+so no gate compares it against the tag, and a `-stable` tag pushed with that file
+untouched publishes exactly as if both checks had been run and passed. This
+section is the whole control. No issue holds a mechanism for it today, which is
+said here rather than left to be discovered by somebody looking for the check
+that refuses a release with no record.
+
 ## Cutting a release
 
-The three steps below are done by a person. Everything after the tag is pushed is
+The four steps below are done by a person. Everything after the tag is pushed is
 the `Publish Release` workflow, and no step of it waits for a hand.
 
 1. On the release branch, move three things together in one change and merge it:
@@ -57,7 +104,9 @@ the `Publish Release` workflow, and no step of it waits for a hand.
    `CHANGELOG.md` holds the rule for what an entry has to say, including the class
    of change every entry states whether or not the answer is nothing.
 2. Check that the commit you want to release is on that branch.
-3. Push the tag for that commit:
+3. Run the manual checks above against that commit's dry-run archive and append
+   the filled-in record to `docs/manual-checks.md`.
+4. Push the tag for that commit:
 
     ```
     git tag 1.4.0-stable <commit>
