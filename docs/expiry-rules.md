@@ -4,18 +4,30 @@ Expiry reads like one comparison and is seven decisions. Each one below is
 settled, with the reason it went that way, so the code that enforces it is built
 against a decision rather than reconciled with one afterwards.
 
-Nothing here is enforced. The record these rules judge is in the tree, as
-`Invitation` under #38, and nothing decides anything about it. The plugin
-serves no route and holds no redemption routine:
+Two of these rules are enforced and the rest are not, and this paragraph said
+none of them were. The record these rules judge is in the tree, as `Invitation`
+under #38, and so is the routine that judges it:
+
+    git grep -n 'public static class RedemptionDecision' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:46:public static class RedemptionDecision
+
+The exclusive boundary is the comparison that routine makes, asserted at the
+exact instant, and the one clock reading is the argument it takes rather than a
+read it performs, with the lint refusing a second read anywhere but the seam.
+Both rules say so in place below.
+
+What is absent is a caller. The plugin serves no route, and nothing hands the
+decision a clock reading or does anything with its verdict:
 
     git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
     exit=1
-    git grep -nE 'Redeem|Redemption' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
+    0
 
-Each rule names the issue that will enforce it. The clock seam these rules read
-through is in the tree already, as `IClock` under #41, so the boundary is
-testable at the exact instant the moment there is something to test.
+So the five rules that are not the boundary and the one reading are decisions
+with nothing standing behind them, and each of them names the issue that will
+enforce it. The clock seam they read through is in the tree already, as `IClock`
+under #41.
 
 ## The clock starts at minting
 
