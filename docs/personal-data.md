@@ -3,14 +3,28 @@
 An invitation is a record that a particular operator invited a particular
 person at a particular time, and that a particular account came out of it. That
 is personal data about two people before a single optional field is added, and
-it is worth writing down before the record type exists rather than after.
+this inventory was written before the record type existed rather than after, so
+the record was built against it.
 
-Nothing below holds anybody's data yet. The record is a type under #38 and the
-attempt trail is #43, and the store they would both live in is #39 and does not
-exist, so nothing here has ever been written down about a person. This document
-is what those three are built against: a field that is not in the inventory does
-not go in the record, and a field in the inventory carries the reason it is
-there.
+Nothing below holds anybody's data yet, and what that sentence rests on has
+moved. The record is a type now, `Jellyfin.Plugin.Invites/Invitations/Invitation.cs`
+under #38, and the store it would live in is
+`Jellyfin.Plugin.Invites/Storage/InvitationStore.cs` under #39. The plugin
+reaches that store on every start, and the one member it reaches is the reading
+one:
+
+    $ git grep -n 'new InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:188:        return new InvitationStore(plugin.DataFolderPath);
+    origin/master:Jellyfin.Plugin.Invites/Storage/StoreLoad.cs:127:                ConsistencyReport.OfALoad(new InvitationStore(directory), accountsTheServerHas));
+
+    $ git grep -n 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:126:        return Of(store.Read().Invitations, accountsTheServerHas);
+
+So a server running this plugin has no invitations file, and nothing here has
+ever been written down about a person. The attempt trail is #43 and has no type
+at all. This document is what all three are built against: a field that is not
+in the inventory does not go in the record, and a field in the inventory carries
+the reason it is there.
 
 The accounts themselves are not in this inventory. An account created by an
 invitation is an ordinary Jellyfin account in the server's own user database,
@@ -119,28 +133,38 @@ and no number.
 
 ## What deletes anything
 
-Nothing today. There is a place to put a record now and nothing puts one there,
-so nothing holds a value that could be deleted:
+Nothing today, and the reason is narrower than it was. There is a place to put a
+record, the plugin opens it on every start, and nothing puts a record there. The
+member that would write one is called from nowhere in the plugin, and the only
+member the plugin reaches is the reading one:
 
 ```
-$ git grep -nE '(class|interface|record) [A-Za-z]*(Store|Repository)' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:72:public sealed class InvitationStore
-origin/master:Jellyfin.Plugin.Invites/Storage/StoreContents.cs:16:public sealed class StoreContents
-origin/master:Jellyfin.Plugin.Invites/Storage/StorePermissions.cs:16:public sealed class StorePermissions
-$ git grep -n 'InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs'; echo "exit=$?"
-exit=1
+$ git grep -nE '\.Write\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
+origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
+origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
+$ git grep -n 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:126:        return Of(store.Read().Invitations, accountsTheServerHas);
 $ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
 exit=1
 ```
 
-What has arrived since this page was written is the record type, in
-`Jellyfin.Plugin.Invites/Invitations/Invitation.cs` under #38, and the store
-that would hold records of it, under #39. Neither holds anybody's data: nothing
-in the plugin calls the store, so a server running this today has no invitations
-file at all, and there is still no redemption path. The two greps are restricted
-to the plugin's own sources, because the suite declares a controller of its own
-to check the route inventory and the lint fixtures hold their violations on
-purpose, and neither is code this plugin runs.
+Three writers and none of them is a caller. The first is the hash secret writing
+itself, the second is the store's own writing member, and the third is the claim
+on the directory. So a server running this today has no invitations file and
+there is still no redemption path.
+
+One file the plugin does write on every start, named here because a flat
+"nothing is written" reads wider than what is true. `StoreLock` creates
+`invitations.lock` beside where the store would be, holding the server's host
+name, the process identifier and the moment the claim was taken, and removes it
+on the way out. No value from either table above is in it. It is there so that
+two servers over one store are refused rather than allowed to corrupt it, which
+is `docs/disaster-cases.md`.
+
+The greps are restricted to the plugin's own sources, because the suite declares
+a controller of its own to check the route inventory and the lint fixtures hold
+their violations on purpose, and neither is code this plugin runs.
 
 Three deleters are planned and no others. The retention sweep in #59 removes
 records the retention rule allows and never touches an account. Revocation in
