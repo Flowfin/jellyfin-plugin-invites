@@ -79,14 +79,38 @@ can produce for free, and the most recent few hundred are worth more than the
 first few thousand, because what an operator wants to see is that something is
 being hammered now.
 
-The number is not chosen here. A failure bound below the rate limiter's threshold
-means the trail cannot show the limiter working, so the count belongs with the
-limits in #31, which take theirs from the entropy calculation in #28. Both are
-open.
+**The failure bound is one thousand entries.** This paragraph said the number was
+not chosen here and that it belonged with the limits in #31, on the ground that a
+bound below the limiter's threshold leaves the trail unable to show the limiter
+working. Those limits are chosen now, so the ground has moved and the number
+follows from them:
+
+    git grep -n 'Per source address, twenty attempts an hour' origin/master -- docs/rate-limit.md
+    origin/master:docs/rate-limit.md:133:**Per source address, twenty attempts an hour. Across all sources, ten attempts
+
+    $ awk 'BEGIN{ bound=1000; perAddress=20; global=10;
+        printf "bound / per-address limit an hour = %d sources at their ceiling, held whole\n", bound/perAddress;
+        printf "bound / global limit a second     = %d seconds of history at saturation\n", bound/global; }'
+    bound / per-address limit an hour = 50 sources at their ceiling, held whole
+    bound / global limit a second     = 100 seconds of history at saturation
+
+Fifty times the per-address threshold is the figure that matters. One source
+running all the way to its ceiling fills a fiftieth of the trail, so it is
+visible whole and it cannot push the rest out, which is the constraint this
+paragraph used to state without a number to satisfy it.
+
+The second row is the honest limit of the whole idea rather than an argument for
+a larger bound. At the global ceiling the trail holds a hundred seconds, and no
+bound makes a trail a record of sustained saturation. Raising it to ten thousand
+buys a thousand seconds and costs ten times the file for a case the entry below
+already covers.
 
 When failures are dropped, the trail says so with the count. A trail that
 silently forgot is worse than one that admits it did, and the admission costs one
 entry.
+
+What an entry costs in bytes is not claimed. There is no entry type, so there is
+nothing to measure, and the bound above is a count rather than a size.
 
 ## What is settled and what is not
 
