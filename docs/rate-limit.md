@@ -4,11 +4,13 @@ The redemption endpoint is unauthenticated by construction. A stranger has to be
 able to reach it or the plugin has no purpose, so it is the one route on the
 server where somebody gets free attempts at a secret. A limiter belongs there.
 
-This page settles one thing about that limiter, and it is the thing that decides
-what the limiter is allowed to be worth: where the counter lives, how long it
-lives, and what a restart does to it. It is written before the limiter exists,
-because the answer changes what numbers may later be chosen, and a lifetime read
-off an implementation somebody already wrote is a lifetime nobody decided.
+This page settles what the limiter is allowed to be worth, in the order the two
+halves have to be taken in. First where the counter lives, how long it lives,
+and what a restart does to it, which was written before the limiter existed
+because a lifetime read off an implementation somebody already wrote is a
+lifetime nobody decided. Then the two thresholds, which are read off that
+lifetime and off the arithmetic in [docs/code-entropy.md](code-entropy.md)
+rather than chosen because they looked reasonable.
 
 Nothing here is built, and the reason has moved. This paragraph said there is no
 endpoint to limit, which was true when it was written and was overtaken without
@@ -121,9 +123,94 @@ restart. Making the counter durable would move the guarantee onto a control that
 an attacker resets by waiting, an operator resets by upgrading, and a second
 instance never had.
 
-That is the reason to write this page before the numbers exist rather than
-after. A number chosen first invites a lifetime chosen to make the number look
-load-bearing.
+That is the reason the lifetime above was settled before any number was chosen.
+A number chosen first invites a lifetime chosen to make the number look
+load-bearing, and the section below is written under that rule rather than
+beside it.
+
+## The two numbers
+
+**Per source address, twenty attempts an hour. Across all sources, ten attempts
+a second.** Both are counted in fixed windows read through the clock seam above,
+and both leave with the process, which is the lifetime already settled.
+
+An attempt is a presented code being judged. Fetching the setup page is not one.
+That route reads no invitation and decides nothing, so counting it would count
+somebody opening their link twice.
+
+Neither number moves anything above it. The lifetime argument is about what
+happens when the counter is empty, and it holds at any threshold.
+
+### Where twenty an hour comes from
+
+From what an invited person needs, not from the keyspace. The code arrives in
+the link rather than being typed, so a redemption that fails does so because the
+username is taken or the password was refused, and the person submits again.
+Four people behind one household address, each meeting three refusals before
+they get through, is sixteen attempts over an evening rather than inside one
+hour.
+
+Twenty an hour is above that and nowhere near what a search needs. One address
+at that rate for a year is 175,200 attempts, which against ten thousand live
+invitations asks for sixty-three bits where the code carries a hundred and
+twenty-eight.
+
+### Where ten a second comes from
+
+It is the number [docs/code-entropy.md](code-entropy.md) already assumes for its
+throttled row, and which it names as #31's to confirm or to move. It is
+confirmed rather than moved, so that page's second row still reproduces and none
+of its arithmetic has to be redone for this one.
+
+Re-run here with the per-address rows beside it, the same model and the same
+inputs:
+
+    $ awk 'BEGIN{ l2=log(2); N=10000;
+        one=20*8760; spread=10000*20*8760; all=10*31536000;
+        printf "one address, 20 an hour for a year    = %.2f bits\n", (log(one)+log(N))/l2 + 32;
+        printf "10^4 addresses, 20 an hour for a year = %.2f bits\n", (log(spread)+log(N))/l2 + 32;
+        printf "all sources, 10 a second for a year   = %.2f bits\n", (log(all)+log(N))/l2 + 32; }'
+    one address, 20 an hour for a year    = 62.71 bits
+    10^4 addresses, 20 an hour for a year = 75.99 bits
+    all sources, 10 a second for a year   = 73.52 bits
+
+### Why there are two of them, in the same units
+
+The middle row is the per-address limit obeyed exactly, by ten thousand
+addresses at once. That is what a spread of sources buys an attacker without
+breaking any rule this page sets, and it asks for 75.99 bits against the global
+row's 73.52. So the per-address limit on its own is the weaker of the two by two
+and a half bits, which is a measurement rather than an argument, and the global
+limit is what closes that gap.
+
+The reverse is why the per-address limit is not dropped in favour of the global
+one alone. One source able to spend the whole global allowance takes the
+operator's real invitees down with it, and that is the denial of service #31
+names as what a global limit alone produces.
+
+Neither row is load-bearing. Both sit far under the hundred and twenty-eight
+bits the code carries, and the unthrottled row is the harder requirement anyway,
+which is the rule this section is written under rather than a happy accident.
+
+### What a fixed window costs, in the same units
+
+A fixed window lets somebody run at twice the stated rate across a boundary, by
+spending one window's allowance at its end and the next one's at its start.
+Doubling the attempts adds exactly one bit to the requirement, against the
+forty-one bits of headroom the code carries. That is the whole cost of the
+simpler counter, and it is why the window is fixed rather than sliding.
+
+### What is deliberately not a number here
+
+There is no lockout that outlives its window. Being refused for the rest of the
+hour is what the per-address limit is, and a lockout surviving longer than the
+counter would be a durable counter under a different name, which the rule above
+refuses.
+
+What a refused attempt says. That is
+[docs/refusal-response.md](refusal-response.md), and the requirement that a
+throttled answer be indistinguishable from an ordinary refusal cannot be met
+until something serves an ordinary refusal at all.
 
 ## What the counter holds about a person, and for how long
 
@@ -138,13 +225,6 @@ only the first happens here.
 
 ## What this page does not decide
 
-The two numbers. The per-address limit and the global limit are chosen with the
-endpoint that enforces them, and `docs/code-entropy.md` already consumes one of
-them as an assumption, ten guesses a second across all sources, which it names
-as #31's to confirm or move. Nothing above depends on either number: the
-lifetime argument holds at any threshold, because it is an argument about what
-happens when the counter is empty.
-
 What a refused attempt looks like. That is `docs/refusal-response.md`, which
 holds the wording and the byte-for-byte requirement for every case including
 this one, and a limiter that answered differently would be the oracle the whole
@@ -158,10 +238,16 @@ is one answer for the two pages rather than one each.
 
 No limiter has been written, so nothing here has been measured against one. This
 is a decision about a component that does not exist, and it is enforced by
-nothing: no check reads this page, and an implementation that persisted the
-counter to disk would pass every workflow in this repository.
+nothing. No check reads this page, and an implementation that persisted the
+counter to disk, or that counted to a different pair of numbers, would pass every
+workflow in this repository.
 
 The arithmetic quoted above is re-run from `docs/code-entropy.md` and is the same
 model, with the same inputs and the same two assumptions it names about an
 attacker. Nothing here measures an attempt rate anybody has observed against a
 Jellyfin server.
+
+The household behind twenty an hour is reasoned rather than counted. Nobody has
+watched four people redeem from one address, so that number is an upper bound on
+an imagined case, and the thing to re-run when it is wrong is the row above it
+rather than this sentence.
