@@ -123,20 +123,45 @@ render anything and it says nothing about what a browser makes of the markup.
 The second replacement said route-level until the configuration page got one,
 and that word was wrong for this half of it. A configuration page is an embedded
 resource the dashboard asks for, so what is served is bytes in the assembly and
-a test reads them without a route anywhere. The setup page is a route and its
-half of this row stays route-level.
+a test reads them without a route anywhere.
 
-Status: all three parts exist for the configuration page and none does for the
-setup page. #19 is closed and the formatter reads the configuration page like
-every other tracked non-C# file, since nothing in `.prettierignore` covers it.
-`PageFetchesFromNowhereElse` in `ConfigurationPageTests` refuses four spellings
-of an address somewhere else and names the line it found.
-`PageCallsTheRoutesTheControllerDeclares` in the same file reads the route
-template off `InvitesController` and the revoke template off its `Revoke`
-action and compares both against the literals the page calls, and
-`PageQueriesElementsItActuallyDeclares` holds every identifier the page's script
-reaches for against the markup in both directions. The setup page has no test
-because it has no page, which is #74 and is open.
+The same paragraph then kept the word for the other half, on the reasoning that
+the setup page is a route. That was a prediction rather than a reading and it
+went the other way. The setup page landed as an embedded resource too, so the
+assertion that it fetches nothing from anywhere else reads compiled-in bytes and
+reaches no route at all. What is route-level is the sentence joining the two:
+`TheRouteServesThePageUnchanged` asserts the response body is those exact bytes,
+which is what makes an assertion about the bytes an assertion about what a
+browser receives.
+
+Status: all three parts exist for both pages. #19 is closed and the formatter
+reads both served pages like every other tracked non-C# file, since nothing in
+`.prettierignore` covers either one and the workflow's tree scan matches HTML:
+
+```
+$ git ls-files -- '*.html' | grep -v fixtures
+Jellyfin.Plugin.Invites/Configuration/configPage.html
+Jellyfin.Plugin.Invites/Setup/setupPage.html
+```
+
+For the configuration page, `PageFetchesFromNowhereElse` in
+`ConfigurationPageTests` refuses four spellings of an address somewhere else and
+names the line it found. `PageCallsTheRoutesTheControllerDeclares` in the same
+file reads the route template off `InvitesController` and the revoke template
+off its `Revoke` action and compares both against the literals the page calls,
+and `PageQueriesElementsItActuallyDeclares` holds every identifier the page's
+script reaches for against the markup in both directions.
+
+For the setup page, `ThePageFetchesFromNowhereElse` in `SetupPageTests` refuses
+the same four spellings, read from the same list rather than a second copy of
+it. The wiring half is three assertions rather than two, because the page has no
+script to query elements with and carries a form instead:
+`TheRouteIsTheOneTheLinkPointsAt` holds the route template against the constant
+`InvitationLink` builds its links from, `TheFormPostsBackToWhereItCameFrom`
+holds that the form names no address of its own, and
+`TheHashInThePolicyIsTheHashOfThePagesOwnStyle` hashes the page's style
+independently and requires the served policy to carry that hash. #74 is open on
+a clause this row does not cover, and the page it built is what these read.
 
 ### A test that waits for an invitation to expire
 
@@ -171,16 +196,23 @@ Row by row, which is the same thing each status line above says at more length.
 The setup page has neither of its two, because #107 is open and no manual check
 has been recorded. The real-server row has its two workflows and not its manual
 install. The reverse-proxy row has both. The mail row has nothing to replace and
-says so. The dashboard row has all three for the configuration page and none for
-the setup page, which has no page yet. The sleeping row has the seam and the
-expiry boundary cases, and not the three behaviours that do not exist.
+says so. The dashboard row has all three for both pages. The sleeping row has
+the seam and the expiry boundary cases, and not the three behaviours that do not
+exist.
+
+Two rows name the setup page and they are in opposite states, which is the pair
+a reader is most likely to collapse. The browser row is about whether the page
+renders, and nothing in the suite can see that. The dashboard row is about
+whether the page fetches from somewhere else and agrees with the code it drives,
+and that is decidable from bytes. A page existing moved the second row and left
+the first exactly where it was.
 
 The suite those replacements join is not the two files this section used to
 count:
 
 ```
 $ git ls-files -- '*.cs' ':!.github/lint/fixtures' | grep -c 'Tests/'
-33
+34
 ```
 
 This list is what the suite is built against as it grows, and #100 is where the
