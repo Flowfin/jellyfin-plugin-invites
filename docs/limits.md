@@ -40,17 +40,26 @@ claims the directory and reads the store when the server starts, under #46 and
     12
 
 So a server running this plugin today does get a directory and a claim file in
-it. What it still does not get is an invitations file, and the reason has moved
-from nothing calling the store to nothing writing it. There is no redemption
-path, and the only call that writes the records file is inside the file that
-declares it:
+it. This paragraph said it does not get an invitations file, because the only
+call that writes the records file was inside the file that declares it. Both
+halves of that were overtaken without the sentence moving, and the correction is
+made here rather than the paragraph deleted. A mint and a revocation both write
+the records file now:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
-    exit=1
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
+
+So an operator who has minted once has an invitations file, and the ceilings on
+this page are what bound how large it gets. What still does not exist is a
+redemption, so nothing grows the file from the public side: the routine that
+decides a presented code has no caller.
+
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
+    exit=1
 
 `InvitationStore.Read` answers a directory with no file as no invitations rather
 than creating one, so reading at startup does not bring the file into being.

@@ -1,11 +1,23 @@
 # Threat model
 
-This is written before the invitation record is designed, because the fields of
-that record are what this model demands rather than the other way round. It is
-also written before there is any code to defend, so every mitigation below is a
-promise held by an issue rather than by a line somebody can read today. The
-issue number in each row is where the promise is kept, and a row whose issue is
-still open is a row this plugin does not yet satisfy.
+This was written before the invitation record was designed, because the fields of
+that record are what this model demands rather than the other way round. It was
+also written before there was any code to defend, and that is no longer the whole
+picture: some of the mitigations below are now lines somebody can read and the
+rest are still promises held by an issue. The issue number in each row is where
+the promise is kept or was kept, and a row whose issue is still open is a row
+this plugin does not yet satisfy. Which rows those are is derived rather than
+listed here, because a list in this paragraph is what went stale the last time:
+
+    sed -n '/^| Attack |/,/^$/p' docs/threat-model.md | grep -o '#[0-9]\+' \
+      | tr -d '#' | sort -un \
+      | while read -r n; do
+          gh issue view "$n" --repo Flowfin/jellyfin-plugin-invites --json state --jq .state
+        done | sort | uniq -c
+
+At `b734e5b` that answered 10 closed and 25 open. A closed issue means the
+mitigation landed under it, not that this file measured it, and
+`## Where this model is wrong` is where that difference is stated.
 
 The one thing this plugin does is turn a link an operator sent to somebody into
 a Jellyfin account. Everything below is about what else that link can be made to
@@ -111,9 +123,13 @@ for word:
 Every clause of it is a property some other issue has to make true, and if any
 of them is not true the cost is larger than the sentence claims. Each clause
 below names where it is kept. Nothing in this repository redeems anything yet,
-so today the sentence is the specification and not a description:
+so today the sentence is the specification and not a description. The command
+this paragraph used to rest on is the wrong one for that claim now, and it is
+corrected rather than dropped: it asked whether the tree has any route at all,
+and the tree has several. What holds the claim up is the absence of a caller for
+the routine that decides a redemption:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs'
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
 
 | Clause | What has to hold for it | Issue |
@@ -220,8 +236,29 @@ somebody who is already reading the data directory.
 
 ## Where this model is wrong
 
-Every row above is a claim about code that does not exist yet. The value of
-writing it now is that the record shape, the decision routine and the routes are
-built against it rather than reconciled with it afterwards, and the cost is that
-nothing here has been measured. When a mitigation lands, the issue it landed
-under is the evidence, and this file is not.
+This section said that every row above is a claim about code that does not exist
+yet. That was true when it was written and is not true now, and nothing in the
+tree noticed: the sentence reads exactly as it did on the day it was correct,
+which is why it is corrected here in place rather than deleted. Ten of the
+thirty-five issues the grid names as where a mitigation lands are closed, and one
+of them is the row saying only a keyed hash of the code is stored, which is a
+reduction with a caller in the tree:
+
+    git grep -n 'new InvitationCodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
+    exit=0
+
+So the wider claim is withdrawn. The narrower one is the one that was always
+carrying the weight and it still holds: nothing here redeems an invitation, so no
+mitigation in the grid has been exercised on a path a stranger can reach. The
+routine that decides a redemption has no caller.
+
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
+    exit=1
+
+A row whose issue is closed is a row where the work landed under an issue that
+argued it. It is not a row this file measured, and it is not a row anybody has
+seen refuse an attack, because the attacks in the grid arrive through a
+redemption and there is none. The value of having written the model first is that
+the record shape, the decision routine and the routes are built against it rather
+than reconciled with it afterwards. The cost is unchanged: when a mitigation
+lands, the issue it landed under is the evidence, and this file is not.
