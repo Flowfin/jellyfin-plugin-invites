@@ -80,7 +80,17 @@ dotnet test --configuration Release
 
 Nothing in this repository redeems an invitation or creates an account yet, so
 several of these are held at the routine that decides and not on any path a
-stranger can reach. Where that is the difference, it is written out.
+stranger can reach:
+
+```
+git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
+exit=1
+```
+
+Routes are served now, which they were not when this section was written. Four
+of them are administrator-only and one is reachable without an account, and the
+public one serves a page and reads no invitation. Where that is the difference
+between a property and what holds it, it is written out.
 
 ### Codes are minted from a cryptographic source at a calculated entropy
 
@@ -123,13 +133,28 @@ canonicalisation would accept as one.
 and reads the file back, asserting the longest run of code alphabet in it is
 shorter than a code.
 
-The key is not held. There is no implementation of `IInvitationCodeHash` in the
-plugin, and the suite supplies its own, so what those tests hold is that the
-code does not reach the disk and not that the stored form is keyed. The secret a
-keyed hash would use is generated, stored and rotated already, in `HashSecret`,
-and nothing hashes with it. Until an implementation lands, treat this property
-as the code being absent from the store rather than as the store being useless
-to somebody who has it.
+The stored form is keyed, which this paragraph said it was not.
+`InvitationCodeHash` reduces a canonical code under the secret `HashSecret`
+draws and holds, and the minting path is what constructs it:
+
+```
+git grep -n 'new InvitationCodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:168:            var hash = new InvitationCodeHash(
+```
+
+`InvitationCodeHashTests.TheValueIsNotTheUnkeyedHashOfTheCode` holds that the
+stored value is not the plain digest of the code, and
+`TwoKeysReduceOneCodeToDifferentValues` holds that the key is what separates two
+installations. Without the key an unkeyed digest of a twenty-six character code
+is a table somebody builds once and then reads every store they are ever handed.
+`MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode` mints through
+that path and reads every file the mint left behind rather than the store alone.
+
+The other direction is not held. Nothing presents a code to this plugin, so no
+route reduces one and compares it against what is stored, and the property is
+held at the mint and at the record rather than across a redemption. Somebody who
+can read the store and the secret together is in the undefended list below, and
+none of this defends against them.
 
 ### The four ways a redemption fails are one answer
 
@@ -156,19 +181,41 @@ matching record through every position and requires the same answer. The
 the two spellings that would take it back. No timing was measured, and this is a
 claim about which branches the routine takes rather than about a clock.
 
-Byte-identical responses are not held, because there is no response. Nothing in
-this repository serves a route. What a person is shown is decided in
+Byte-identical responses are not held, because no route answers a presented
+code. This paragraph said nothing here serves a route, and routes are served.
+What is absent is narrower and is the half that matters: the public route
+answers a code with the same page whether or not it was ever minted, so it
+neither distinguishes the four nor refuses any of them, and nothing posts to it:
+
+```
+git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs; echo "exit=$?"
+exit=1
+```
+
+What a person is shown is decided in
 [docs/refusal-response.md](docs/refusal-response.md), and the assertion that the
 four are identical on the wire waits for the route that writes them.
 
 ### Redemption is rate limited
 
-It is not. Nothing in this repository limits or locks out anything, and there is
-no endpoint to limit. This property is on the list because the entropy
-calculation quotes a figure that assumes a limiter, and reading the code length
-as sufficient on its own would be reading the unthrottled row of that page, not
-the throttled one. Both rows are on it, and the unthrottled one is what holds
-today.
+It is not. Nothing in this repository limits or locks out anything:
+
+```
+git grep -lniE '\b(rate ?limit|lockout|throttle)' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Time/IClock.cs
+```
+
+The one file that matches names those windows as clock reads that a seam will
+have to serve, and limits nothing. This paragraph also said there is no endpoint
+to limit, and there is one: `GET /redeem/{code}` is reachable without an
+account. It serves a page and reads no invitation, so there is nothing on it yet
+for a limiter to stand in front of, and the moment a presented code is judged
+there will be.
+
+This property is on the list because the entropy calculation quotes a figure
+that assumes a limiter, and reading the code length as sufficient on its own
+would be reading the unthrottled row of that page, not the throttled one. Both
+rows are on it, and the unthrottled one is what holds today.
 
 ### An invitation expires, at an instant the plugin does not argue with
 
@@ -267,8 +314,7 @@ It will never ask for a password to another service, a password already used on
 this server, a payment detail, a date of birth, a postal address, a legal name,
 a security question, anything phrased as optional that the plugin has no field
 for, or anything the operator could ask outside the plugin. It loads no script,
-font, image or analytics from another host, and it says which server it belongs
-to.
+font, image or analytics from another host.
 
 A page bearing this plugin's name that asks for any of those is not this
 plugin's page, and a report that it does is a report this policy wants. The
@@ -276,8 +322,36 @@ reason for each refusal is in
 [docs/setup-never-asks.md](docs/setup-never-asks.md), and a field added to the
 form needs a row in [docs/personal-data.md](docs/personal-data.md) first.
 
-The page does not exist yet, so this is what it is being built to rather than a
-description of something serving today.
+The page exists and is served, which this section said it did not, so the two
+halves of it are now in different states and are worth reading apart.
+
+The form and what it loads are a description of something serving today.
+`SetupPageTests.TheFormAsksForThreeThingsAndNoFourth` holds that the served
+bytes carry the three fields named above and nothing else, so a question added
+to the form cannot arrive without somebody moving that assertion.
+`ThePageFetchesFromNowhereElse` reads the same bytes for four spellings of an
+address somewhere else, `ThePageRunsNoScript` refuses a script element, a
+`javascript:` address and a handler attribute, and
+`ThePolicyNamesNoOriginAndAllowsNoInlineScript` holds that the response is served
+under `default-src 'none'`, which names no origin at all. Nothing here can decide
+whether a field asks for a legal name, and that reading stays a person's.
+
+The sentence about naming the server was removed rather than left standing,
+because the page does not do it:
+
+```
+git grep -n 'It does not say which server it belongs to' docs/setup-never-asks.md
+docs/setup-never-asks.md:81:It does not say which server it belongs to, which the presentation rules above
+```
+
+Naming the server means writing a value into markup that nothing is written
+into, which is what leaves the page with no place a presented code could reach
+it, and which value and where it comes from is not decided.
+[docs/setup-never-asks.md](docs/setup-never-asks.md) still asks for it and says
+in the same place that it is not done.
+
+Nothing posts to the form, so what a completed setup does is still what this
+plugin is being built to rather than a report of anything.
 
 ## What is not defended
 
@@ -285,10 +359,14 @@ These are the entries the threat model in [docs/threat-model.md](docs/threat-mod
 marks as undefended, in the same words. That file is where each one is placed
 against the attack it belongs to.
 
-Every mitigation the threat model names is a promise held by an open issue
-rather than by code, because there is no redemption path in this repository yet.
-Read this section as what will still not be defended once those issues land, and
-not as a claim that everything else already is.
+This paragraph said every mitigation the threat model names is a promise held by
+an open issue rather than by code. That is no longer the reading. Some of them
+have landed, the keyed hash above being one, and the grid in that document names
+the issue each one sits on rather than this page repeating them. What is
+unchanged is that there is no redemption path here, so no mitigation in the grid
+has been exercised on a path a stranger can reach. Read this section as what will
+still not be defended once the rest land, and not as a claim that everything else
+already is.
 
 A leaked link within its validity, before the intended person uses it, is an
 account for whoever found it. This is what a bearer credential means and no
