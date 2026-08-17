@@ -62,6 +62,24 @@ public sealed class ProbeExplicitlyAuthorizedController : ControllerBase
 }
 
 /// <summary>
+/// The near miss the requirement check on its own walks past: an action that
+/// requires something of its caller and does not require an administrator.
+/// <c>[Authorize]</c> with no policy is satisfied by any account the server has,
+/// so a route written this way lets an ordinary user mint an invitation, and it
+/// is one word shorter than the correct spelling.
+/// </summary>
+public sealed class ProbeAuthorizedWithoutElevationController : ControllerBase
+{
+    /// <summary>
+    /// Carries its own requirement, and the requirement is not an administrator.
+    /// </summary>
+    /// <returns>Nothing a caller reads. Nothing routes to this type.</returns>
+    [Authorize]
+    [HttpGet("probe/no-policy")]
+    public IActionResult Mint() => Ok();
+}
+
+/// <summary>
 /// The public side, written the same way. The redemption path is reachable
 /// without authentication by design, and saying so on the action is what tells a
 /// later reader that the absence of a requirement was a decision.
@@ -90,6 +108,13 @@ public sealed class ProbeExplicitlyAnonymousController : ControllerBase
 /// </summary>
 public class RouteInventoryTests
 {
+    /// <summary>
+    /// The name of the server policy that requires an administrator. It is a
+    /// string rather than a constant read from the server because neither
+    /// referenced assembly carries one to read.
+    /// </summary>
+    private const string Elevation = "RequiresElevation";
+
     /// <summary>
     /// The controllers whose every route requires an administrator. One today,
     /// the four administrator operations from #82.
@@ -214,7 +239,54 @@ public class RouteInventoryTests
     /// </typeparam>
     /// <param name="controller">The controller type to read.</param>
     /// <returns>The names of the actions carrying nothing of their own, ordered.</returns>
-    private static IReadOnlyList<string> ActionsWithoutTheirOwn<TRequirement>(Type controller)
+    private static IReadOnlyList<string> ActionsWithoutTheirOwn<TRequirement>(Type controller) =>
+        DeclaredActions(controller)
+            .Where(method => !method.GetCustomAttributes(inherit: false).OfType<TRequirement>().Any())
+            .Select(method => Name(controller, method))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+    /// <summary>
+    /// The actions of a controller that require something of their caller
+    /// without requiring an administrator.
+    /// <para>
+    /// The check above asks whether an action declares a requirement at all, and
+    /// <c>[Authorize]</c> with no policy answers yes. What that spelling requires
+    /// is an account, and every account on a media server has one, so an action
+    /// carrying it is a mint route an ordinary user may call. It is one word
+    /// short of the correct attribute rather than a shape somebody would have to
+    /// mean, which is why it is the near miss this reads for.
+    /// </para>
+    /// <para>
+    /// The policy is matched by its name, because the name is all there is to
+    /// match. Neither assembly this plugin references carries the constant, in
+    /// either version the build uses, so there is nothing to compare against and
+    /// this holds the plugin to a literal the server has to be carrying too. A
+    /// server that renamed the policy would leave this green and refuse every
+    /// request, which is the failure this cannot see.
+    /// </para>
+    /// </summary>
+    /// <param name="controller">The controller type to read.</param>
+    /// <returns>The names of the actions requiring less than an administrator, ordered.</returns>
+    private static IReadOnlyList<string> ActionsNotRequiringAnAdministrator(Type controller) =>
+        DeclaredActions(controller)
+            .Where(method => !method.GetCustomAttributes(inherit: false)
+                .OfType<IAuthorizeData>()
+                .Any(requirement => string.Equals(requirement.Policy, Elevation, StringComparison.Ordinal)))
+            .Select(method => Name(controller, method))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+    /// <summary>
+    /// The methods the two checks above read, which are those declared on the
+    /// controller and on any base of it inside the same assembly. The bound this
+    /// carries is documented on <see cref="ActionsWithoutTheirOwn{TRequirement}"/>
+    /// and is one walk rather than two so that a later widening moves both
+    /// checks at once.
+    /// </summary>
+    /// <param name="controller">The controller type to read.</param>
+    /// <returns>Its action methods.</returns>
+    private static IEnumerable<MethodInfo> DeclaredActions(Type controller)
     {
         var declared = new List<MethodInfo>();
         for (var type = controller; type is not null && type.Assembly == controller.Assembly; type = type.BaseType)
@@ -224,12 +296,11 @@ public class RouteInventoryTests
 
         return declared
             .Where(method => !method.IsSpecialName)
-            .Where(method => method.GetCustomAttributes(typeof(NonActionAttribute), inherit: true).Length == 0)
-            .Where(method => !method.GetCustomAttributes(inherit: false).OfType<TRequirement>().Any())
-            .Select(method => (method.DeclaringType?.FullName ?? controller.Name) + "." + method.Name)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
+            .Where(method => method.GetCustomAttributes(typeof(NonActionAttribute), inherit: true).Length == 0);
     }
+
+    private static string Name(Type controller, MethodInfo method) =>
+        (method.DeclaringType?.FullName ?? controller.Name) + "." + method.Name;
 
     /// <summary>
     /// The check bites, and it bites the shape that actually happens. A class
@@ -261,11 +332,11 @@ public class RouteInventoryTests
 
     /// <summary>
     /// Every action of every controller the plugin places in a category declares
-    /// its own requirement. This is vacuous today, because the plugin registers
-    /// no controllers at all, and it is landed vacuous for the same reason the
-    /// inventory above was: the first route added has to carry its requirement
-    /// in the change that adds it, rather than inherit one from a class
-    /// attribute that a later refactor can remove without turning anything red.
+    /// its own requirement. This was landed over an empty assembly for the same
+    /// reason the inventory above was: the first route added has to carry its
+    /// requirement in the change that adds it, rather than inherit one from a
+    /// class attribute that a later refactor can remove without turning anything
+    /// red. It reads five actions today, the four from #82 and the one from #74.
     /// </summary>
     [Fact]
     public void EveryActionOfEveryPlacedControllerCarriesItsOwnRequirement()
@@ -286,5 +357,65 @@ public class RouteInventoryTests
             "These actions carry no authorization declaration of their own: "
             + string.Join(", ", bare.OrderBy(name => name, StringComparer.Ordinal))
             + ". An administrator route declares what it requires on the action; the redemption route declares that it is public on the action. A requirement held only by the class disappears with the class attribute and takes every action under it with it.");
+    }
+
+    /// <summary>
+    /// The administrator check bites the one word that separates an
+    /// administrator route from a route every account on the server may call.
+    /// The assertion above is satisfied by a bare <c>[Authorize]</c>, because a
+    /// bare one is a requirement; this is the half that reads which requirement
+    /// it is.
+    /// </summary>
+    [Fact]
+    public void AnActionRequiringOnlyAnAccountIsReportedAsNotRequiringAnAdministrator()
+    {
+        var found = ActionsNotRequiringAnAdministrator(typeof(ProbeAuthorizedWithoutElevationController));
+
+        Assert.Equal(
+            new[] { typeof(ProbeAuthorizedWithoutElevationController).FullName + ".Mint" },
+            found);
+
+        // And the requirement check the other assertion uses walks straight past
+        // it, which is why this one exists rather than being a stricter reading
+        // of that one.
+        Assert.Empty(ActionsWithoutTheirOwn<IAuthorizeData>(typeof(ProbeAuthorizedWithoutElevationController)));
+    }
+
+    /// <summary>
+    /// And it does not bite the correct spelling. Without this half the
+    /// assertion below is satisfied by a check that reports every action ever
+    /// written.
+    /// </summary>
+    [Fact]
+    public void AnActionNamingTheElevationPolicyIsNotReported()
+    {
+        Assert.Empty(ActionsNotRequiringAnAdministrator(typeof(ProbeExplicitlyAuthorizedController)));
+    }
+
+    /// <summary>
+    /// Every action of every administrator controller requires an administrator
+    /// rather than merely a caller. This is the sentence the inventory's first
+    /// list makes, read against the actions rather than against the name in the
+    /// list, and it is the one the issue this file answers puts first: a route
+    /// that mints an invitation is administrator-only, and an ordinary account
+    /// on the server is not an administrator.
+    /// </summary>
+    [Fact]
+    public void EveryAdministratorActionRequiresAnAdministrator()
+    {
+        var lesser = new List<string>();
+        foreach (var name in DiscoverControllers(typeof(Plugin).Assembly)
+            .Where(AdministratorControllers.Contains))
+        {
+            lesser.AddRange(ActionsNotRequiringAnAdministrator(typeof(Plugin).Assembly.GetType(name)!));
+        }
+
+        Assert.True(
+            lesser.Count == 0,
+            "These actions are on an administrator-only controller and do not require an administrator: "
+            + string.Join(", ", lesser.OrderBy(name => name, StringComparer.Ordinal))
+            + ". [Authorize] with no policy is satisfied by any account the server has, so the route is open to every user on it. The policy these routes name is "
+            + Elevation
+            + ".");
     }
 }
