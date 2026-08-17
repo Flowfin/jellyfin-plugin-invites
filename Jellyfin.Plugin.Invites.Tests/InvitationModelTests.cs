@@ -35,12 +35,6 @@ public class InvitationModelTests
     private static readonly IInvitationCodeHash _codeHash = new TestCodeHash();
 
     /// <summary>
-    /// The characters a code is drawn from, so a test can ask whether anything
-    /// in a file is shaped like one without knowing which code was minted.
-    /// </summary>
-    private const string Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-
-    /// <summary>
     /// Mints a record for a code, through the routine that mints records.
     /// </summary>
     /// <param name="canonicalCode">The code the record is for.</param>
@@ -56,26 +50,6 @@ public class InvitationModelTests
             expiresAt: _expires,
             uses: 3,
             templateLabel: templateLabel);
-    }
-
-    /// <summary>
-    /// The longest run of characters in a text that are all drawn from the
-    /// code alphabet.
-    /// </summary>
-    /// <param name="text">The text to look through.</param>
-    /// <returns>The length of the longest run.</returns>
-    private static int TheLongestCodeShapedRunIn(string text)
-    {
-        var longest = 0;
-        var run = 0;
-
-        foreach (var character in text)
-        {
-            run = Alphabet.IndexOf(character, StringComparison.Ordinal) < 0 ? 0 : run + 1;
-            longest = Math.Max(longest, run);
-        }
-
-        return longest;
     }
 
     /// <summary>
@@ -113,8 +87,8 @@ public class InvitationModelTests
 
         Assert.DoesNotContain(code, whole, StringComparison.OrdinalIgnoreCase);
         Assert.True(
-            TheLongestCodeShapedRunIn(whole) < InvitationCode.Length,
-            "The store file carries a run of " + TheLongestCodeShapedRunIn(whole)
+            CodeShape.LongestRunIn(whole) < InvitationCode.Length,
+            "The store file carries a run of " + CodeShape.LongestRunIn(whole)
             + " characters of the code alphabet, and a code is " + InvitationCode.Length
             + ". Something in it is shaped like a code.");
     }
@@ -143,7 +117,7 @@ public class InvitationModelTests
         store.Write(new[] { ARecordFor(canonical!) });
 
         var characters = canonical!.ToCharArray();
-        characters[0] = characters[0] == Alphabet[0] ? Alphabet[1] : Alphabet[0];
+        characters[0] = characters[0] == CodeShape.Alphabet[0] ? CodeShape.Alphabet[1] : CodeShape.Alphabet[0];
         var neighbour = new string(characters);
 
         Assert.Equal(neighbour, InvitationCode.Canonicalise(neighbour));
