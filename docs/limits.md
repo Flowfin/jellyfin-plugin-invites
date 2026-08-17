@@ -11,11 +11,12 @@ adds and it exists nowhere else.
 
 ## What this page is, at the moment you are reading it
 
-None of these behaviours is in the code. More of the pieces they are about are
-than this paragraph used to say: the invitation record as `Invitation` under
-#38, the file that holds records as `InvitationStore` under #39, the routine
-that judges a presented code as `RedemptionDecision` under #56, and the claim on
-the store directory as `StoreLock` under #96.
+Some of these behaviours are in the code now, and this paragraph said none of
+them was. More of the pieces they are about are here than it used to say: the
+invitation record as `Invitation` under #38, the file that holds records as
+`InvitationStore` under #39, the routine that judges a presented code as
+`RedemptionDecision` under #56, and the claim on the store directory as
+`StoreLock` under #96.
 
     git ls-files 'Jellyfin.Plugin.Invites' | grep -iE 'store|redemption'
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
@@ -64,11 +65,14 @@ decides a presented code has no caller.
 `InvitationStore.Read` answers a directory with no file as no invitations rather
 than creating one, so reading at startup does not bring the file into being.
 
-So every entry below names the issue that owns the behaviour, and none of them
-is held by a test. That is the honest status and it is not a formality: an entry
-here is a decision the plan has taken, and a decision is something a later change
-can contradict without anything going red. When a behaviour lands, its entry
-gains the test that holds it, and this line gets smaller.
+So every entry below names the issue that owns the behaviour, and three of the
+nine are held by a test that was seen to fail. Which three, and what each one
+was broken with, is at the foot of this page. The other six were not put to that
+check here, so nothing on this page says a test holds them. That accounting
+matters and is not a formality: an entry without one is a decision the plan has
+taken and nothing more, and a decision is something a later change can contradict
+without anything going red. When a behaviour lands, its entry gains the test that
+holds it and the count at the foot moves.
 
 Four of these cases are already stated in fixed words under what is not defended
 in [docs/threat-model.md](threat-model.md) and in
@@ -221,7 +225,64 @@ is its change to make rather than something this file can assert about itself.
     git ls-files docs | grep -i 'guide' ; echo "exit=$?"
     exit=1
 
-No entry here is asserted by a test, for the reason at the top. The done
-condition of #115 asks that every entry match the behaviour the tests assert, so
-that clause is met one entry at a time as the behaviours land, and not by this
-document.
+The done condition of #115 asks that every entry match the behaviour the tests
+assert. Three of the nine are shown below to be held by one, and that clause is
+met one entry at a time as the behaviours land rather than by this document.
+
+## Which entries a test holds
+
+Each of the three was checked by breaking the thing the entry rests on and
+watching the suite, rather than by reading a test name and deciding it looked
+close enough. None of the three faults is in the tree.
+
+**A code is shown once and cannot be recovered.** The mint routine was handed
+the code as the template label, one argument along from where it belongs, which
+is the slip that puts a live code in the store file:
+
+    $ sed -i '178s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ dotnet test --configuration Release --no-build
+      MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode [FAIL]
+      MintedCodeIsNotHandedBackTests.NoReadingRouteHandsBackAnythingShapedLikeACode [FAIL]
+      InvitesControllerTests.MintingReturnsACodeThatMatchesTheStoredHash [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 401, übersprungen: 8, gesamt: 412
+
+**A restored backup revives spent invitations**, for the part this page adds,
+which is reading the disagreement the plugin reports on load. The comparison was
+inverted by dropping one character:
+
+    $ sed -i '156s/if (!present.Contains(account))/if (present.Contains(account))/' Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs
+    $ dotnet test --configuration Release --no-build
+      ConsistencyReportTests.AStoreTheServerAgreesWithReportsNothing [FAIL]
+      ConsistencyReportTests.ARecordThatNamesOneAccountTwiceIsNotTidiedAway [FAIL]
+      ConsistencyReportTests.AStoreThatDisagreesInBothDirectionsIsReportedInBoth [FAIL]
+      StoreLoadTests.ALoadReportsWhatTheStoreDisagreesWithInBothDirections [FAIL]
+      LoadOnStartTests.AStartOverAStoreThatDisagreesNamesBothDirections [FAIL]
+      LoadOnStartTests.DisagreementsBeyondTheBoundAreCountedRatherThanNamed [FAIL]
+    Fehler!      : Fehler: 6, erfolgreich: 398, übersprungen: 8, gesamt: 412
+
+Two of those six assert that it happens on load, which is the word the entry
+uses, rather than only that the comparison answers correctly when somebody calls
+it.
+
+**The server's timezone does not change when an invitation expires.** The
+comparison was moved off the moments and onto the wall-clock readings, which is
+exactly what the entry is about and what a suite spelling every instant at one
+offset cannot see:
+
+    $ sed -i '111s/if (now >= match.ExpiresAt)/if (now.DateTime >= match.ExpiresAt.DateTime)/' Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    $ dotnet test --configuration Release --no-build
+      StoredInstantTests.TheDecisionReadsTwoSpellingsOfOneClockReadingAlike(offsetHours: 13) [FAIL]
+      StoredInstantTests.TheDecisionJudgesTwoSpellingsOfOneMomentAlike(offsetHours: 13) [FAIL]
+    Fehler!      : Fehler: 2, erfolgreich: 402, übersprungen: 8, gesamt: 412
+
+Each fault was put back afterwards and the suite returns to where it started:
+
+    $ dotnet test --configuration Release --no-build
+    Bestanden!   : Fehler: 0, erfolgreich: 404, übersprungen: 8, gesamt: 412
+
+The other six entries are the username disclosure, the deleted library, the
+server line, expiry against deletion, revocation leaving accounts alone, and
+uninstall leaving accounts alone. No fault was run against any of them here, so
+this section says nothing about whether they are held. Two of the six describe
+routines nothing in this tree has yet, which is the startup comparison in #97 and
+the retention sweep in #59, and for those the answer is not in doubt.
