@@ -5,14 +5,17 @@ is a plugin an operator wants to drive from whatever already runs their server,
 and that happens whether or not anything is written down. The only choice is
 whether they are working from this page or from a browser's network tab.
 
-So the routes are fixed here, before they exist, rather than described
-afterwards. Nothing serves any of them today:
+So the routes were fixed here before they existed, rather than described
+afterwards. Four of the seven are served now:
 
-    $ git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
-    exit=1
+    $ git grep -lE 'ControllerBase' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
 
-The four administrator operations are #82 and the three redemption routes are
-#74 and #75. This page is what those are built against.
+The four administrator operations landed under #82. The three redemption routes
+are #74 and #75 and are still what this page is built against rather than a
+description of anything. Which is which is not read off this paragraph: the
+register at the end of the page is the list, and the suite holds it against the
+assembly.
 
 ## What is promised
 
@@ -233,10 +236,6 @@ a line behind it.
 - `GET /redeem/{code}`
 - `POST /redeem/{code}`
 - `GET /redeem/done`
-- `POST /Invites`
-- `GET /Invites`
-- `GET /Invites/{id}`
-- `POST /Invites/{id}/Revoke`
 
 A line leaves in the change that lands its route, and the last one to leave
 empties the section rather than deleting it. This is not the heading list said
