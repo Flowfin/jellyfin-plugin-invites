@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
+using Jellyfin.Plugin.Invites.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
 namespace Jellyfin.Plugin.Invites.Tests;
@@ -27,6 +30,26 @@ public class ConfigurationPageTests
     /// looks like a path until it is read twice.
     /// </summary>
     private static readonly string[] Elsewhere = ["://", "\"//", "'//", "(//"];
+
+    /// <summary>
+    /// Every element the page's own script reaches for. A list rather than
+    /// something derived, because both directions are worth asserting: an
+    /// identifier declared and never queried is dead markup, and one queried
+    /// and never declared is a handler that silently does nothing.
+    /// </summary>
+    private static readonly string[] Driven =
+    [
+        "InvitesConfigPage",
+        "InvitesConfigForm",
+        "InvitesMintForm",
+        "InvitesMintTemplate",
+        "InvitesMintValidityDays",
+        "InvitesMintUses",
+        "InvitesMintedCode",
+        "InvitesMintedCodeValue",
+        "InvitesCopyCode",
+        "InvitesList",
+    ];
 
     /// <summary>
     /// The identifier the page hands to the dashboard is this plugin's own.
@@ -64,20 +87,102 @@ public class ConfigurationPageTests
     }
 
     /// <summary>
-    /// The page's script queries the two elements by identifier. An element
-    /// renamed without its query, or the other way round, is a page whose Save
-    /// button does nothing and whose load handler never runs.
+    /// The page's script queries every element it drives by identifier. An
+    /// element renamed without its query, or the other way round, is a page
+    /// whose button does nothing and whose load handler never runs, and the
+    /// dashboard reports none of it.
     /// </summary>
     [Fact]
     public void PageQueriesElementsItActuallyDeclares()
     {
         var page = ReadPage();
 
-        foreach (var id in new[] { "InvitesConfigPage", "InvitesConfigForm" })
+        foreach (var id in Driven)
         {
             Assert.Contains("id=\"" + id + "\"", page, StringComparison.Ordinal);
             Assert.Contains("querySelector(\"#" + id + "\")", page, StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>
+    /// The page calls the routes the controller declares, rather than paths
+    /// that were right when the page was written.
+    /// </summary>
+    /// <remarks>
+    /// The page is served as bytes and its calls are strings, so a renamed
+    /// route leaves it compiling, shipping and failing at the moment an
+    /// operator presses a button. Nothing else in this repository reads both
+    /// sides: the route inventory reads the controller and the tests above read
+    /// the page. This reads the controller's own attributes and compares them
+    /// against what the page will ask for.
+    /// </remarks>
+    [Fact]
+    public void PageCallsTheRoutesTheControllerDeclares()
+    {
+        var page = ReadPage();
+
+        var route = typeof(InvitesController).GetCustomAttribute<RouteAttribute>();
+        Assert.NotNull(route);
+        Assert.Equal(route!.Template, ValueAfter(page, "invitations:"));
+
+        var revoke = typeof(InvitesController)
+            .GetMethod(nameof(InvitesController.Revoke))!
+            .GetCustomAttribute<HttpPostAttribute>();
+        Assert.NotNull(revoke);
+        Assert.Equal("{id}/" + ValueAfter(page, "revoke:"), revoke!.Template);
+    }
+
+    /// <summary>
+    /// The four operations an operator does are all on this page, so the job is
+    /// done without leaving it.
+    /// </summary>
+    /// <remarks>
+    /// Read off what the page sends rather than off the buttons, because a
+    /// button that posts nowhere looks the same in the markup as one that
+    /// works. Minting is a post to the route, listing is the read the page
+    /// makes when it opens, revoking is a post to the revoke path, and copying
+    /// is the field the code lands in.
+    /// </remarks>
+    [Fact]
+    public void PageMintsListsAndRevokesWithoutLeaving()
+    {
+        var page = ReadPage();
+
+        Assert.Contains("ApiClient.getUrl(InvitesConfig.invitations)", page, StringComparison.Ordinal);
+        Assert.Contains("ApiClient.getJSON(", page, StringComparison.Ordinal);
+        Assert.Contains(
+            "InvitesConfig.invitations + \"/\" + id + \"/\" + InvitesConfig.revoke",
+            page,
+            StringComparison.Ordinal);
+        Assert.Contains("window.confirm(", page, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The code is shown once, the page says so, and the field it is shown in
+    /// can be copied with nothing but a keyboard.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The warning is the only thing on this surface that tells an operator a
+    /// code they did not copy is gone. What makes the sentence true is
+    /// elsewhere and by construction rather than by wording:
+    /// <c>InvitationView</c> has no field a code could be expressed in, so no
+    /// listing returns one.
+    /// </para>
+    /// <para>
+    /// The field is <c>readonly</c> rather than disabled, because a disabled
+    /// field cannot be focused and therefore cannot be copied by anybody
+    /// working without a mouse or a script. The copy button is an enhancement
+    /// beside it and not the route.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void PageSaysTheCodeIsShownOnce()
+    {
+        var page = ReadPage();
+
+        Assert.Contains("only time this code is shown", page, StringComparison.Ordinal);
+        Assert.Contains("readonly", ElementCarrying(page, "InvitesMintedCodeValue"), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -132,6 +237,28 @@ public class ConfigurationPageTests
 
         using var reader = new StreamReader(stream!);
         return reader.ReadToEnd();
+    }
+
+    /// <summary>
+    /// The whole tag carrying an identifier, from its opening angle bracket to
+    /// its closing one, so an assertion about an attribute does not depend on
+    /// the order the attributes are written in.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="id">The identifier on the element.</param>
+    /// <returns>The element's tag.</returns>
+    private static string ElementCarrying(string page, string id)
+    {
+        var at = page.IndexOf("id=\"" + id + "\"", StringComparison.Ordinal);
+        Assert.True(at >= 0, "The page declares no element with the identifier " + id + ".");
+
+        var open = page.LastIndexOf('<', at);
+        Assert.True(open >= 0, "The identifier " + id + " is not inside an element.");
+
+        var close = page.IndexOf('>', at);
+        Assert.True(close > open, "The element carrying " + id + " is not closed.");
+
+        return page[open..(close + 1)];
     }
 
     private static string ValueAfter(string page, string marker)
