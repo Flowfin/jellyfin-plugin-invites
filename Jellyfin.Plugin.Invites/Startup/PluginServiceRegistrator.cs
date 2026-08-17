@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.Invites.Accounts;
+using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 using MediaBrowser.Controller;
@@ -34,6 +35,8 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IClock, SystemClock>();
         serviceCollection.AddSingleton<IStoreDirectory, PluginStoreDirectory>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+        serviceCollection.AddSingleton<InvitationOperations>();
+        serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
         serviceCollection.AddHostedService<LoadOnStart>();
     }
 }

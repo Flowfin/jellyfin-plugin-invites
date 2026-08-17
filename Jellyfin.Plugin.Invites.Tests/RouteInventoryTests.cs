@@ -80,19 +80,24 @@ public sealed class ProbeExplicitlyAnonymousController : ControllerBase
 /// <summary>
 /// Every route this plugin registers is administrator-only except the
 /// redemption path, which is public by design. This is the inventory that holds
-/// that sentence to the assembly, and it is landed while the inventory is empty
-/// on purpose: written now, the first route added to the plugin turns this red
-/// and its author has to place it in one of the two lists in the same change.
-/// Written after the routes exist, it starts as a snapshot of whatever happened
-/// to be there, which is the drift it is meant to refuse.
+/// that sentence to the assembly, and it was landed while the inventory was
+/// empty on purpose: written then, the first route added to the plugin turned
+/// this red and its author had to place it in one of the two lists in the same
+/// change. Written after the routes existed, it would have started as a snapshot
+/// of whatever happened to be there, which is the drift it is meant to refuse.
+/// That is what happened: the administrator routes arrived under #82 and all
+/// three assertions below went red until the name was placed.
 /// </summary>
 public class RouteInventoryTests
 {
     /// <summary>
-    /// The controllers whose every route requires an administrator. Empty
-    /// today, because the plugin has no routes at all.
+    /// The controllers whose every route requires an administrator. One today,
+    /// the four administrator operations from #82.
     /// </summary>
-    private static readonly HashSet<string> AdministratorControllers = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> AdministratorControllers = new(StringComparer.Ordinal)
+    {
+        "Jellyfin.Plugin.Invites.Controllers.InvitesController",
+    };
 
     /// <summary>
     /// The controllers reachable without authentication. There is exactly one
