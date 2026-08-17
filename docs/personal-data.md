@@ -6,25 +6,45 @@ is personal data about two people before a single optional field is added, and
 this inventory was written before the record type existed rather than after, so
 the record was built against it.
 
-Nothing below holds anybody's data yet, and what that sentence rests on has
-moved. The record is a type now, `Jellyfin.Plugin.Invites/Invitations/Invitation.cs`
-under #38, and the store it would live in is
-`Jellyfin.Plugin.Invites/Storage/InvitationStore.cs` under #39. The plugin
-reaches that store on every start, and the one member it reaches is the reading
+This page said nothing below holds anybody's data yet. Some of it does. The
+record is a type, `Jellyfin.Plugin.Invites/Invitations/Invitation.cs` under #38,
+the store is `Jellyfin.Plugin.Invites/Storage/InvitationStore.cs` under #39, and
+since the administrator routes landed an operator who mints an invitation writes
 one:
 
     $ git grep -n 'new InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:165:            var store = new InvitationStore(directory);
     origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:188:        return new InvitationStore(plugin.DataFolderPath);
     origin/master:Jellyfin.Plugin.Invites/Storage/StoreLoad.cs:127:                ConsistencyReport.OfALoad(new InvitationStore(directory), accountsTheServerHas));
 
     $ git grep -n 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:166:            var contents = store.Read();
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:239:            var contents = store.Read();
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
     origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:126:        return Of(store.Read().Invitations, accountsTheServerHas);
 
-So a server running this plugin has no invitations file, and nothing here has
-ever been written down about a person. The attempt trail is #43 and has no type
-at all. This document is what all three are built against: a field that is not
-in the inventory does not go in the record, and a field in the inventory carries
-the reason it is there.
+Both writes are in `InvitationOperations` and both have a route above them:
+
+    $ git grep -n '_operations\.Mint(\|_operations\.Revoke(' origin/master -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
+    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:95:            var minting = _operations.Mint(
+    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:192:        var revoked = _operations.Revoke(id, revokedBy);
+
+So a server whose operator has minted once holds an invitations file, and the
+rows of the record table below that are filled in on that file are the
+identifier, the keyed hash, minted by, minted at, expires at, the use count and
+the template name, plus revoked at and revoked by once somebody revokes. `Minted
+by` and `Revoked by` are personal data about the operator, and they are held
+under the `record-retention` parameter named below with no sweep applying it
+yet.
+
+What is still not written is anything about the invited person. That waits on a
+redemption that commits, and the rows it would fill are `Accounts produced` and
+the attempt trail, which is #43 and has no type at all.
+
+This document is what all three are built against: a field that is not in the
+inventory does not go in the record, and a field in the inventory carries the
+reason it is there.
 
 The accounts themselves are not in this inventory. An account created by an
 invitation is an ordinary Jellyfin account in the server's own user database,
@@ -133,32 +153,47 @@ and no number.
 
 ## What deletes anything
 
-Nothing today, and the reason is narrower than it was. There is a place to put a
-record, the plugin opens it on every start, and nothing puts a record there. The
-member that would write one is called from nowhere in the plugin, and the only
-member the plugin reaches is the reading one:
+Nothing today, and the reason has moved to the other end of the sentence. It
+used to be that nothing put a record there. Records are put there now, and what
+is absent is the removal:
 
 ```
 $ git grep -nE '\.Write\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
+origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
 origin/master:Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
 origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
 origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
-$ git grep -n 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:126:        return Of(store.Read().Invitations, accountsTheServerHas);
-$ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
-exit=1
+$ git grep -nE '\.Remove\(|\.Delete\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:161:                File.Delete(Path);
 ```
 
-Three writers and none of them is a caller. The first is the hash secret writing
-itself, the second is the store's own writing member, and the third is the claim
-on the directory. So a server running this today has no invitations file and
-there is still no redemption path.
+Five writers and two of them are callers, which is the pair the section above
+names. The other three are the hash secret writing itself, the store's own
+writing member, and the claim on the directory. The one deleter in the plugin
+removes the claim file on the way out and reaches no record.
 
-One file the plugin does write on every start, named here because a flat
-"nothing is written" reads wider than what is true. `StoreLock` creates
-`invitations.lock` beside where the store would be, holding the server's host
-name, the process identifier and the moment the claim was taken, and removes it
-on the way out. No value from either table above is in it. It is there so that
+So an invitation minted today is kept until somebody removes the file by hand.
+`record-retention` is ninety days and #59 is the sweep that would apply it, and
+until that lands the number on this page is a decision rather than a behaviour.
+That is a wider gap than the one this section used to describe, and it is the
+direction worth being exact about: a page saying nothing is written is read as
+safe, and what is true is that things are written and nothing takes them away.
+
+The redemption half is unchanged. A `Redeem` controller exists and serves the
+page, and no redemption commits:
+
+```
+$ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:49:public sealed class RedeemController : ControllerBase
+origin/master:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
+```
+
+One file the plugin writes on every start, named here because it is the write
+that happens with no operator action behind it and so appears on a server where
+nobody has minted anything. `StoreLock` creates `invitations.lock` beside the
+store, holding the server's host name, the process identifier and the moment the
+claim was taken, and removes it on the way out. No value from either table above is in it. It is there so that
 two servers over one store are refused rather than allowed to corrupt it, which
 is `docs/disaster-cases.md`.
 
