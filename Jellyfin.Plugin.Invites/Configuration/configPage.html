@@ -13,42 +13,274 @@
         >
             <div data-role="content">
                 <div class="content-primary">
-                    <form id="InvitesConfigForm">
-                        <p class="fieldDescription">There is nothing to configure yet.</p>
-                        <div>
-                            <button
-                                is="emby-button"
-                                type="submit"
-                                class="raised button-submit block emby-button"
+                    <form id="InvitesMintForm">
+                        <h2>Invite somebody</h2>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="InvitesMintTemplate"
+                                >Template</label
                             >
-                                <span>Save</span>
-                            </button>
+                            <input is="emby-input" id="InvitesMintTemplate" type="text" required />
+                            <div class="fieldDescription">
+                                Which grant the invitation carries. The invitation keeps a copy of
+                                it, so editing a template afterwards does not change an invitation
+                                that was already minted.
+                            </div>
                         </div>
+                        <div class="inputContainer">
+                            <label
+                                class="inputLabel inputLabelUnfocused"
+                                for="InvitesMintValidityDays"
+                                >Valid for, in days</label
+                            >
+                            <input
+                                is="emby-input"
+                                id="InvitesMintValidityDays"
+                                type="number"
+                                min="1"
+                            />
+                            <div class="fieldDescription">
+                                Left empty, the plugin's own default is used. An invitation with no
+                                expiry at all is refused.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="InvitesMintUses"
+                                >Accounts it is good for</label
+                            >
+                            <input is="emby-input" id="InvitesMintUses" type="number" min="1" />
+                            <div class="fieldDescription">
+                                Left empty, the plugin's own default is used.
+                            </div>
+                        </div>
+                        <button
+                            is="emby-button"
+                            type="submit"
+                            class="raised button-submit block emby-button"
+                        >
+                            <span>Mint an invitation</span>
+                        </button>
+                    </form>
+
+                    <div id="InvitesMintedCode" class="hide">
+                        <h2>The code</h2>
+                        <p class="fieldDescription">
+                            This is the only time this code is shown. Nothing on this page and no
+                            route in this plugin will hand it back afterwards, because what is kept
+                            is a hash of it and not the code. Copy it now. The repair for a code
+                            nobody copied is a new invitation rather than a lookup.
+                        </p>
+                        <input is="emby-input" id="InvitesMintedCodeValue" type="text" readonly />
+                        <button
+                            is="emby-button"
+                            id="InvitesCopyCode"
+                            type="button"
+                            class="raised emby-button"
+                        >
+                            <span>Copy</span>
+                        </button>
+                        <div class="fieldDescription">
+                            The field above is selectable and copyable with the keyboard on its own.
+                            The button is a convenience and the page works without it.
+                        </div>
+                    </div>
+
+                    <h2>Outstanding invitations</h2>
+                    <p class="fieldDescription">
+                        These are the records as they stand, and this page judges none of them.
+                        Whether an invitation may still be honoured is decided in one place at the
+                        moment it is presented, and a second answer worked out here would be a
+                        second answer.
+                    </p>
+                    <table id="InvitesTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">Invitation</th>
+                                <th scope="col">Template</th>
+                                <th scope="col">Minted</th>
+                                <th scope="col">Expires</th>
+                                <th scope="col">Uses left</th>
+                                <th scope="col">Revoked</th>
+                                <th scope="col">Accounts</th>
+                                <th scope="col"><span class="hide">Revoke</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="InvitesList"></tbody>
+                    </table>
+
+                    <form id="InvitesConfigForm">
+                        <h2>Settings</h2>
+                        <div class="inputContainer">
+                            <label
+                                class="inputLabel inputLabelUnfocused"
+                                for="InvitesSettingPublicBaseUrl"
+                                >Public address</label
+                            >
+                            <input
+                                is="emby-input"
+                                id="InvitesSettingPublicBaseUrl"
+                                data-setting="PublicBaseUrl"
+                                type="text"
+                            />
+                            <div class="fieldDescription">
+                                The address a stranger reaches this server on, written the way a
+                                browser outside your network would need it, scheme and all.
+                                Invitation links are built from this and never from what a request
+                                says the host is, because a request can say anything. Left empty,
+                                building a link is refused rather than guessed at.
+                            </div>
+                        </div>
+                        <button
+                            is="emby-button"
+                            type="submit"
+                            class="raised button-submit block emby-button"
+                        >
+                            <span>Save</span>
+                        </button>
                     </form>
                 </div>
             </div>
             <script type="text/javascript">
                 var InvitesConfig = {
                     pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+                    invitations: "Invites",
+                    revoke: "Revoke",
                 };
+
+                function invitesCell(value) {
+                    var cell = document.createElement("td");
+                    cell.textContent =
+                        value === null || value === undefined || value === "" ? "-" : String(value);
+                    return cell;
+                }
+
+                function invitesMoment(value) {
+                    return invitesCell(value ? new Date(value).toLocaleString() : "");
+                }
+
+                function invitesRow(invitation) {
+                    var row = document.createElement("tr");
+                    row.appendChild(invitesCell(invitation.Id));
+                    row.appendChild(invitesCell(invitation.Template));
+                    row.appendChild(invitesMoment(invitation.MintedAt));
+                    row.appendChild(invitesMoment(invitation.ExpiresAt));
+                    row.appendChild(
+                        invitesCell(invitation.UsesRemaining + " of " + invitation.UsesGranted),
+                    );
+                    row.appendChild(invitesMoment(invitation.RevokedAt));
+                    row.appendChild(invitesCell(invitation.AccountsProduced.length));
+
+                    var actions = document.createElement("td");
+                    var button = document.createElement("button");
+                    button.setAttribute("is", "emby-button");
+                    button.setAttribute("type", "button");
+                    button.className = "raised emby-button";
+                    button.textContent = "Revoke";
+                    button.addEventListener("click", function () {
+                        invitesRevoke(invitation.Id);
+                    });
+                    actions.appendChild(button);
+                    row.appendChild(actions);
+                    return row;
+                }
+
+                function invitesList() {
+                    return ApiClient.getJSON(ApiClient.getUrl(InvitesConfig.invitations)).then(
+                        function (invitations) {
+                            var body = document.querySelector("#InvitesList");
+                            body.textContent = "";
+                            invitations.forEach(function (invitation) {
+                                body.appendChild(invitesRow(invitation));
+                            });
+                            Dashboard.hideLoadingMsg();
+                        },
+                    );
+                }
+
+                function invitesRevoke(id) {
+                    var asked = window.confirm(
+                        "Revoke this invitation? It stops accounts that have not been created yet and leaves the accounts it already created alone.",
+                    );
+                    if (!asked) {
+                        return;
+                    }
+
+                    Dashboard.showLoadingMsg();
+                    ApiClient.ajax({
+                        type: "POST",
+                        url: ApiClient.getUrl(
+                            InvitesConfig.invitations + "/" + id + "/" + InvitesConfig.revoke,
+                        ),
+                    }).then(invitesList);
+                }
+
+                function invitesSettingFields() {
+                    return document.querySelectorAll("[data-setting]");
+                }
+
+                function invitesLoadConfiguration() {
+                    return ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
+                        function (config) {
+                            invitesSettingFields().forEach(function (field) {
+                                var name = field.getAttribute("data-setting");
+                                field.value = config[name] === undefined ? "" : config[name];
+                            });
+                        },
+                    );
+                }
 
                 document
                     .querySelector("#InvitesConfigPage")
                     .addEventListener("pageshow", function () {
                         Dashboard.showLoadingMsg();
-                        ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
-                            function () {
-                                Dashboard.hideLoadingMsg();
-                            },
-                        );
+                        invitesLoadConfiguration().then(invitesList);
                     });
+
+                document.querySelector("#InvitesMintForm").addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+
+                    var validity = document.querySelector("#InvitesMintValidityDays").value;
+                    var uses = document.querySelector("#InvitesMintUses").value;
+
+                    ApiClient.ajax({
+                        type: "POST",
+                        url: ApiClient.getUrl(InvitesConfig.invitations),
+                        contentType: "application/json",
+                        dataType: "json",
+                        data: JSON.stringify({
+                            Template: document.querySelector("#InvitesMintTemplate").value,
+                            ValidityDays: validity === "" ? null : Number(validity),
+                            Uses: uses === "" ? null : Number(uses),
+                        }),
+                    }).then(function (minted) {
+                        document.querySelector("#InvitesMintedCodeValue").value = minted.Code;
+                        document.querySelector("#InvitesMintedCode").classList.remove("hide");
+                        return invitesList();
+                    });
+
+                    return false;
+                });
+
+                document.querySelector("#InvitesCopyCode").addEventListener("click", function () {
+                    var field = document.querySelector("#InvitesMintedCodeValue");
+                    field.focus();
+                    field.select();
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(field.value);
+                    }
+                });
 
                 document
                     .querySelector("#InvitesConfigForm")
                     .addEventListener("submit", function (e) {
+                        e.preventDefault();
                         Dashboard.showLoadingMsg();
+
                         ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                             function (config) {
+                                invitesSettingFields().forEach(function (field) {
+                                    config[field.getAttribute("data-setting")] = field.value;
+                                });
                                 ApiClient.updatePluginConfiguration(
                                     InvitesConfig.pluginUniqueId,
                                     config,
@@ -58,7 +290,6 @@
                             },
                         );
 
-                        e.preventDefault();
                         return false;
                     });
             </script>
