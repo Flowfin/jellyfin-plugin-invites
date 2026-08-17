@@ -73,59 +73,64 @@ and pruned less carefully than the trail. A field refused in the record cannot
 be admitted through the log, or the log is the store with none of the store's
 decisions attached to it.
 
-## The greppable rule is narrower than this list
+## Two greppable rules, and both are narrower than this list
 
-`secret-in-a-log-call` in `.github/lint/invariants.sh` is decided by #32 and is
-what a machine refuses. It matches spellings, so it is not this document and
-does not become it:
+`secret-in-a-log-call` and `code-or-link-in-a-log-call` in
+`.github/lint/invariants.sh` are decided by #32 and are what a machine refuses.
+They match spellings, so they are not this document and do not become it:
 
 ```
-$ git grep -n 'secret-in-a-log-call@' -- .github/lint/invariants.sh
+$ git grep -n 'in-a-log-call@' -- .github/lint/invariants.sh
 ```
 
-The alternation holds four words. A log call whose argument is named `code`,
-`url` or `link` passes it, and those are the ordinary names for the first three
-rows above. So a green `Invariant lint` says none of the four spellings appear,
-which is a much smaller claim than the never list holding.
+The first holds four words a reader already hears as a secret. The second holds
+the three names the same values are actually given in code: `code`, `url` and
+`link`, which are the ordinary names for the first three rows above. Until the
+second landed, a log call whose argument carried any of those three passed every
+route in this repository.
 
-Widening the pattern is deliberately not done here, and the reason is a cost
-rather than an absence of one. `code` appears in ordinary C# that has nothing to
-do with an invitation, a status code first. A rule that fires on a status code
-is a rule somebody switches off, and switching it off costs the four spellings
-it does catch.
+That widening was held open for a while, and the reason was a cost rather than
+an absence of one. `code` appears in ordinary C# that has nothing to do with an
+invitation, a status code first. A rule that fires on a status code is a rule
+somebody switches off, and switching it off costs the four spellings it does
+catch.
 
-That cost was a prediction and it has now been measured, because there are real
-log calls to measure it against. There are eight, all in the routine that reads
-the store when the server starts:
+What answers that is the shape rather than the measurement. The three words are
+a rule of their own, so a later false positive on a status code is narrowed,
+exempted or switched off on that rule alone and the four spellings survive it.
+The cost the objection named was the cost of putting all seven behind one
+switch, and there is no longer one switch.
+
+The measurement is worth having beside it. There are eight log calls in the
+plugin today, all in the routine that reads the store when the server starts:
 
     $ git grep -cPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)\s*\(' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs:8
 
-Adding `code`, `url` and `link` to the alternation fires on none of them, and on
-nothing else the plugin ships:
+The second rule's pattern fires on none of them, and on nothing else the plugin
+ships:
 
     $ git grep -nPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b' -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
     exit=1
 
-Over the whole tracked tree it fires once, on the rule's own tripping fixture,
-which is the file that exists to be fired on:
+Over the whole tracked tree it fires inside the lint's own fixtures and nowhere
+else, and `check` drops that directory:
 
-    $ git grep -nPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b' -- '*.cs'
-    .github/lint/fixtures/secret-in-a-log-call.trip.cs:8:        logger.LogInformation("Redeeming {Code}", invitationCode);
+    $ git grep -lPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b' -- '*.cs'
+    .github/lint/fixtures/code-or-link-in-a-log-call.trip.cs
+    .github/lint/fixtures/secret-in-a-log-call.trip.cs
 
-So the widening costs nothing today. What that does not say is that it costs
-nothing, and the difference is the whole reason it is not done here: eight calls
-in one file is a small population, and the objection was always about the log
-calls the redemption path has not written yet, where a status code and an
-invitation code sit closest together. The measurement is recorded so that
-whoever decides is deciding against a number, and #32 is where the decision is
-held.
+So a green `Invariant lint` says none of seven spellings appear, which is a
+larger claim than it was and still a much smaller one than the never list
+holding. The population it has been measured over is eight calls in one file,
+and the log calls the redemption path has not written yet are where a status
+code and an invitation code sit closest together.
 
 ## What this document does not settle
 
-Nothing enforces the list beyond the one rule above. No check reads this file,
+Nothing enforces the list beyond the two rules above. No check reads this file,
 no check counts log calls, and a line written against every rule here would
-reach the mainline if it avoided four words.
+reach the mainline if it avoided seven words.
 
 It also does not decide the log level of anything, or whether the trail and the
 log are the same write. Both belong with #43, which builds the trail, and both

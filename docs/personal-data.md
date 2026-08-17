@@ -181,7 +181,8 @@ The invitation code, other than as the keyed hash above. The hash secret is
 held, and it is a secret rather than personal data, and #30 owns it. The
 password an invited person chooses is handed to the server and never stored
 here. #32 is the same list applied to log lines, and the greppable half of it
-is the `secret-in-a-log-call` rule in `.github/lint/invariants.sh`.
+is the `secret-in-a-log-call` and `code-or-link-in-a-log-call` rules in
+`.github/lint/invariants.sh`.
 
 ## What this document does not settle
 

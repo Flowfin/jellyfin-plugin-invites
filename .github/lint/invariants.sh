@@ -29,6 +29,7 @@ RULES=(
   'secret-compared-by-sequence@#29@(?i)^(?=.*\b\w*(secret|token|hash)\w*\b).*\.SequenceEqual\s*\(@'
   'secret-compared-through-a-comparer@#29@(?i)^(?=.*\b(?!hashset\b)\w*(secret|token|hash)\w*\b).*(\bstring\.Equals\s*\(|\bStringComparer\.)@'
   'secret-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(invitationcode|password|secret|hashsecret)\b@'
+  'code-or-link-in-a-log-call@#32@(?i)\bLog(Information|Warning|Error|Debug|Trace|Critical)?\s*\([^)]*\b(code|url|link)\b@'
   'policy-written-outside-the-template@#69@\.Policy\s*=[^=]|UpdateUserPolicy\s*\(|UpdatePolicy\s*\(@^[^:]*AccountTemplate[^:]*:'
   'policy-field-written-outside-the-template@#69@\.Policy\s*\.\s*\w+\s*=[^=]@^[^:]*AccountTemplate[^:]*:'
   'administrator-flag-set@#62@\bIsAdministrator\s*=(?!=)@'
@@ -54,6 +55,8 @@ explain() {
       echo "string.Equals and StringComparer are the same early-returning comparison with the secret moved into an argument. Use CryptographicOperations.FixedTimeEquals." ;;
     secret-in-a-log-call)
       echo "An invitation code, a password or the hash secret in a log line is that secret written to disk in clear." ;;
+    code-or-link-in-a-log-call)
+      echo "A value called a code is the credential, and a link or a url is the credential with a host in front of it. Log the invitation identifier instead." ;;
     policy-written-outside-the-template)
       echo "A user policy written anywhere but the routine that applies an account template is a grant nobody reviewed." ;;
     policy-field-written-outside-the-template)
@@ -121,6 +124,38 @@ explain() {
 # tripping fixture per rule id, so a word added to a rule that already trips is a
 # word nothing proves. And the first rule reds on a null check written as
 # hash == null, which is correct code. Both are recorded on #29.
+#
+# Two rules carry #32, and the second is a vocabulary rather than a shape. The
+# first refuses four words a reader already hears as a secret. What it leaves is
+# the three names the same three values are actually given in code: a redemption
+# route calls its parameter code, and a mint route calls the address it just
+# built url or link. docs/logging.md places all three in its never list, the
+# link row explaining that it is the code with a host in front of it.
+#
+# It is a rule of its own rather than three more words on the first, for two
+# reasons that pull the same way. The selftest reads one tripping fixture per
+# rule id, so words added to a rule that already trips are words nothing proves,
+# which is the bound recorded on #29 above. And the objection that held this
+# widening open was a cost: code appears in ordinary C# that has nothing to do
+# with an invitation, a status code first, and a rule that fires on one is a
+# rule somebody switches off - which, on one rule, would cost the four spellings
+# it does catch. Split in two, the switch reaches this vocabulary alone and the
+# four survive it. So the shape answers the objection that the measurement only
+# postponed.
+#
+# The measurement is still worth having and is in docs/logging.md: over the log
+# calls this plugin ships today the pattern fires on none of them, and over
+# every tracked file it fires once, inside the other #32 rule's tripping
+# fixture, which check mode drops with the rest of that directory.
+#
+# Its bounds. The selftest asserts that the fixture pair moves the rule, not
+# that each of the three words does; which line each word holds was measured by
+# narrowing the pattern one word at a time, and that reading is in the change
+# that landed this rather than re-run on every push. It matches one line, so a
+# code pulled into a local on an earlier line and logged under another name is
+# invisible to it, as it is to every rule here. And it reads the argument text
+# rather than the value, so an interpolated string holding a code without ever
+# naming one walks through. All of that is on #32.
 #
 # Two rules carry #69, and the second one was found inside the first one's own
 # tripping fixture. That fixture holds two lines, a policy field set and a whole
