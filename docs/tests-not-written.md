@@ -107,11 +107,18 @@ A test that asserts the shape of rendered markup is also a test that breaks on
 every styling change and catches nothing, which is the reason this one is
 refused twice over.
 
-Replaced by the formatting check over the non-C# files, which is #19, and by an
+Replaced by the formatting check over the non-C# files, which is #19, by an
 assertion that the page loads no external origin, which is part of #74 for the
-setup page and #84 for the configuration page. Between them they cover the two
-things about the page that are worth failing a build for: that it is readable,
-and that it fetches nothing from anywhere else.
+setup page and #84 for the configuration page, and by assertions that the page's
+own wiring agrees with the code it drives. Between them they cover three things
+about the page that are worth failing a build for: that it is readable, that it
+fetches nothing from anywhere else, and that every route it calls and every
+element it reaches for is one that exists.
+
+The third of those is the one a reader is most likely to mistake for the refused
+test, so it is worth being exact about what it sees. It reads the page as bytes
+and the controller through its own attributes, and compares the two. It does not
+render anything and it says nothing about what a browser makes of the markup.
 
 The second replacement said route-level until the configuration page got one,
 and that word was wrong for this half of it. A configuration page is an embedded
@@ -119,12 +126,17 @@ resource the dashboard asks for, so what is served is bytes in the assembly and
 a test reads them without a route anywhere. The setup page is a route and its
 half of this row stays route-level.
 
-Status: both parts exist for the configuration page and neither does for the
+Status: all three parts exist for the configuration page and none does for the
 setup page. #19 is closed and the formatter reads the configuration page like
 every other tracked non-C# file, since nothing in `.prettierignore` covers it.
 `PageFetchesFromNowhereElse` in `ConfigurationPageTests` refuses four spellings
-of an address somewhere else and names the line it found. The setup page has no
-test because it has no page, which is #74 and is open.
+of an address somewhere else and names the line it found.
+`PageCallsTheRoutesTheControllerDeclares` in the same file reads the route
+template off `InvitesController` and the revoke template off its `Revoke`
+action and compares both against the literals the page calls, and
+`PageQueriesElementsItActuallyDeclares` holds every identifier the page's script
+reaches for against the markup in both directions. The setup page has no test
+because it has no page, which is #74 and is open.
 
 ### A test that waits for an invitation to expire
 
@@ -159,7 +171,7 @@ Row by row, which is the same thing each status line above says at more length.
 The setup page has neither of its two, because #107 is open and no manual check
 has been recorded. The real-server row has its two workflows and not its manual
 install. The reverse-proxy row has both. The mail row has nothing to replace and
-says so. The dashboard row has both for the configuration page and neither for
+says so. The dashboard row has all three for the configuration page and none for
 the setup page, which has no page yet. The sleeping row has the seam and the
 expiry boundary cases, and not the three behaviours that do not exist.
 
@@ -168,7 +180,7 @@ count:
 
 ```
 $ git ls-files -- '*.cs' ':!.github/lint/fixtures' | grep -c 'Tests/'
-30
+33
 ```
 
 This list is what the suite is built against as it grows, and #100 is where the
