@@ -69,6 +69,20 @@ this request under #78, or with the single refusal below. No JSON shape, because
 the caller is a browser following a link. Reading the invitation here writes
 nothing.
 
+What answers today is narrower than that paragraph, and the difference is worth
+reading before anybody calls this route. #74 landed the page and nothing else:
+the same bytes are served for every code, no invitation is looked up, and the
+response carries no anti-forgery token. So the refusal half is undelivered, and
+the route discloses nothing about a code because it does not read one. The
+lookup by code that both halves need does not exist in this plugin; #75 and #77
+own the refusal and #78 owns the token.
+
+The response carries `Content-Security-Policy`, `X-Frame-Options`,
+`X-Content-Type-Options`, `Cache-Control` and `Referrer-Policy`, and
+`SetupPageTests` asserts each of them. The policy names no origin at all beyond
+the one hash of the page's own style element, which is derived from the page as
+it is served rather than written into a header by hand.
+
 ### `POST /redeem/{code}`
 
 Takes the answers, decides, and creates the account.
@@ -233,7 +247,6 @@ the plugin assembly does not register, so a route that starts answering while
 its line is still here reds, and so does a heading with neither a controller nor
 a line behind it.
 
-- `GET /redeem/{code}`
 - `POST /redeem/{code}`
 - `GET /redeem/done`
 
