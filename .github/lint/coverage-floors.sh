@@ -34,6 +34,7 @@ AREAS=(
   'startup@Startup@85@Jellyfin.Plugin.Invites/Startup'
   'clock@Time@90@Jellyfin.Plugin.Invites/Time'
   'controllers@Controllers@70@Jellyfin.Plugin.Invites/Controllers'
+  'setup@Setup@90@Jellyfin.Plugin.Invites/Setup'
 )
 
 # What is measured and given no floor, with the reason in
