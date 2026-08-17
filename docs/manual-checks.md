@@ -19,6 +19,17 @@ the packaged build. Confirm the setup page appears with its fields, that
 submitting it produces an account, and that a refused invitation shows the
 refusal rather than a blank page or a stack trace.
 
+Run it against a server with no web client installed. That is not an unusual
+server chosen to be strict about it; it is the condition the page's whole shape
+was picked for. #74 chose an embedded page over a redirect into the client
+precisely so the flow survives a server that has no client, and its last clause
+asks for the page to render on one. A run against a server that has the client
+answers a different question and cannot be read as that clause.
+
+The `Notes` cell says which it was. A run that could only be made against a
+server carrying the web client is still worth recording, and it says so rather
+than being filed as the check the clause asks for.
+
 This covers what the route-level tests in #107 cannot see. Anything the route
 tests do cover is not repeated here, because a manual step that duplicates an
 automated one is a step people learn to skip.
