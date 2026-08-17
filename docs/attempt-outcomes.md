@@ -13,9 +13,12 @@ set a requirement of the refusals rather than a convenience for the view that
 renders them.
 
 Nothing here is enforced. There is no redemption path to produce an outcome and
-no trail to append to:
+no trail to append to. The command this rested on asked whether the tree has any
+route at all, and it stopped answering the question once the administrator routes
+and the setup page landed, so it is corrected rather than dropped. What holds the
+claim up is that the routine deciding a redemption has no caller:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
 
 `docs/personal-data.md` already names this set as what the outcome field holds,

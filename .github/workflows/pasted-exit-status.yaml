@@ -1,0 +1,45 @@
+name: '📎 Pasted Evidence'
+
+on:
+  # Every branch and every pull request. This drift arrives from two directions
+  # and neither of them is a change to a document: a paste goes stale when the
+  # code under it moves, so the pull request that breaks a claim is usually one
+  # that never opened the file carrying it.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  pasted-exit-status:
+    name: Every pasted exit status still holds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        # The commands the check re-runs are git plumbing over the tree at this
+        # commit. Full history is not needed and is not fetched.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. Every paste in
+        # this tree agrees today, so the step below cannot fire, and a rule that
+        # had stopped recognising the shape would go green forever while the
+        # documents drifted underneath it. That is the failure that makes a
+        # documentation check worse than none: the file is trusted because a green
+        # mark stands behind it.
+        run: bash .github/lint/pasted-exit-status.sh selftest
+
+      - name: Every pasted exit status is reproduced
+        run: bash .github/lint/pasted-exit-status.sh check .

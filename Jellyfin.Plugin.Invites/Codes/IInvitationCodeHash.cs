@@ -17,10 +17,32 @@ namespace Jellyfin.Plugin.Invites.Codes;
 /// It is a seam for the same reason <see cref="Time.IClock"/> is one. The
 /// secret behind the hash has a life cycle, which is where it is generated,
 /// what its permissions are, what happens when it is missing and what rotation
-/// costs, and that is #30 rather than this interface. Until #30 lands there is
-/// no implementation of this in the plugin, and the suite supplies its own.
-/// The decision routine takes this rather than a secret so that neither the
-/// routine nor its table has to know any of that.
+/// costs, and that is #30 rather than this interface. The decision routine takes
+/// this rather than a secret so that neither the routine nor its table has to
+/// know any of that.
+/// </para>
+/// <para>
+/// <b>What implements it.</b> <see cref="InvitationCodeHash"/>, which landed
+/// under #29 and takes its key from <see cref="Storage.HashSecret"/>. This
+/// remark said there was no implementation in the plugin until #30 landed, which
+/// was true when it was written and stopped being true without the sentence
+/// moving. It is corrected here rather than deleted, because a reader who opens
+/// this file to find out whether the stored form is keyed was being told it is
+/// not, in the file that defines what keying means here.
+/// </para>
+/// <para>
+/// <b>What still does not call it.</b> One routine in the plugin takes this
+/// interface, the one in <see cref="Redemption.RedemptionDecision"/> that decides
+/// a presented code, and nothing calls that routine. So the seam is exercised
+/// only by the suite. docs/threat-model.md carries the command that shows the
+/// absence, written there rather than here because a command pasted into source
+/// is a line the same command then finds.
+/// </para>
+/// <para>
+/// The mint path does construct the implementation and hash a code with it, in
+/// <see cref="Invitations.InvitationOperations"/>, but it holds the concrete type
+/// rather than this interface. So the keyed form is in use for writing a record
+/// and has never been used for deciding one.
 /// </para>
 /// </remarks>
 public interface IInvitationCodeHash

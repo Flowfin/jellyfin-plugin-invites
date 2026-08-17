@@ -10,9 +10,20 @@ lives, and what a restart does to it. It is written before the limiter exists,
 because the answer changes what numbers may later be chosen, and a lifetime read
 off an implementation somebody already wrote is a lifetime nobody decided.
 
-Nothing here is built. There is no endpoint to limit:
+Nothing here is built, and the reason has moved. This paragraph said there is no
+endpoint to limit, which was true when it was written and was overtaken without
+the sentence moving. There is an endpoint a stranger can reach:
 
     git grep -lE 'ControllerBase|ApiController|HttpGet|HttpPost' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    exit=0
+
+`RedeemController` serves the setup page anonymously, so the address the limiter
+belongs on exists. What it still does not do is read an invitation or decide
+anything, so there is no attempt to count: the same bytes come back for a code
+that was never minted as for a live one, and the routine that would tell them
+apart has no caller.
+
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
 
 ## The counter lives in memory, in the plugin's process

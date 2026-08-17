@@ -16,10 +16,12 @@ exact instant, and the one clock reading is the argument it takes rather than a
 read it performs, with the lint refusing a second read anywhere but the seam.
 Both rules say so in place below.
 
-What is absent is a caller. The plugin serves no route, and nothing hands the
+What is absent is a caller. This paragraph said the plugin serves no route, and
+that stopped being true when the administrator routes and the setup page landed,
+without the sentence moving. The plugin serves routes; none of them hands the
 decision a clock reading or does anything with its verdict:
 
-    git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
     0

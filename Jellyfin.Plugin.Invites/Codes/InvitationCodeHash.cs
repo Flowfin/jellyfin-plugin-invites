@@ -47,9 +47,19 @@ namespace Jellyfin.Plugin.Invites.Codes;
 /// the key are both on the never list in docs/logging.md.
 /// </para>
 /// <para>
-/// <b>Nothing in the plugin constructs one yet.</b> The redemption path that
-/// would is #56 and does not exist, so this is the surface that path takes
-/// rather than a thing already in use. The suite constructs it directly.
+/// <b>The mint path constructs one; no redemption path does.</b> This remark
+/// said nothing in the plugin constructs one yet. That was true when it was
+/// written and was overtaken without the sentence moving, which is the shape #257
+/// is about, so it is corrected here rather than deleted.
+/// </para>
+/// <para>
+/// The construction is in <see cref="Invitations.InvitationOperations"/>, where a
+/// mint hashes the code it has just drawn so the record carries the keyed form and
+/// never the code. Deciding a presented code is the other direction and is #56's
+/// routine, which has no caller, so nothing here has yet compared a hash of
+/// something a stranger typed. docs/threat-model.md carries the commands for both
+/// halves; they are not pasted here, because a command written into source is a
+/// line the same command then finds. The suite also constructs this directly.
 /// </para>
 /// </remarks>
 public sealed class InvitationCodeHash : IInvitationCodeHash
