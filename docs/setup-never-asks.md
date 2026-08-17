@@ -53,28 +53,41 @@ The page says which server it belongs to, so the person can tell they are where
 they think they are. A page that could be any server is a page that is easy to
 imitate.
 
-## What none of this is yet
+## What is enforced, and what is still read by a person
 
-There is no page. Nothing the plugin declares serves anything, which is
-checkable rather than a claim about work not yet done:
-
-```
-git grep -nE 'ControllerBase|ApiController|HttpGet|HttpPost' -- '*.cs' ':!Jellyfin.Plugin.Invites.Tests'
-exit=1
-```
-
-So no line above is enforced today, and three of them are things a test has to
-say rather than a document. When the page lands, the enforcement each rule is
-owed is:
+This section said there was no page and quoted a command returning nothing.
+There is one. #74 landed it as an embedded resource served at
+`GET /redeem/{code}`, and the paragraphs below say which of the rules above the
+tree now refuses and which it does not.
 
 - The list of questions is read by a person against the form. Nothing can
   decide whether a field asks for a legal name, and no check is owed for that.
-- No resource from another host is a property of the served bytes and a check
-  can decide it. #73 asks for a test that asserts the rendered page references
-  no external origin, and that test lands with the page in #74.
+  What `SetupPageTests` does say is narrower and worth having beside it: the
+  form carries the three fields this page names and no fourth, so a question
+  added to it cannot arrive without somebody moving that assertion.
+- No resource from another host is a property of the served bytes, and it is
+  refused twice. The page is read for four spellings of an address somewhere
+  else, which is the same reading the configuration page gets, and the response
+  carries a content security policy of `default-src 'none'` that names no
+  origin at all. The one thing opened back up is the page's own style element,
+  by hash rather than by an allowance, and the hash is computed from the page as
+  it is served so the two cannot drift apart.
 - Every field on the form appearing in the personal-data inventory is a
   comparison between two files, and it is the one rule here that could be
   refused by a machine rather than read. Nothing does it today.
+
+Two things the page does not do yet, said here rather than left to be found.
+
+It does not say which server it belongs to, which the presentation rules above
+ask for. The page is served as bytes nothing is written into, which is what
+leaves it with no place a presented code could reach the markup, and naming the
+server means putting a value into it. Which value, and where it comes from, is
+not decided here.
+
+It reads no invitation. The same page is served for a code that was never
+minted as for a live one, so nothing about a code is disclosed and nothing is
+refused either. The refusal a spent, expired or revoked invitation is owed is
+#75 and #77.
 
 One gap is worth naming rather than leaving for whoever hits it. The inventory
 in [docs/personal-data.md](personal-data.md) has rows for the invitation record

@@ -102,11 +102,14 @@ public class RouteInventoryTests
     /// <summary>
     /// The controllers reachable without authentication. There is exactly one
     /// category of these by design, the redemption path a stranger presents an
-    /// invitation to, and it is empty today because that route is not written.
-    /// A second name here is a second public endpoint and is a decision, not an
+    /// invitation to, and one name in it today, the setup page from #74. A
+    /// second name here is a second public endpoint and is a decision, not an
     /// addition.
     /// </summary>
-    private static readonly HashSet<string> PublicControllers = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> PublicControllers = new(StringComparer.Ordinal)
+    {
+        "Jellyfin.Plugin.Invites.Controllers.RedeemController",
+    };
 
     /// <summary>
     /// Discovers controllers the way the server does. The framework decides
