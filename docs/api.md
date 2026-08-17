@@ -258,8 +258,17 @@ plugin.
 
 ## What is not claimed
 
-Nothing here has been measured against a running server, because none of these
-routes exists. Every sentence above is a decision about what will be built.
+Nothing here has been measured against a running server. That much is unchanged
+and it is the sentence worth keeping.
+
+The reason given for it was that none of these routes exists, and that stopped
+being true without the sentence moving. Five of the seven headings above are
+served by the assembly now, and the two that are not are the two the section
+above lists, which the suite holds rather than a reader. So the claim is
+narrowed rather than dropped: what has not been measured is this page against a
+server, and what is now source rather than intention is whatever the register
+above does not name. A sentence saying every heading is a decision about what
+will be built was true when it was written and is not true now.
 
 What holds this page against the source is `ApiDocumentTests`, and it reads
 routes rather than files: the controllers are discovered through the same
