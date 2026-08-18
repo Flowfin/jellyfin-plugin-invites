@@ -65,9 +65,9 @@ decides a presented code has no caller.
 `InvitationStore.Read` answers a directory with no file as no invitations rather
 than creating one, so reading at startup does not bring the file into being.
 
-So every entry below names the issue that owns the behaviour, and three of the
-nine are held by a test that was seen to fail. Which three, and what each one
-was broken with, is at the foot of this page. The other six were not put to that
+So every entry below names the issue that owns the behaviour, and five of the
+nine are held by a test that was seen to fail. Which five, and what each one
+was broken with, is at the foot of this page. The other four were not put to that
 check here, so nothing on this page says a test holds them. That accounting
 matters and is not a formality: an entry without one is a decision the plan has
 taken and nothing more, and a decision is something a later change can contradict
@@ -226,39 +226,42 @@ is its change to make rather than something this file can assert about itself.
     exit=1
 
 The done condition of #115 asks that every entry match the behaviour the tests
-assert. Three of the nine are shown below to be held by one, and that clause is
+assert. Five of the nine are shown below to be held by one, and that clause is
 met one entry at a time as the behaviours land rather than by this document.
 
 ## Which entries a test holds
 
-Each of the three was checked by breaking the thing the entry rests on and
+Each of the five was checked by breaking the thing the entry rests on and
 watching the suite, rather than by reading a test name and deciding it looked
-close enough. None of the three faults is in the tree.
+close enough. None of the faults is in the tree, and every run below was made at
+the commit this page is on rather than carried across from the commit where the
+fault was first written. The rebuild is part of each run: a revert followed by
+`--no-build` measures the binary the fault is still in.
 
 **A code is shown once and cannot be recovered.** The mint routine was handed
 the code as the template label, one argument along from where it belongs, which
 is the slip that puts a live code in the store file:
 
     $ sed -i '178s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    $ dotnet test --configuration Release --no-build
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode [FAIL]
       MintedCodeIsNotHandedBackTests.NoReadingRouteHandsBackAnythingShapedLikeACode [FAIL]
       InvitesControllerTests.MintingReturnsACodeThatMatchesTheStoredHash [FAIL]
-    Fehler!      : Fehler: 3, erfolgreich: 401, übersprungen: 8, gesamt: 412
+    Fehler!      : Fehler: 3, erfolgreich: 404, übersprungen: 8, gesamt: 415
 
 **A restored backup revives spent invitations**, for the part this page adds,
 which is reading the disagreement the plugin reports on load. The comparison was
 inverted by dropping one character:
 
     $ sed -i '156s/if (!present.Contains(account))/if (present.Contains(account))/' Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs
-    $ dotnet test --configuration Release --no-build
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ConsistencyReportTests.AStoreTheServerAgreesWithReportsNothing [FAIL]
       ConsistencyReportTests.ARecordThatNamesOneAccountTwiceIsNotTidiedAway [FAIL]
       ConsistencyReportTests.AStoreThatDisagreesInBothDirectionsIsReportedInBoth [FAIL]
       StoreLoadTests.ALoadReportsWhatTheStoreDisagreesWithInBothDirections [FAIL]
       LoadOnStartTests.AStartOverAStoreThatDisagreesNamesBothDirections [FAIL]
       LoadOnStartTests.DisagreementsBeyondTheBoundAreCountedRatherThanNamed [FAIL]
-    Fehler!      : Fehler: 6, erfolgreich: 398, übersprungen: 8, gesamt: 412
+    Fehler!      : Fehler: 6, erfolgreich: 401, übersprungen: 8, gesamt: 415
 
 Two of those six assert that it happens on load, which is the word the entry
 uses, rather than only that the comparison answers correctly when somebody calls
@@ -270,19 +273,95 @@ exactly what the entry is about and what a suite spelling every instant at one
 offset cannot see:
 
     $ sed -i '111s/if (now >= match.ExpiresAt)/if (now.DateTime >= match.ExpiresAt.DateTime)/' Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
-    $ dotnet test --configuration Release --no-build
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       StoredInstantTests.TheDecisionReadsTwoSpellingsOfOneClockReadingAlike(offsetHours: 13) [FAIL]
       StoredInstantTests.TheDecisionJudgesTwoSpellingsOfOneMomentAlike(offsetHours: 13) [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 402, übersprungen: 8, gesamt: 412
+    Fehler!      : Fehler: 2, erfolgreich: 405, übersprungen: 8, gesamt: 415
+
+**Revoking an invitation does not remove the accounts it already created.** A
+revocation rebuilds the record field by field, so the mistake this entry is
+about is one field left off that call, which reads at the site like tidying a
+list that is no longer needed:
+
+    $ sed -i '104s/accountsProduced: invitation.AccountsProduced);/accountsProduced: []);/' Jellyfin.Plugin.Invites/Invitations/Revocation.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      RevocationTests.TheAccountsAlreadyCreatedAreStillNamed [FAIL]
+      RevocationTests.RevokingChangesNothingElseAboutTheRecord [FAIL]
+    Fehler!      : Fehler: 2, erfolgreich: 405, übersprungen: 8, gesamt: 415
+
+Two rather than one, and the second is the wider of the pair: it holds every
+field the revocation carries across rather than this one, so a change dropping
+some other field is caught by the same assertion. The entry's other half, that
+revoking stops the invitation from being redeemed again, is the revocation
+outcome and is held by `RedemptionDecisionTests.ARevokedInvitationIsRefused`,
+which was put to a fault under #57 rather than here.
+
+**Expiry is not the same as deletion**, for the half of it that had nothing.
+That entry promises two separate things: a presented code stops being honoured
+at the instant, and the record stays where it was so an operator can still see
+it and account for it. The first half is the comparison the timezone entry above
+rests on. The second was held by nothing, and a reading routine rewritten to hide
+what the clock had passed left the whole suite green. Three faults, one per
+assertion, each reddening exactly one:
+
+    $ sed -i '195s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillListed [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+
+    $ sed -i '209s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillFoundByItsIdentifier [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+
+The third is the one worth reading, because it does not filter anything a caller
+sees. It writes the shortened list back, which is the tidy-up somebody adds to a
+reading routine believing it changes nothing:
+
+      var seen = Store().Read().Invitations;
+      var live = seen.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();
+      if (live.Length != seen.Length)
+      {
+          Store().Write(live);
+      }
+
+      return seen;
+
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ExpiryIsNotDeletionTests.CrossingTheExpiryChangesNothingOnTheDisk [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+
+What that does not cover is the sentence about the retention rule. Removing a
+record once retention allows it is the sweep in #59 and nothing in this tree
+sweeps, so an expired record staying forever and an expired record removed on
+schedule are the same tree today.
 
 Each fault was put back afterwards and the suite returns to where it started:
 
-    $ dotnet test --configuration Release --no-build
-    Bestanden!   : Fehler: 0, erfolgreich: 404, übersprungen: 8, gesamt: 412
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+    Bestanden!   : Fehler: 0, erfolgreich: 407, übersprungen: 8, gesamt: 415
 
-The other six entries are the username disclosure, the deleted library, the
-server line, expiry against deletion, revocation leaving accounts alone, and
-uninstall leaving accounts alone. No fault was run against any of them here, so
-this section says nothing about whether they are held. Two of the six describe
-routines nothing in this tree has yet, which is the startup comparison in #97 and
-the retention sweep in #59, and for those the answer is not in doubt.
+The other four entries are the username disclosure, the deleted library, the
+server line, and uninstall leaving accounts alone. No fault was run against any
+of them here, and for three of the four there is nothing to run one against.
+Nothing in the plugin judges a username, resolves a library identifier, or
+compares the running server against the line it was built for:
+
+    git grep -niE 'Username' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v '///' ; echo "exit=$?"
+    exit=1
+    git grep -niE 'EnabledFolders|libraryId|ResolveLibrar' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    exit=1
+    git grep -niE 'ApplicationVersion|ServerVersion|TargetAbi' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    exit=1
+
+The fourth is different and is worth separating from the other three, because it
+reads as covered and is not. Uninstall leaving accounts alone is true today
+because the plugin has no way to touch one: the seam over the server's accounts
+carries a single member and it reads.
+
+    git grep -nE '^    [A-Za-z?<>,\.]+ [A-Za-z]+ \{ get; \}' origin/master -- Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs
+    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
+
+That is an absence rather than a guard. A write member added to that interface
+tomorrow would pass every check in this repository, so what would hold this entry
+is an assertion refusing one, and there is none. #91 is where the entry lives.
