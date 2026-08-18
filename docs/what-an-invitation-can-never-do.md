@@ -11,7 +11,7 @@ this page would be better off without.
 
 ## How to read a line
 
-Each line carries one of three states, and they are different claims:
+Each line carries one of four states, and they are different claims:
 
 - **Refused by a test.** A named test fails when the line is broken in the
   source. The test is named here, and breaking the line is how the naming was
@@ -20,6 +20,12 @@ Each line carries one of three states, and they are different claims:
   shape of the mistake. That is narrower than the sentence: it catches the
   spelling somebody actually writes and not the same thing written another way,
   which the lint file says about itself rule by rule.
+- **Refused at the capability.** A named test refuses the plugin gaining the
+  ability the line is about, rather than refusing the behaviour. It is weaker
+  than the first state and stronger than the last, and the difference matters in
+  one direction: it says the line cannot be broken today and says nothing about
+  the day the ability arrives. The test reds on that day, which is what puts the
+  line's own test in the change that lands the routine rather than after it.
 - **Not refused.** Nothing in the tree would notice. The line still belongs
   here, because the code it is about is being written against it, and the issue
   that will land that code is named.
@@ -34,6 +40,15 @@ The tests are named rather than pasted, and the names are what the suite prints:
 
 Not refused by a test. Nothing in this plugin creates an account or writes a
 user policy, so there is no execution path for a test to reach.
+
+Refused at the capability. Creating an administrator means creating an account,
+and the plugin cannot create one: `TheSeamOverTheServersAccountsDeclaresNothingThatWrites`
+refuses a member on the seam over the server's accounts that takes an argument
+or hands nothing back, and `OnlyTheReadSeamCanBeHandedTheServersUserManager`
+refuses a second type in the plugin able to be handed the user manager at all.
+That is not a defence of this line and it is not nothing: it means the line
+cannot be broken by a change that does not first announce itself by reddening
+one of those two.
 
 Refused by a spelling, in part.
 `policy-field-written-outside-the-template` matches a policy field assigned
@@ -74,6 +89,15 @@ has no member that writes. What is gone is the argument that no path in the
 plugin could reach an account at all, and what is left is the smaller one, that
 the path which exists reads identifiers.
 
+Refused at the capability, since #91. That the seam reads and never writes was
+an observation, and `AccountsAreNeverWrittenTests` makes it a refusal: a member
+on the interface that takes an argument or hands nothing back, a name the seam
+reaches by reflection that is not a read on the server's own interface, and a
+second type in the plugin able to take the user manager are each refused. The
+middle one is the one a reader should notice, because the seam binds late and a
+write behind a looked-up name is invisible to the compiler and to a lint that
+reads source text.
+
 The first line is prose inside a test file, and the test it belongs to is the
 nearest thing in the tree to a defence of this sentence.
 `NothingHereCanBeHandedAnAccount` holds the parameters of the revocation routine
@@ -83,9 +107,16 @@ line is about every routine.
 
 The line has two halves and they need different mechanisms. That the routine
 does not modify an account it was handed is a test, and it waits on the routine
-in #69 and the write side of the seam in #103. That no other path in the plugin
-ever calls the server's update method is not a test at all: it is a greppable
-invariant, and `policy-written-outside-the-template` is the half that exists.
+in #69 and the write side of the seam in #103. The second half, that no other
+path in the plugin ever reaches the server's update method, said here that it is
+not a test at all and is a greppable invariant.
+`OnlyTheReadSeamCanBeHandedTheServersUserManager` is that half as a test, and it
+is stronger than the grep it replaces: it reads the compiled assembly rather
+than source text, so a spelling the lint's pattern does not match is still a
+type able to take the user manager and is still refused.
+`policy-written-outside-the-template` stays where it is and covers the
+neighbouring shape, a policy written outside the routine that applies a
+template.
 
 ### An invitation can never grant a library, a permission or a quota that its template does not name
 
@@ -205,3 +236,12 @@ the other direction: a line's source arriving with no test for the line is what
 this table exists to make visible, so a change that lands one of the issues
 above lands the line's test in the same change and moves its row out of this
 table.
+
+Nothing in the table moves for the capability refusal added under #91, and that
+is deliberate. What is missing in each row is a routine and the test over it,
+and refusing the plugin the ability to reach an account removes neither. What it
+changes is the first two rows' failure mode rather than their content: those
+lines cannot be broken quietly today, because the change that would break them
+has to add a write to the seam or a second type able to take the user manager,
+and both are red before a line of the routine is written. The row leaves this
+table when the routine and its test arrive, not before.
