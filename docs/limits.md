@@ -366,6 +366,16 @@ carries a single member and it reads.
     git grep -nE '^    [A-Za-z?<>,\.]+ [A-Za-z]+ \{ get; \}' -- Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs
     Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
 
-That is an absence rather than a guard. A write member added to that interface
-tomorrow would pass every check in this repository, so what would hold this entry
-is an assertion refusing one, and there is none. #91 is where the entry lives.
+That was an absence rather than a guard until #91 turned it into one.
+`AccountsAreNeverWrittenTests` refuses a member on that interface that takes an
+argument or hands nothing back, refuses a name the seam reaches by reflection
+that is not a read on the server's own interface, and refuses a second type in
+the plugin that can be handed the user manager at all. The middle one is the
+reason the file exists: the seam binds late, so a write hidden behind a
+looked-up name is invisible to the compiler and to the invariant lint, which
+reads source text.
+
+The entry is still not counted among the five. What is refused is the
+capability, and what the entry promises is an uninstall that leaves the accounts
+where they are. Exercising that needs a seam that can create an account so there
+is something to leave behind, which is #103, and nothing here stands in for it.
