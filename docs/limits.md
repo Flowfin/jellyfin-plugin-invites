@@ -347,20 +347,24 @@ of them here, and for three of the four there is nothing to run one against.
 Nothing in the plugin judges a username, resolves a library identifier, or
 compares the running server against the line it was built for:
 
-    git grep -niE 'Username' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v '///' ; echo "exit=$?"
+    git grep -niE 'Username' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -cv '///'
+    0
+    git grep -niE 'EnabledFolders|libraryId|ResolveLibrar' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
     exit=1
-    git grep -niE 'EnabledFolders|libraryId|ResolveLibrar' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    git grep -niE 'ApplicationVersion|ServerVersion|TargetAbi' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
     exit=1
-    git grep -niE 'ApplicationVersion|ServerVersion|TargetAbi' origin/master -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
+
+The first of the three is counted rather than statused. One line in the plugin
+carries the word and it is inside a documentation comment, so that grep exits 0
+and what has to be zero is the count surviving the filter.
 
 The fourth is different and is worth separating from the other three, because it
 reads as covered and is not. Uninstall leaving accounts alone is true today
 because the plugin has no way to touch one: the seam over the server's accounts
 carries a single member and it reads.
 
-    git grep -nE '^    [A-Za-z?<>,\.]+ [A-Za-z]+ \{ get; \}' origin/master -- Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
+    git grep -nE '^    [A-Za-z?<>,\.]+ [A-Za-z]+ \{ get; \}' -- Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs
+    Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
 
 That is an absence rather than a guard. A write member added to that interface
 tomorrow would pass every check in this repository, so what would hold this entry
