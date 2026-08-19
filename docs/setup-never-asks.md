@@ -7,9 +7,21 @@ because the page has a box for it. That willingness is the reason to fix the
 question list before the page exists rather than after, and it is why this is a
 refusal list rather than a guideline.
 
-Nothing here is implemented. The page is #74, the server-side validation is
-#75, the password rules are #76, and the cross-site protections are #78. This
-document is what those four are built against.
+Half of what this document is built against is in the tree. The page is served
+from the plugin, and what it requires of a password is one value in the source
+with [docs/password-rules.md](password-rules.md) behind it. The other half is
+not: nothing takes a submission, so there is no server-side validation and no
+anti-forgery token, which are #75 and #78.
+
+What the form asks for is held against the list below rather than read against
+it by hand. A fourth field arriving at all reds the suite:
+
+```
+$ grep -n 'public void TheFormAsksForThreeThingsAndNoFourth' Jellyfin.Plugin.Invites.Tests/SetupPageTests.cs
+```
+
+Which questions are refusals is still a person's reading. No check can decide
+whether a box asks for a legal name.
 
 ## The list
 
