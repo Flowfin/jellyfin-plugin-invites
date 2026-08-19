@@ -24,15 +24,30 @@ file is still there.
 A workflow this repository has and this ledger does not name is a blank row rather
 than an absence, and it is the failure mode this file has already had: seven of them
 accumulated while the second table stood still. Nothing checks that, so it is checked
-by hand, and the check is written here rather than remembered:
+by hand, and the two directions are written here rather than remembered. This
+repository's directory against the second table:
 
 ```
 $ git ls-files .github/workflows | sed 's|.*/||' \
-    | while read -r f; do grep -qF "\`$f\`" docs/workflow-parity.md || echo "$f"; done
+    | while read -r f; do grep -qF "| \`$f\`" docs/workflow-parity.md || echo "$f"; done
 ```
 
-Empty output is both tables accounting for the directory. It says nothing about
-whether an answer is the right one, which is what a reader is for.
+And the target gate's directory against the first one:
+
+```
+$ gh api repos/iderex/jellyfin-plugin-sso/contents/.github/workflows --jq '.[].name' \
+    | while read -r f; do grep -qF "| \`$f\`" docs/workflow-parity.md || echo "$f"; done
+```
+
+The second one is new and the first one used to be the whole check, which is how
+`perf-baseline.yml` sat on the target gate with no row: a listing this tree does not
+hold is a listing a command over this tree cannot read. Both patterns now carry the
+cell marker rather than the file name alone, because a name written into a sentence
+on this page would otherwise answer a question about a table row, and the sentence
+above is one.
+
+Empty output from both is both tables accounting for both directories. Neither says
+anything about whether an answer is the right one, which is what a reader is for.
 
 ## What the target gate has
 
@@ -48,6 +63,7 @@ whether an answer is the right one, which is what a reader is for.
 | `manifest-freshness.yml` | deferred to M12 | There is no published manifest to keep fresh until a release process exists. |
 | `nightly-betas.yml` | deferred to M12 | Nothing is published yet, and how many publishing workflows survive depends on whether one server line is carried or two. |
 | `opengrep.yml` | adopted, landed | #18 adopted a greppable invariant lint and seeded it with this plugin's invariants. It landed at `219935b6` as `invariants.yaml` plus `.github/lint/invariants.sh`, and reports `Invariant lint`. #18 stays open on the required-check clause rather than on the file. |
+| `perf-baseline.yml` | declined | It drives a benchmark harness that lives outside the solution and times the target plugin's own login round trip, and it records the runner image beside the numbers so a figure quoted later can be traced to the machine that produced it. It gates nothing there either: weekly and on dispatch, no threshold, and it reds when the harness stops completing a login rather than when one gets slower. Adopting it would mean adopting a harness first and there is none here. The cost this plugin would want a number for is `RedemptionDecision.Lookup`, which compares every record instead of stopping at a match, and that is deliberate and is bounded by what #33 lets the store grow into rather than by a figure a runner records. |
 | `pr-hygiene.yml` | adopted, landed | #17 adopted the legs that are decidable by a machine and dropped the ones that need a person to judge. It landed at `9f3245fd` as `pr-hygiene.yaml` plus `.github/lint/pr-hygiene.sh`, and reports `Deterministic pull-request hygiene`. |
 | `prettier.yml` | adopted, landed | #19 adopted formatting checks for the non-C# files. It landed at `5c98896b` as `prettier.yaml`, and reports `Non-C# files are formatted`. Its glob is the served-page surface and does not reach markdown, which is written in the file itself. |
 | `publish-beta.yml` | deferred to M12 | Same as the other publishing workflows, there is nothing to publish before a release process exists. |
