@@ -154,14 +154,27 @@ script reaches for against the markup in both directions.
 
 For the setup page, `ThePageFetchesFromNowhereElse` in `SetupPageTests` refuses
 the same four spellings, read from the same list rather than a second copy of
-it. The wiring half is three assertions rather than two, because the page has no
+it. The wiring half is five assertions rather than two, because the page has no
 script to query elements with and carries a form instead:
 `TheRouteIsTheOneTheLinkPointsAt` holds the route template against the constant
 `InvitationLink` builds its links from, `TheFormPostsBackToWhereItCameFrom`
 holds that the form names no address of its own, and
 `TheHashInThePolicyIsTheHashOfThePagesOwnStyle` hashes the page's style
-independently and requires the served policy to carry that hash. #74 is open on
-a clause this row does not cover, and the page it built is what these read.
+independently and requires the served policy to carry that hash.
+
+Two of the five arrived later, with the password rules under #76, and they are
+the same half rather than a neighbouring subject: both compare the served bytes
+against the type the route enforces.
+`ThePageStatesEveryRuleBeforeThePasswordField` in `PasswordRulesTests` requires
+every sentence the rules declare to appear on the page ahead of the box a person
+types into, and `ThePageQuotesNoOtherNumbers` requires both refusal sentences to
+be on the page with the minimum length inside the sentence rather than typed
+beside it, so the number somebody is shown and the number they are refused by
+are one value. This row said three until they were read back, which is the same
+shape as the count below and is why that one is handed to a command.
+
+#74 is open on a clause this row does not cover, and the page it built is what
+these read.
 
 ### A test that waits for an invitation to expire
 
@@ -212,8 +225,14 @@ count:
 
 ```
 $ git ls-files -- '*.cs' ':!.github/lint/fixtures' | grep -c 'Tests/'
-34
 ```
+
+The output is not written here. It was, as thirty-four, and the command answered
+with a larger number by the time it was next run. Nothing reads a count in a
+document, the check that re-runs a pasted command judges a pasted exit status
+and says of itself that it does not judge pasted output. This section's point is
+that the suite has grown rather than that it is any particular size, and the
+command says that better than a number somebody has to keep true.
 
 This list is what the suite is built against as it grows, and #100 is where the
 statuses are read against the tree again.
