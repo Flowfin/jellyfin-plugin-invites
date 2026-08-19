@@ -133,6 +133,7 @@ drifts from it.
 | [docs/attempt-outcomes.md](docs/attempt-outcomes.md) | The fixed set of outcomes a redemption attempt records |
 | [docs/rate-limit.md](docs/rate-limit.md) | Where the redemption counter lives, and what a restart does to it |
 | [docs/setup-never-asks.md](docs/setup-never-asks.md) | What the guided setup may never put a box on the page for |
+| [docs/password-rules.md](docs/password-rules.md) | What the guided setup requires of a password, and why the rules are this plugin's rather than the server's |
 | [docs/refusal-response.md](docs/refusal-response.md) | The one page every unusable invitation produces, and what identical means |
 | [docs/configuration.md](docs/configuration.md) | One row per setting, its default, its bounds and what breaks |
 | [docs/limits.md](docs/limits.md) | Behaviour that is correct, surprising, and reported as a bug |
