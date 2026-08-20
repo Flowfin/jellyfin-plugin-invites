@@ -109,7 +109,7 @@ naming a deleter here.
 Nothing takes a submission yet, so no value in this table has reached the plugin
 on any server:
 
-    $ git grep -n 'HttpPost' origin/master -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs ; echo "exit=$?"
+    $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs ; echo "exit=$?"
     exit=1
 
 So the rows are written before the post that fills them, in the same direction
