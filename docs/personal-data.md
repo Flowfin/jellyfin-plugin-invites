@@ -88,6 +88,38 @@ address a redemption arrived from.
 | Time | When it happened. | The trail bound |
 | Source address | Failed the test. See below. | Not stored |
 
+## The setup form
+
+The guided setup asks three questions, and they belong on this page for the same
+reason the two tables above do: a field on a form is a value somebody typed, and
+the inventory is where what becomes of it is argued rather than assumed.
+[docs/setup-never-asks.md](setup-never-asks.md) decides which questions may be
+asked at all. This is what happens to the three that are.
+
+None of the three is stored by this plugin. That is the answer rather than an
+omission, and it is why each row below names where the value goes instead of
+naming a deleter here.
+
+| Field | Why it exists | What deletes it |
+| --- | --- | --- |
+| `username` | Becomes the name of the account the server creates, so it is held in the server's own user database on the same footing as an account an operator made by hand. The record points at an account by identifier and never by name, so this plugin keeps no second copy of it. | Deleting the account, on the server |
+| `password` | The credential of the account being created. It is handed to the server and held here in no form: not in the store, not in a log line, not in the trail. What reads it in this plugin is the length rule in `Jellyfin.Plugin.Invites/Setup/PasswordRules.cs`, which answers why a password is refused and keeps none of it. | Never held here |
+| `confirmation` | Compared with the password so a mistyped credential is caught before an account exists carrying it. It is the one value on the form with no reader outside the request it arrived in. | Never held here |
+
+Nothing takes a submission yet, so no value in this table has reached the plugin
+on any server:
+
+    $ git grep -n 'HttpPost' origin/master -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs ; echo "exit=$?"
+    exit=1
+
+So the rows are written before the post that fills them, in the same direction
+as the record table above, which was written before the record type existed. The
+comparison between what the page asks and what this section names is
+`Jellyfin.Plugin.Invites.Tests.SetupFormInventoryTests` rather than a reading
+somebody repeats, so a fourth question added to the form with no row here reds
+the suite, and a row here naming a field the form does not carry reds it in the
+other direction.
+
 ## The three that failed
 
 The operator's label first. #38 leaves it open and #82 has minting accept one.

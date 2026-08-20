@@ -341,7 +341,7 @@ because the page does not do it:
 
 ```
 git grep -n 'It does not say which server it belongs to' docs/setup-never-asks.md
-docs/setup-never-asks.md:81:It does not say which server it belongs to, which the presentation rules above
+docs/setup-never-asks.md:98:It does not say which server it belongs to, which the presentation rules above
 ```
 
 Naming the server means writing a value into markup that nothing is written
