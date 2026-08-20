@@ -38,7 +38,7 @@ claims the directory and reads the store when the server starts, under #46 and
 #96:
 
     git grep -n 'InvitationStore' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -v 'Storage/InvitationStore.cs' | grep -c ''
-    12
+    14
 
 So a server running this plugin today does get a directory and a claim file in
 it. This paragraph said it does not get an invitations file, because the only
