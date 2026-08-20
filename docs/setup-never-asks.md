@@ -86,7 +86,12 @@ tree now refuses and which it does not.
   it is served so the two cannot drift apart.
 - Every field on the form appearing in the personal-data inventory is a
   comparison between two files, and it is the one rule here that could be
-  refused by a machine rather than read. Nothing does it today.
+  refused by a machine rather than read. `SetupFormInventoryTests` is that
+  comparison. It reads the field names out of the form region of the page this
+  plugin serves and the field names out of the setup-form table in
+  [docs/personal-data.md](personal-data.md), and requires the two sets to be
+  equal, so neither a question added to the form nor a row left behind after a
+  question is dropped passes unread.
 
 Two things the page does not do yet, said here rather than left to be found.
 
@@ -101,11 +106,11 @@ minted as for a live one, so nothing about a code is disclosed and nothing is
 refused either. The refusal a spent, expired or revoked invitation is owed is
 #75 and #77.
 
-One gap is worth naming rather than leaving for whoever hits it. The inventory
-in [docs/personal-data.md](personal-data.md) has rows for the invitation record
-and rows for the attempt trail, and no section for what the form asks. The
-username becomes the account and the password goes to the server, so neither is
-held by this plugin, and the inventory says so in prose under what is never
-held. But "every field on the form appears in the inventory" wants rows, and
-there are none to point at. That section belongs to #34, which owns that file
-and is open.
+The gap this section used to name, that the inventory held rows for the
+invitation record and for the attempt trail and no section for what the form
+asks, is closed. [docs/personal-data.md](personal-data.md) carries a setup-form
+table with a row per field, and for all three the row says this plugin stores
+nothing: the username becomes the account in the server's own user database, and
+the password and its confirmation are never held here at all. The prose under
+what is never held said as much before. What was missing was rows, and rows are
+what the comparison above reads.
