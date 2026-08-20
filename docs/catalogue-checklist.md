@@ -430,3 +430,28 @@ This pass says no more about a catalogue than the one above it. No official
 checklist was found then and none was looked for again here, so the items remain
 derived rather than quoted, and nothing here says the packaged plugin loads on a
 server. No server was run for this pass either.
+
+## Read again on 2026-08-20, for one quotation rather than for the items
+
+Nothing on this page is re-judged here. One quotation in the pass above has
+stopped reproducing and it is corrected the way that pass corrected the one
+before it, by saying so underneath rather than by editing a landed pass.
+
+The identifier item quotes the configuration page at line 32, and the page has
+grown since:
+
+    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' -- build.yaml 'Jellyfin.Plugin.Invites/'
+    Jellyfin.Plugin.Invites/Configuration/configPage.html:144:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+    Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
+    build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
+
+The verdict is untouched. It is still one identifier in the three places that
+have to agree, and the item passes for the reason it already gave. What moved is
+where the first of the three sits in its file, which matters because a reader
+who runs that command against the pasted line number and finds something else
+has no way to tell a moved line from a plugin reading another plugin's settings.
+
+Only that quotation was read. The line numbers in the first pass are already
+disclosed as stale where the second pass says the packaging metadata gained
+fields, and no item on this page was re-judged for this reading. No server was
+run.
