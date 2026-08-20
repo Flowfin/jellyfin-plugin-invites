@@ -221,7 +221,7 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:96:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:148:memory for as long as its window and no longer, and that the trail does not
 
 ## What this page does not decide
 

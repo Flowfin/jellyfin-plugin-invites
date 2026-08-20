@@ -67,21 +67,30 @@ than on the template, so that one rule does not live in two places.
 Not refused by a test. No account is created and none is written.
 
 This paragraph said the plugin named the server's user operations nowhere, and
-that stopped being true. The command it offered as evidence returns two lines:
+that stopped being true. The command it offered as evidence returned two lines
+when it was written and returns five:
 
     git grep -n 'IUserManager' -- '*.cs' ':!.github'
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:92:            foreach (var property in typeof(IUserManager).GetProperties().Where(candidate => candidate.Name == name))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:99:            foreach (var method in typeof(IUserManager).GetMethods().Where(candidate => candidate.Name == name && !candidate.IsSpecialName))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:129:            .Where(type => Members(type).Any(parameter => typeof(IUserManager).IsAssignableFrom(parameter)))
     Jellyfin.Plugin.Invites.Tests/RevocationTests.cs:132:    /// something after the next edit. Add an <c>IUserManager</c> parameter and
     Jellyfin.Plugin.Invites/Accounts/ServerAccounts.cs:56:    public ServerAccounts(IUserManager users)
 
-The second is the plugin. `ServerAccounts` asks the user manager for the
+Four of the five are in the suite and one is the plugin. The three that were not
+there before are the refusal #91 landed, which names the type in order to refuse
+it, so the count moving upward is the capability being held rather than the
+plugin reaching further.
+
+The last line is the plugin. `ServerAccounts` asks the user manager for the
 identifier of every account and for nothing else, which is what
 `IServerAccounts` declares and what the load-time comparison landed under #46
 reads. It is not a type waiting for a caller: it is registered, and the hosted
 service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:36:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:37:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:37:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:40:        serviceCollection.AddHostedService<LoadOnStart>();
 
 That narrows the reason this line is undefended without moving it. An identifier
 is not an account: nothing here hands back a user object to modify, and the type
@@ -98,7 +107,7 @@ middle one is the one a reader should notice, because the seam binds late and a
 write behind a looked-up name is invisible to the compiler and to a lint that
 reads source text.
 
-The first line is prose inside a test file, and the test it belongs to is the
+The fourth line is prose inside a test file, and the test it belongs to is the
 nearest thing in the tree to a defence of this sentence.
 `NothingHereCanBeHandedAnAccount` holds the parameters of the revocation routine
 to a fixed set, so a later change that starts passing an account into it goes
