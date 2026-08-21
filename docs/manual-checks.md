@@ -39,8 +39,10 @@ automated one is a step people learn to skip.
 For each supported server line, install the packaged artefact into a clean
 Jellyfin server, restart it, and confirm the plugin appears in the dashboard
 with its configuration page openable. Which lines are supported is item 1 in
-#11 and is not answered, so the table below leaves the line as a column to fill
-in rather than naming one here.
+#11, and it is answered: one line, 10.11, decided on #97. The table below keeps
+the line as a column to fill in anyway, because what a run was made against is a
+fact of that run and not of this page, and a record that inherits the line from
+a sentence written above it stops being readable the day the answer moves.
 
 ## How a run is recorded
 

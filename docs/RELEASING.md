@@ -69,11 +69,13 @@ catalogue serves is produced by the release job, so the value in the record is
 computed from the downloaded archive rather than copied from a release that does
 not exist yet.
 
-Which server lines the second check is run on is item 1 in #11 and is not
-answered. `build.yaml` declares `targetAbi` as a floor and no field names a
-ceiling, so there is no count to satisfy today, and #97 is where that gets a
-shape. Until it does, the check is run on the line the floor names and the record
-says which line it was.
+Which server lines the second check is run on is item 1 in #11, and it is
+answered: one line, 10.11, decided on #97. So the check is run once rather than
+per line of a set nobody has enumerated, and the record still says which line it
+was, because a record that leaves the line to be inferred from the date is a
+record nobody can read back. `build.yaml` declares `targetAbi` and no field
+names a ceiling; what the plugin does when it meets a line it was not built for
+is #97 rather than something this page decides.
 
 A check that could not be run says so on the record, with the reason. A row
 admitting a check was skipped stays an admission and is not rewritten later into

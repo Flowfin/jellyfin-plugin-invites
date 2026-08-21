@@ -1,10 +1,10 @@
 # Tests this plugin refuses to write
 
-Six obvious tests are refusals here. Each one would be a reasonable thing to
+Seven obvious tests are refusals here. Each one would be a reasonable thing to
 add, each one would break the headless rule in `CONTRIBUTING.md`, and each one
 is therefore replaced by something narrower rather than dropped.
 
-Writing the list down is what stops the sixth of them arriving in good faith
+Writing the list down is what stops the seventh of them arriving in good faith
 next year, with a comment explaining that it only needs a browser. A refusal
 nobody recorded is a refusal that gets reversed by whoever did not know it was
 one.
@@ -26,7 +26,7 @@ elevated rights, writes outside a temporary directory it owns, reads or writes
 the machine's certificate stores, opens a network connection, launches an
 external binary, or sleeps on a real clock.
 
-## The six
+## The seven
 
 ### A test that drives the setup page in a browser
 
@@ -211,6 +211,43 @@ several at once. #104 is open because the other three clock-driven behaviours,
 the rate-limit window, the retention sweep and the optional account expiry, are
 not in the tree to be driven.
 
+### A test that this plugin works beside every supported sibling
+
+It would install the whole supported set of plugins into one server and look for
+collisions: two plugins claiming one route, two scheduled tasks with one name,
+two writers over one configuration key. It needs a server binary and a media
+directory, like the row above, and it needs every sibling built and installed
+beside this one.
+
+The reason it is refused today is narrower than the headless rule and it is
+worth reading as the whole reason: there is no sibling. The supported set is
+empty, so the run would install one plugin, find no collision, and report the
+colour of a run that looked at nothing. That is the failure this page exists
+against, in the register that is least able to afford it: a green square whose
+subject was empty.
+
+Replaced, for now, by the half that is decidable without a second plugin. This
+plugin consumes no sibling, which is what makes the absence of one a
+non-event rather than a degradation to handle, and
+`NoSiblingIsConsumedTests` refuses the two ways that could stop being true:
+a reference to another plugin assembly, and a second file in the artefact list
+`build.yaml` ships. The alone case is the row above, with its ABI floor
+build, its packaging job and its manual install.
+
+**This refusal names its own end.** It expires the day the first supported
+sibling ships. On that day the set is no longer empty, a run over it is a run
+over something, and this row is deleted rather than reworded. Nothing else on
+this page has an end condition that specific, which is what makes this one a
+refusal rather than a gap with a justification attached.
+
+The list of siblings, when there is one, lives in this repository. Not on a
+tracker: a test that fetches what to test over the network fails for reasons
+unrelated to the code, and the headless rule that `headless.yaml` executes
+refuses the fetch outright.
+
+Status: the replacement exists. #44 is where the refusal was decided and what it
+is waiting for is a sibling rather than any further work here.
+
 ## What this list is measured against
 
 This section counted four of six replacements absent, against a suite of two
@@ -225,7 +262,9 @@ has been recorded. The real-server row has its two workflows and not its manual
 install. The reverse-proxy row has both. The mail row has nothing to replace and
 says so. The dashboard row has all three for both pages. The sleeping row has
 the seam and the expiry boundary cases, and not the three behaviours that do not
-exist.
+exist. The sibling row has its replacement, and that replacement is deliberately
+smaller than the test it stands for: it says nothing about a collision and
+everything about there being nothing to collide with.
 
 Two rows name the setup page and they are in opposite states, which is the pair
 a reader is most likely to collapse. The browser row is about whether the page
@@ -253,7 +292,7 @@ statuses are read against the tree again.
 
 ## When a refusal is added
 
-A seventh row is added the same way. Name the test somebody would reasonably
+Another row is added the same way. Name the test somebody would reasonably
 write, name the clause of the headless rule that refuses it, name what covers
 the same risk instead, and say whether that replacement exists today. A row
 whose replacement column says nothing is not a refusal. It is a gap with a
