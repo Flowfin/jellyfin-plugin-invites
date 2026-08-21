@@ -140,6 +140,26 @@ owns that property on the operator's side and this page owes it the same
 sentence: a code that is not copied at this moment is gone, and the repair is a
 new invitation rather than a lookup.
 
+It also carries the link, which is the code with the configured address in
+front of it and is therefore the same credential under the same rule rather
+than a milder one. #50 put it here so that there is one place deciding what a
+link looks like: the alternative was the configuration page composing it from
+the setting and the code it had just been handed, which is a second such place
+in a language the greppable rules do not read. The listing and the two routes
+that read one invitation back carry neither the code nor the link.
+
+The address it is written against is `PublicBaseUrl` from
+[docs/configuration.md](configuration.md) and nothing else. Nothing about the
+request reaches it, which is the whole of #50: a minting call carrying a forged
+host would otherwise produce a link pointing at the caller's server, and the
+invited person types their new password into it.
+
+Where no address is configured, the response carries the refusal in place of
+the link, naming the setting. The invitation is still minted and the code is
+still handed over, because the address is only what the link is written
+against: getting it wrong affects no record and no account, and a link to the
+wrong host is worse than no link.
+
 ### `GET /Invites`
 
 Lists invitations.

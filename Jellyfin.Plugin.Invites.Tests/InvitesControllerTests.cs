@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Codes;
+using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Controllers;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
@@ -55,6 +56,12 @@ internal sealed class StubOperatorIdentity : IOperatorIdentity
 /// </remarks>
 public class InvitesControllerTests
 {
+    /// <summary>
+    /// The public address a link is written against, as an operator would set
+    /// it. Nothing here derives it from a request, which is #50.
+    /// </summary>
+    private const string Configured = "https://media.example.org";
+
     private static readonly DateTimeOffset _minted = new(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid _operator = new("11111111-1111-1111-1111-111111111111");
 
@@ -313,7 +320,7 @@ public class InvitesControllerTests
     public async Task WithNoDataDirectoryEveryRouteSaysSoRatherThanFailing()
     {
         var controller = new InvitesController(
-            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted)),
+            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured)),
             new StubOperatorIdentity(_operator))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
@@ -360,15 +367,101 @@ public class InvitesControllerTests
                 type.FullName + " can be handed to this controller. It takes the operations and the calling operator and nothing else, so that no action here can read a clock or a store and form an opinion the model layer already holds."));
     }
 
+    /// <summary>
+    /// A mint answers with the link, and a request that says this server was
+    /// reached somewhere else does not change what is in it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the fourth clause of #50 in the form the clause asks for: a
+    /// forged host on a real request that a real action answers with a link.
+    /// The leg in <c>InvitationLinkTests</c> that sets a header and then calls
+    /// the builder directly says on itself that it could not have failed,
+    /// because the builder never sees a request. This one could: the request is
+    /// the one the action is answering, and the value asserted is the one it
+    /// returned.
+    /// </para>
+    /// <para>
+    /// One spelling of the forgery is written here and it is the only one that
+    /// can be. The greppable rules under #50 refuse the request object's own
+    /// host member and the forwarded header names as text anywhere in this
+    /// tree, taking no exemption for a test, so a leg forging through either
+    /// would red <c>Invariant lint</c>. That was met rather than assumed: an
+    /// earlier draft of this remark named one of them in prose and the rule
+    /// refused the run. What is left is the <c>Host</c> header through the
+    /// typed accessor, which is the header a proxy rewrites and the one the
+    /// server would answer from. The others are covered by the rules rather
+    /// than by this test, and covered more widely: no file here may name those
+    /// spellings at all, which is a statement about the source and not about
+    /// one call.
+    /// </para>
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task AForgedHostDoesNotReachTheMintedLink()
+    {
+        using var directory = new OwnedDirectory();
+
+        var context = new DefaultHttpContext();
+        context.Request.Scheme = "http";
+        context.Request.Headers.Host = "attacker.example";
+
+        var controller = ControllerOver(directory, new TestClock(_minted), Configured, context);
+
+        var minted = Minted(await controller.Mint(new MintRequest { Template = "guest" }));
+
+        Assert.NotNull(minted.Link);
+        Assert.Null(minted.LinkRefusal);
+        Assert.StartsWith(Configured + "/", minted.Link, StringComparison.Ordinal);
+        Assert.DoesNotContain("attacker.example", minted.Link, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("/" + minted.Code, minted.Link, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// With no address configured the mint still mints, and what comes back in
+    /// place of the link is the refusal naming the setting.
+    /// </summary>
+    /// <remarks>
+    /// A fresh install is this case, so it is the first thing an operator
+    /// meets. The invitation is written and the code is handed over either way,
+    /// because the address is only what the link is written against: getting it
+    /// wrong affects no record and no account. A link to the wrong host would.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task WithNoConfiguredAddressTheMintCarriesTheRefusalAndStillMints()
+    {
+        using var directory = new OwnedDirectory();
+        var controller = ControllerOver(directory, new TestClock(_minted), null, new DefaultHttpContext());
+
+        var minted = Minted(await controller.Mint(new MintRequest { Template = "guest" }));
+
+        Assert.Null(minted.Link);
+        Assert.NotNull(minted.LinkRefusal);
+        Assert.Contains(nameof(PluginConfiguration.PublicBaseUrl), minted.LinkRefusal, StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(minted.Code));
+        Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
+    }
+
     private static InvitesController ControllerOver(OwnedDirectory directory, DateTimeOffset now)
         => ControllerOver(directory, new TestClock(now));
 
     private static InvitesController ControllerOver(OwnedDirectory directory, TestClock clock)
+        => ControllerOver(directory, clock, Configured, new DefaultHttpContext());
+
+    private static InvitesController ControllerOver(
+        OwnedDirectory directory,
+        TestClock clock,
+        string? configured,
+        HttpContext context)
         => new(
-            new InvitationOperations(new StubStoreDirectory(directory.Path), clock),
+            new InvitationOperations(
+                new StubStoreDirectory(directory.Path),
+                clock,
+                new StubPublicAddress(configured)),
             new StubOperatorIdentity(_operator))
         {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+            ControllerContext = new ControllerContext { HttpContext = context },
         };
 
     private static MintedInvitation Minted(ActionResult<MintedInvitation> result)

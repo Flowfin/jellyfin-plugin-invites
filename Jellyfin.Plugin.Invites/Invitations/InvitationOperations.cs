@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using Jellyfin.Plugin.Invites.Codes;
+using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 
@@ -65,6 +66,7 @@ public sealed class InvitationOperations
 
     private readonly IStoreDirectory _directory;
     private readonly IClock _clock;
+    private readonly IPublicAddress _address;
     private readonly object _gate = new();
 
     /// <summary>
@@ -72,14 +74,23 @@ public sealed class InvitationOperations
     /// </summary>
     /// <param name="directory">Where the store sits.</param>
     /// <param name="clock">The one time source, so a test can move it.</param>
-    /// <exception cref="ArgumentNullException">Either argument is null.</exception>
-    public InvitationOperations(IStoreDirectory directory, IClock clock)
+    /// <param name="address">
+    /// The configured public address a minted link is written against, and the
+    /// only place an address is read from. It is a seam for the same reason the
+    /// two above are: the value lives on a static the server sets, so a routine
+    /// reading it directly could only be tested by a test that arranges a
+    /// global.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    public InvitationOperations(IStoreDirectory directory, IClock clock, IPublicAddress address)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(address);
 
         _directory = directory;
         _clock = clock;
+        _address = address;
     }
 
     /// <summary>
@@ -113,7 +124,10 @@ public sealed class InvitationOperations
     /// <param name="uses">
     /// How many accounts it is good for, or <c>null</c> for one.
     /// </param>
-    /// <returns>The code and the record that was stored.</returns>
+    /// <returns>
+    /// The code, the record that was stored, and the link the two of them make
+    /// against the configured public address.
+    /// </returns>
     /// <exception cref="ArgumentException">The template label is null or blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// The validity is zero or negative or above <see cref="MaximumValidityDays"/>,
@@ -179,7 +193,7 @@ public sealed class InvitationOperations
 
             store.Write(contents.Invitations.Add(minted));
 
-            return new Minting(code, minted);
+            return new Minting(code, minted, _address.PublicBaseUrl);
         }
     }
 

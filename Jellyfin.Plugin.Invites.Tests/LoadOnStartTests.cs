@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
+using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Startup;
 using Jellyfin.Plugin.Invites.Storage;
@@ -27,6 +28,25 @@ internal sealed class StubStoreDirectory : IStoreDirectory
     }
 
     public string? Path { get; }
+}
+
+/// <summary>
+/// The configured public address, as the test sets it, standing in for the
+/// setting an operator writes on the plugin's own configuration page.
+/// </summary>
+/// <remarks>
+/// It takes a string and nothing else. There is no member here a request could
+/// be handed to, which is the shape #50 is about rather than a spelling any
+/// greppable rule reads.
+/// </remarks>
+internal sealed class StubPublicAddress : IPublicAddress
+{
+    public StubPublicAddress(string? publicBaseUrl)
+    {
+        PublicBaseUrl = publicBaseUrl;
+    }
+
+    public string? PublicBaseUrl { get; }
 }
 
 /// <summary>
