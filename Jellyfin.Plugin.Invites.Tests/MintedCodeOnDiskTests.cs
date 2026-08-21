@@ -36,6 +36,12 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </remarks>
 public class MintedCodeOnDiskTests
 {
+    /// <summary>
+    /// The public address a link is written against, as an operator would set
+    /// it. Nothing here derives it from a request, which is #50.
+    /// </summary>
+    private const string Configured = "https://media.example.org";
+
     private static readonly DateTimeOffset _now = new(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
 
     private static readonly Guid _operator = Guid.Parse("11112222-3333-4444-5555-666677778888");
@@ -50,7 +56,8 @@ public class MintedCodeOnDiskTests
         using var directory = new OwnedDirectory();
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
-            new TestClock(_now));
+            new TestClock(_now),
+            new StubPublicAddress(Configured));
 
         var minting = operations.Mint(_operator, "Household", validity: null, uses: null);
 
@@ -88,7 +95,8 @@ public class MintedCodeOnDiskTests
         using var directory = new OwnedDirectory();
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
-            new TestClock(_now));
+            new TestClock(_now),
+            new StubPublicAddress(Configured));
 
         operations.Mint(_operator, "Household", validity: null, uses: null);
 
