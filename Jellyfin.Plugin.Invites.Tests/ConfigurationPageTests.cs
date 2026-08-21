@@ -49,6 +49,7 @@ public class ConfigurationPageTests
         "InvitesMintedCodeValue",
         "InvitesCopyCode",
         "InvitesList",
+        "InvitesRotateKey",
     ];
 
     /// <summary>
@@ -130,6 +131,16 @@ public class ConfigurationPageTests
             .GetCustomAttribute<HttpPostAttribute>();
         Assert.NotNull(revoke);
         Assert.Equal("{id}/" + ValueAfter(page, "revoke:"), revoke!.Template);
+
+        // The fifth operation, read the same way. It is the one route on this
+        // page whose template carries no identifier, so the page holds the
+        // whole of it rather than a suffix, and a comparison written as a
+        // suffix would pass against a template that had lost its first segment.
+        var rotate = typeof(InvitesController)
+            .GetMethod(nameof(InvitesController.Rotate))!
+            .GetCustomAttribute<HttpPostAttribute>();
+        Assert.NotNull(rotate);
+        Assert.Equal(ValueAfter(page, "rotate:"), rotate!.Template);
     }
 
     /// <summary>
@@ -155,6 +166,48 @@ public class ConfigurationPageTests
             page,
             StringComparison.Ordinal);
         Assert.Contains("window.confirm(", page, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Rotating the key is two calls to one route, and the page cannot make the
+    /// second without the first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Read off what the page sends, like the assertions above. What matters
+    /// here is the order rather than the presence: the count the second call
+    /// confirms is taken out of what the first call answered, so a page that
+    /// posted a number of its own would be confirming a cost the server never
+    /// stated. The route refuses that anyway, and this is the half that says
+    /// the page does not try.
+    /// </para>
+    /// <para>
+    /// The sentence shown to the operator is the server's. A page that wrote
+    /// its own would be a second description of what rotation costs, and the
+    /// two would disagree the first time either moved.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void PageAsksWhatRotationCostsBeforeItConfirms()
+    {
+        var page = ReadPage();
+
+        Assert.Contains("JSON.stringify({ Invalidates: null })", page, StringComparison.Ordinal);
+        Assert.Contains("window.confirm(plan.Detail)", page, StringComparison.Ordinal);
+        Assert.Contains(
+            "JSON.stringify({ Invalidates: plan.Invalidates })",
+            page,
+            StringComparison.Ordinal);
+
+        var planned = page.IndexOf("Invalidates: null", StringComparison.Ordinal);
+        var asked = page.IndexOf("window.confirm(plan.Detail)", StringComparison.Ordinal);
+        var confirmed = page.IndexOf("Invalidates: plan.Invalidates", StringComparison.Ordinal);
+
+        Assert.True(
+            planned < asked && asked < confirmed,
+            "The page asks, shows and confirms in that order, and the source has them at "
+            + planned + ", " + asked + " and " + confirmed
+            + ". A confirmation written before the question is a rotation an operator meets after it has happened.");
     }
 
     /// <summary>

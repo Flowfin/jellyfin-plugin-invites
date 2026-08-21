@@ -107,6 +107,27 @@
                         <tbody id="InvitesList"></tbody>
                     </table>
 
+                    <h2>The key the codes are stored under</h2>
+                    <p class="fieldDescription">
+                        Every stored invitation is a hash computed under one key. Rotating it makes
+                        all of them unverifiable at once, so no invitation minted before the
+                        rotation can be redeemed again. It is the answer to a key that has leaked,
+                        and it is not something to press to tidy up. No account is touched and no
+                        record is removed.
+                    </p>
+                    <button
+                        is="emby-button"
+                        type="button"
+                        id="InvitesRotateKey"
+                        class="raised emby-button"
+                    >
+                        <span>Rotate the key</span>
+                    </button>
+                    <p class="fieldDescription">
+                        The count of what it would invalidate is read from the server and shown
+                        before anything is written.
+                    </p>
+
                     <form id="InvitesConfigForm">
                         <h2>Settings</h2>
                         <div class="inputContainer">
@@ -144,6 +165,7 @@
                     pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
                     invitations: "Invites",
                     revoke: "Revoke",
+                    rotate: "HashSecret/Rotate",
                 };
 
                 function invitesCell(value) {
@@ -260,6 +282,39 @@
 
                     return false;
                 });
+
+                function invitesRotate() {
+                    Dashboard.showLoadingMsg();
+                    return ApiClient.ajax({
+                        type: "POST",
+                        url: ApiClient.getUrl(
+                            InvitesConfig.invitations + "/" + InvitesConfig.rotate,
+                        ),
+                        contentType: "application/json",
+                        dataType: "json",
+                        data: JSON.stringify({ Invalidates: null }),
+                    }).then(function (plan) {
+                        Dashboard.hideLoadingMsg();
+                        if (!window.confirm(plan.Detail)) {
+                            return null;
+                        }
+
+                        Dashboard.showLoadingMsg();
+                        return ApiClient.ajax({
+                            type: "POST",
+                            url: ApiClient.getUrl(
+                                InvitesConfig.invitations + "/" + InvitesConfig.rotate,
+                            ),
+                            contentType: "application/json",
+                            dataType: "json",
+                            data: JSON.stringify({ Invalidates: plan.Invalidates }),
+                        }).then(invitesList);
+                    });
+                }
+
+                document
+                    .querySelector("#InvitesRotateKey")
+                    .addEventListener("click", invitesRotate);
 
                 document.querySelector("#InvitesCopyCode").addEventListener("click", function () {
                     var field = document.querySelector("#InvitesMintedCodeValue");

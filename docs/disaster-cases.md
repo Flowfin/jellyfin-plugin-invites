@@ -78,7 +78,10 @@ the identity, accepting that rotation invalidates every live invitation, which
 is exactly what rotation is for and what #30 requires be stated before it runs.
 
 Detected: no. Named in the operator guide with the rotation instruction, which
-is #111, and the rotation itself is #30.
+is #111. The rotation itself is an operator action now rather than something
+#30 still owes: `POST /Invites/HashSecret/Rotate` in
+[docs/api.md](api.md) says what it will invalidate before it does it, and the
+control is on the plugin's configuration page.
 
 ## Two servers, one store
 
