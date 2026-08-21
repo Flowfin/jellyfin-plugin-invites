@@ -69,12 +69,27 @@ carries `guid`, `name`, `description`, `overview`, `owner`, `category` and
 ### The identifier is this plugin's own
 
 Fails. The identifier is still the template's, and it is in three places rather
-than the two the issue that owns it names:
+than the two the issue that owns it names. The value to search for is the `guid`
+field of `build.yaml` in `jellyfin/jellyfin-plugin-template`, which is where a
+plugin author gets it and where a reader of this checklist reads it out rather
+than copying it from here:
 
-    git grep -n 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
-    Jellyfin.Plugin.Template/Configuration/configPage.html:23:                pluginUniqueId: 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
-    Jellyfin.Plugin.Template/Plugin.cs:32:    public override Guid Id => Guid.Parse("eb5d7894-8eef-4b36-aa6f-5d124e828ce1");
-    build.yaml:3:guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
+    TEMPLATE_GUID=$(gh api repos/jellyfin/jellyfin-plugin-template/contents/build.yaml \
+      --jq .content | base64 -d | sed -n 's/^guid: "\(.*\)"$/\1/p')
+    git grep -n "$TEMPLATE_GUID"
+
+A clean result is no lines at all, and `git grep` exits 1 when it matches
+nothing. This pass got three lines: the `pluginUniqueId` the configuration page
+hands the dashboard, the `Guid.Parse` in the plugin class, and the `guid` in the
+packaging metadata.
+
+Those three lines were pasted here with the identifier in them until #273. The
+verdict, the count and the reasoning of this pass are untouched; what was taken
+out is the literal, because a checklist that tells a reader to search for a
+string and then contains that string is the only thing the search finds, on this
+repository and on every one that adopts the check. Excluding this file from the
+search would have to travel with every copy of the check, and the next document
+to quote the identifier would need its own exclusion.
 
 The third copy is the one the configuration page hands to the dashboard when it
 loads and saves this plugin's configuration, so it has to move with the other
@@ -272,6 +287,12 @@ an owner it no longer has and answer nothing today, and they are re-run below
 under the owner it does have. Fields have also been added to `build.yaml` since,
 so the line numbers in the quotations above are not the line numbers a reader
 gets now.
+
+That paragraph was written on 2026-08-16 and one thing above it has been edited
+since, under #273: the identifier item's pasted search and its three result
+lines are gone and the same evidence stands there in prose. The verdict of that
+item, its count and its reasoning are what the pass recorded. The literal came
+out because it was the only thing the search it instructs still found.
 
 The items below are in the order of the items above, and one that has not moved
 says so rather than repeating its evidence.
