@@ -120,7 +120,9 @@ What to do instead is the part that belongs here. Rotate the hash secret after
 restoring, which is a revoke-everything operation and is offered as one, then
 mint again whatever should still be live. Read the disagreement the plugin
 reports on load, which compares the accounts the store claims to have created
-against the accounts the server actually has. Owned by #46, with rotation in #30.
+against the accounts the server actually has. Owned by #46. Rotation is a route
+and a button rather than something still owed, which is #30 and is written up
+under `POST /Invites/HashSecret/Rotate` in [docs/api.md](api.md).
 
 ## The server's timezone does not change when an invitation expires
 

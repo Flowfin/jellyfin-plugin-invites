@@ -11,16 +11,28 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 
 /// <summary>
 /// The administrator surface: mint one invitation, list them, look at one,
-/// revoke one.
+/// revoke one, and rotate the hash secret.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Four operations and no more.</b> There is no route that deletes a record,
-/// because removal is retention rather than a button; no route that creates an
-/// account, because an operator who wants one has the server's own user editor;
-/// and no route that returns a code after minting. Those absences are decisions
-/// docs/api.md holds, and they are invisible to somebody reading a list of
-/// routes, which is why they are written here as well.
+/// <b>Five operations and no more, and it was four.</b> There is no route that
+/// deletes a record, because removal is retention rather than a button; no
+/// route that creates an account, because an operator who wants one has the
+/// server's own user editor; and no route that returns a code after minting.
+/// Those absences are decisions docs/api.md holds, and they are invisible to
+/// somebody reading a list of routes, which is why they are written here as
+/// well.
+/// </para>
+/// <para>
+/// <b>Why the fifth arrived, written here rather than left to a commit
+/// message.</b> A rule that quietly grew by one is a rule nobody trusts the
+/// next time. <see cref="Storage.HashSecretRotation"/> already counts what a
+/// rotation would invalidate and already refuses a confirmation made against a
+/// store that has moved, and with no route none of that reached an operator: a
+/// mechanism that exists and cannot be reached is the same as an absent one
+/// while looking like a present one. Keeping the surface at four would have
+/// made rotation an offline edit of a key file, and then the counter and the
+/// refusal serve nobody. #30 is where that was decided.
 /// </para>
 /// <para>
 /// <b>Nothing here decides anything about a record.</b> Expiry, the use count and
@@ -54,7 +66,7 @@ public sealed class InvitesController : ControllerBase
     /// <summary>
     /// Initializes a new instance of the <see cref="InvitesController"/> class.
     /// </summary>
-    /// <param name="operations">The four operations.</param>
+    /// <param name="operations">The operations the routes translate.</param>
     /// <param name="caller">Where the calling operator's identity comes from.</param>
     /// <exception cref="ArgumentNullException">Either argument is null.</exception>
     public InvitesController(InvitationOperations operations, IOperatorIdentity caller)
@@ -192,6 +204,75 @@ public sealed class InvitesController : ControllerBase
         var revoked = _operations.Revoke(id, revokedBy);
 
         return revoked is null ? NotFound() : Ok(InvitationView.Of(revoked));
+    }
+
+    /// <summary>
+    /// Says what rotating the hash secret would cost, and rotates it when the
+    /// caller sends that cost back.
+    /// </summary>
+    /// <param name="request">
+    /// Empty to ask what a rotation would cost. Carrying the count from such an
+    /// answer to rotate against it.
+    /// </param>
+    /// <response code="200">
+    /// The plan, or the receipt. <c>Rotated</c> says which.
+    /// </response>
+    /// <response code="409">
+    /// The store holds a different number of records than the caller
+    /// confirmed. Nothing was written.
+    /// </response>
+    /// <response code="503">This plugin has no data directory.</response>
+    /// <returns>What the rotation costs, or cost.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>The first call cannot be skipped.</b> The only way to rotate is to
+    /// send back a number this route gave out, so an interface cannot rotate
+    /// without having put the cost in front of somebody, and #30's clause about
+    /// saying what it will do before it does it is held by the shape rather
+    /// than by whoever writes the page.
+    /// </para>
+    /// <para>
+    /// <b>A conflict rather than a bad request when the count has moved.</b>
+    /// The caller sent a number that was right when they were shown it, so
+    /// nothing about the request is malformed: the store changed underneath.
+    /// The repair is to ask again, which the message says.
+    /// </para>
+    /// <para>
+    /// Rotation touches no account and removes no record. It makes every stored
+    /// hash unverifiable, which is what makes it the operator's answer to a
+    /// leaked key, and docs/api.md carries the same sentence.
+    /// </para>
+    /// </remarks>
+    [Authorize(Policy = "RequiresElevation")]
+    [HttpPost("HashSecret/Rotate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public ActionResult<RotationView> Rotate([FromBody] RotateRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!_operations.StoreIsAvailable)
+        {
+            return NoStore();
+        }
+
+        if (request.Invalidates is null)
+        {
+            return Ok(RotationView.Planned(_operations.PlanRotation()));
+        }
+
+        try
+        {
+            return Ok(RotationView.Done(_operations.Rotate(request.Invalidates.Value)));
+        }
+        catch (InvalidOperationException refused)
+        {
+            // The refusal is the routine's, and its message carries both counts
+            // and what to do. Replacing it here would be a second opinion about
+            // an event this type cannot see.
+            return Conflict(refused.Message);
+        }
     }
 
     private ObjectResult NoStore() => StatusCode(

@@ -6,16 +6,21 @@ and that happens whether or not anything is written down. The only choice is
 whether they are working from this page or from a browser's network tab.
 
 So the routes were fixed here before they existed, rather than described
-afterwards. Four of the seven are served now:
+afterwards. Most of them answer now:
 
     $ git grep -lE 'ControllerBase' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
 
-The four administrator operations landed under #82. The three redemption routes
-are #74 and #75 and are still what this page is built against rather than a
-description of anything. Which is which is not read off this paragraph: the
-register at the end of the page is the list, and the suite holds it against the
-assembly.
+This paragraph carried two hand counts and both had gone wrong, in the direction
+that reads as less built than the tree is: it said four of seven were served,
+against a pasted output naming one controller where the tree holds two. Neither
+number is written here now. The register at the end of the page is the list of
+what nothing serves, `ApiDocumentTests` holds it against the assembly on every
+run, and a count in a sentence is read by nobody.
+
+The administrator operations landed under #82, and the fifth of them, rotation
+of the hash secret, under #30. The redemption routes are #74 and #75.
 
 ## What is promised
 
@@ -120,9 +125,17 @@ created. Whatever it says, it says to anybody who visits it.
 
 ## The administrator routes
 
-Four operations and no more, from #82. Every one of them requires an
-administrator, and #83 is where that is asserted against the assembly rather
-than promised here.
+Five operations and no more. Every one of them requires an administrator, and
+#83 is where that is asserted against the assembly rather than promised here.
+
+It was four, from #82, and the fifth is rotation of the keyed hash secret. #30
+is where that was decided and the reason is worth reading before anybody adds a
+sixth: the routine that plans a rotation already counts what it invalidates and
+already refuses a confirmation made against a store that has moved, and with no
+route none of it reached an operator. A mechanism that cannot be reached is an
+absent one that looks present. The alternative kept the surface at four and made
+rotation an offline edit of a key file, which serves the counter and the refusal
+to nobody.
 
 ### `POST /Invites`
 
@@ -201,6 +214,39 @@ It is a `POST` to a named operation rather than a `DELETE` of the record, and
 the difference is not cosmetic. #82 keeps deleting a record out of the operator's
 hands, so a `DELETE` on this path would name an operation this plugin does not
 offer, and the first person to try it would learn that from a status code.
+
+### `POST /Invites/HashSecret/Rotate`
+
+Says what rotating the keyed hash secret would cost, and rotates it when the
+caller sends that cost back.
+
+| Parameter | In | Required | What it is |
+| --- | --- | --- | --- |
+| invalidates | body | no | The count from an earlier answer of this route. Omitted, nothing is written and the answer is what a rotation would cost |
+
+Two steps on one route, and the shape is what holds the promise rather than the
+wording. The only way to rotate is to send back a number this route gave out, so
+nothing can rotate without having put the cost in front of somebody first.
+
+The answer carries the count, the sentence to show an operator, and whether the
+secret was rotated. The count is every record the store holds, including the
+ones that were already expired, spent or revoked, and the sentence says so:
+narrowing it would mean a second routine deciding whether an invitation may be
+honoured, which is the one place that judgement lives.
+
+A confirmation naming a count the store no longer holds is refused with a
+conflict and nothing is written. Nothing about such a request is malformed, so
+it is not a bad request: the store changed between being read and being
+confirmed, and the repair is to ask again.
+
+Rotation is a revoke-everything operation. Every stored hash was computed under
+the old secret, so no invitation minted before the rotation can be redeemed
+again. That is what makes it the answer to a leaked key. It touches no account
+and it removes no record, because the trail of what those invitations produced
+is retention rather than rotation, and this API offers no route that deletes a
+record.
+
+The response carries no secret. There is no field it could be expressed in.
 
 ## One refusal, not four
 

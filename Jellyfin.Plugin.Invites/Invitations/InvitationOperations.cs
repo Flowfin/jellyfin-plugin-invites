@@ -11,13 +11,13 @@ using Jellyfin.Plugin.Invites.Time;
 namespace Jellyfin.Plugin.Invites.Invitations;
 
 /// <summary>
-/// The four operations an operator has over invitations: mint one, list them,
-/// look at one, revoke one.
+/// What an operator may do: mint an invitation, list them, look at one, revoke
+/// one, and rotate the key the stored hashes are computed under.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>This is where the work happens and the routes are where it is translated.</b>
-/// docs/api.md fixes four administrator routes and says of them that they
+/// docs/api.md fixes the administrator routes and says of them that they
 /// validate, call the routine that does the work and translate the result, and
 /// that no route makes a judgement of its own about expiry, uses or revocation.
 /// Keeping the work here rather than in the controller is what makes that
@@ -266,6 +266,73 @@ public sealed class InvitationOperations
 
             store.Write(contents.Invitations.Replace(found, revoked));
             return revoked;
+        }
+    }
+
+    /// <summary>
+    /// Works out what rotating the keyed hash secret would cost, without
+    /// rotating it.
+    /// </summary>
+    /// <returns>The plan, carrying the count and the sentence to show first.</returns>
+    /// <remarks>
+    /// Read under the same gate as everything else, so the number is the store
+    /// as it stood at one instant rather than a count assembled while somebody
+    /// else was minting.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    public HashSecretRotation PlanRotation()
+    {
+        lock (_gate)
+        {
+            var directory = Directory();
+
+            return HashSecret.PlanRotation(directory, Store().Read().Invitations);
+        }
+    }
+
+    /// <summary>
+    /// Rotates the keyed hash secret, against a count the caller was already
+    /// shown.
+    /// </summary>
+    /// <param name="invalidates">
+    /// The count from a <see cref="PlanRotation"/> the caller has seen. It must
+    /// still be what the store holds.
+    /// </param>
+    /// <returns>What the rotation cost, as it was actually paid.</returns>
+    /// <remarks>
+    /// <para>
+    /// The plan is made again here rather than carried in from the caller, so
+    /// what is rotated against is the store inside this gate and not a value
+    /// that travelled over a network. The number the caller sends is compared
+    /// against it, and a store that moved between the two calls refuses.
+    /// </para>
+    /// <para>
+    /// No record is removed. Rotation makes every stored hash unverifiable,
+    /// which is what the operator asked for, and deleting the records as well
+    /// would take away the trail of what those invitations produced. That is
+    /// retention rather than rotation and this plugin offers no route for it.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// There is no store directory, or the store holds a different number of
+    /// records than the caller confirmed. Nothing is written in either case.
+    /// </exception>
+    public HashSecretRotation Rotate(int invalidates)
+    {
+        lock (_gate)
+        {
+            var directory = Directory();
+            var records = Store().Read().Invitations;
+            var plan = HashSecret.PlanRotation(directory, records);
+
+            if (plan.Invalidates != invalidates)
+            {
+                throw HashSecretRotation.CountMoved(invalidates, plan.Invalidates);
+            }
+
+            HashSecret.Rotate(plan, records);
+
+            return plan;
         }
     }
 

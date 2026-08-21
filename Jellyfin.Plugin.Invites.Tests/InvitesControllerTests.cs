@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
@@ -338,6 +339,9 @@ public class InvitesControllerTests
         Assert.Equal(
             StatusCodes.Status503ServiceUnavailable,
             Assert.IsType<ObjectResult>((await controller.Revoke(Guid.NewGuid())).Result).StatusCode);
+        Assert.Equal(
+            StatusCodes.Status503ServiceUnavailable,
+            Assert.IsType<ObjectResult>(controller.Rotate(new RotateRequest()).Result).StatusCode);
     }
 
     /// <summary>
@@ -443,6 +447,102 @@ public class InvitesControllerTests
         Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
     }
 
+    /// <summary>
+    /// Asking what a rotation costs reads the store and writes nothing.
+    /// </summary>
+    /// <remarks>
+    /// The key on disk is compared byte for byte before and after, because the
+    /// claim is not that the response says nothing happened. It is that nothing
+    /// happened.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task AskingWhatRotationCostsWritesNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var controller = ControllerOver(directory, _minted);
+
+        await controller.Mint(new MintRequest { Template = "guest" });
+        var before = File.ReadAllBytes(HashSecret.PathIn(directory.Path));
+
+        var plan = Rotation(controller.Rotate(new RotateRequest()));
+
+        Assert.False(plan.Rotated);
+        Assert.Equal(1, plan.Invalidates);
+        Assert.Contains("1 record(s)", plan.Detail, StringComparison.Ordinal);
+        Assert.Equal(before, File.ReadAllBytes(HashSecret.PathIn(directory.Path)));
+    }
+
+    /// <summary>
+    /// Confirming the count rotates the key, leaves every record where it was,
+    /// and makes the code that was minted under the old key unverifiable.
+    /// </summary>
+    /// <remarks>
+    /// The last of those three is the whole point and the other two are what
+    /// keep it from being achieved by deleting things. A rotation that also
+    /// removed the records would pass an assertion about the code and take the
+    /// trail of what those invitations produced with it.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task ConfirmingTheCountRotatesAndLeavesTheRecords()
+    {
+        using var directory = new OwnedDirectory();
+        var controller = ControllerOver(directory, _minted);
+
+        var minted = Minted(await controller.Mint(new MintRequest { Template = "guest" }));
+        var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
+        var before = File.ReadAllBytes(HashSecret.PathIn(directory.Path));
+
+        var done = Rotation(controller.Rotate(new RotateRequest { Invalidates = 1 }));
+
+        Assert.True(done.Rotated);
+        Assert.Equal(1, done.Invalidates);
+
+        var after = File.ReadAllBytes(HashSecret.PathIn(directory.Path));
+        Assert.NotEqual(before, after);
+
+        var records = new InvitationStore(directory.Path).Read().Invitations;
+        Assert.Equal(stored.Id, Assert.Single(records).Id);
+
+        var underTheNewKey = new InvitationCodeHash(
+            HashSecret.OpenOrCreate(directory.Path, records).Value);
+
+        Assert.NotEqual(
+            Convert.ToHexString(stored.CodeHash.AsSpan()),
+            Convert.ToHexString(underTheNewKey.Of(InvitationCode.Canonicalise(minted.Code)!).AsSpan()));
+    }
+
+    /// <summary>
+    /// A confirmation naming a count the store no longer holds is refused, and
+    /// the key it would have replaced is still there.
+    /// </summary>
+    /// <remarks>
+    /// This is the interleaving the route exists to survive: an operator reads
+    /// a number, somebody mints while they are reading it, and the cost they
+    /// agreed to is no longer the cost that would be paid. A conflict rather
+    /// than a bad request, because nothing about the request is malformed.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task AConfirmationAgainstAMovedStoreIsRefusedAndWritesNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var controller = ControllerOver(directory, _minted);
+
+        await controller.Mint(new MintRequest { Template = "guest" });
+        var plan = Rotation(controller.Rotate(new RotateRequest()));
+        await controller.Mint(new MintRequest { Template = "guest" });
+
+        var before = File.ReadAllBytes(HashSecret.PathIn(directory.Path));
+        var refused = Assert.IsType<ConflictObjectResult>(
+            controller.Rotate(new RotateRequest { Invalidates = plan.Invalidates }).Result);
+
+        Assert.Equal(StatusCodes.Status409Conflict, refused.StatusCode);
+        Assert.Contains("Nothing was rotated", (string)refused.Value!, StringComparison.Ordinal);
+        Assert.Equal(before, File.ReadAllBytes(HashSecret.PathIn(directory.Path)));
+    }
+
     private static InvitesController ControllerOver(OwnedDirectory directory, DateTimeOffset now)
         => ControllerOver(directory, new TestClock(now));
 
@@ -463,6 +563,9 @@ public class InvitesControllerTests
         {
             ControllerContext = new ControllerContext { HttpContext = context },
         };
+
+    private static RotationView Rotation(ActionResult<RotationView> result)
+        => Assert.IsType<RotationView>(Assert.IsType<OkObjectResult>(result.Result).Value);
 
     private static MintedInvitation Minted(ActionResult<MintedInvitation> result)
         => Assert.IsType<MintedInvitation>(Assert.IsType<OkObjectResult>(result.Result).Value);
