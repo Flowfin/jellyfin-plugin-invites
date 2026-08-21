@@ -22,7 +22,7 @@ the review is for.
 
 | Setting | What it does | Default | Bounds | At the bound | If it is set badly |
 | ------- | ------------ | ------- | ------ | ------------ | ------------------ |
-| `PublicBaseUrl` | The address invitation links are built from, as a stranger outside the network reaches this server | Empty | An absolute `http` or `https` address, with an optional path prefix and no query or fragment | Empty refuses to build a link at all, naming this setting | Every link points somewhere the invited person cannot reach, or reaches a server that is not this one. Nothing is minted wrongly and no account is affected, because the address is used only to write the link down |
+| `PublicBaseUrl` | The address invitation links are built from, as a stranger outside the network reaches this server. It is what the mint response writes its link against, and it is read from here and never from the request | Empty | An absolute `http` or `https` address, with an optional path prefix and no query or fragment | Empty mints as usual and returns the refusal in place of the link, naming this setting | Every link points somewhere the invited person cannot reach, or reaches a server that is not this one. Nothing is minted wrongly and no account is affected, because the address is used only to write the link down |
 
 ## The public base address
 
@@ -52,6 +52,10 @@ wrong one, and the member a server answers that question with has already been
 measured moving between the two lines this plugin loads on. A refusal naming this
 setting is a support question with an answer. A link built from the wrong address
 is a support question without one.
+
+The refusal is not written to a log for somebody to find later. It comes back in
+the mint response, in place of the link, at the moment an operator was expecting
+one, which is #50 and is what `docs/api.md` describes under `POST /Invites`.
 
 An address that is not absolute, is not `http` or `https`, or carries a query or
 a fragment is refused the same way, because appending a path to any of them

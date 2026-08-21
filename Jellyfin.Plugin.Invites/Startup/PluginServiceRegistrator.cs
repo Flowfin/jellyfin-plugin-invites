@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.Invites.Accounts;
+using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
@@ -13,18 +14,23 @@ namespace Jellyfin.Plugin.Invites.Startup;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Three registrations, and all of them exist so that something happens when the
-/// server starts. <see cref="LoadOnStart"/> is the moment #46 and #96 were both
-/// waiting for. <see cref="IClock"/> is the seam every instant in this plugin is
-/// read through, and <see cref="IStoreDirectory"/> is where the store sits, both
-/// wired here to the one implementation that answers from the machine and from
-/// the server.
+/// Everything here exists so that something happens when the server starts.
+/// <see cref="LoadOnStart"/> is the moment #46 and #96 were both waiting for.
+/// The rest are the seams: <see cref="IClock"/> is where every instant in this
+/// plugin is read, <see cref="IStoreDirectory"/> is where the store sits, and
+/// <see cref="IPublicAddress"/> is the address a minted link is written
+/// against, each wired to the one implementation that answers from the machine
+/// and from the server. The method below is the list rather than this
+/// paragraph, which would go stale the next time one is added.
 /// </para>
 /// <para>
-/// The two seams are registered rather than constructed where they are needed. A
+/// The seams are registered rather than constructed where they are needed. A
 /// caller that built its own clock would be a second place the machine clock is
 /// reached, which is what that seam exists to prevent, and the greppable rule
-/// that refuses a direct read exempts one file by name.
+/// that refuses a direct read exempts one file by name. A caller that read
+/// <see cref="Plugin.Instance"/> for the public address would be the same
+/// failure one static along, and #50 is why that one matters: an address read
+/// from anywhere a request can reach is a link an attacker chooses.
 /// </para>
 /// </remarks>
 public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
@@ -34,6 +40,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.AddSingleton<IClock, SystemClock>();
         serviceCollection.AddSingleton<IStoreDirectory, PluginStoreDirectory>();
+        serviceCollection.AddSingleton<IPublicAddress, PluginPublicAddress>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
         serviceCollection.AddSingleton<InvitationOperations>();
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();

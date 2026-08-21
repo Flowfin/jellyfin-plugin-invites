@@ -38,6 +38,12 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </remarks>
 public class ExpiryIsNotDeletionTests
 {
+    /// <summary>
+    /// The public address a link is written against, as an operator would set
+    /// it. Nothing here derives it from a request, which is #50.
+    /// </summary>
+    private const string Configured = "https://media.example.org";
+
     private static readonly DateTimeOffset _minted = new(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan _validity = TimeSpan.FromDays(7);
     private static readonly DateTimeOffset _wellPast = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
@@ -60,7 +66,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock);
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
         Assert.Single(operations.All());
@@ -86,7 +92,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock);
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
 
@@ -107,7 +113,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock);
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
         var afterMinting = File.ReadAllBytes(new InvitationStore(directory.Path).Path);

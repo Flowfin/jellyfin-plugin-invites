@@ -33,6 +33,12 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </remarks>
 public class MintedCodeIsNotHandedBackTests
 {
+    /// <summary>
+    /// The public address a link is written against, as an operator would set
+    /// it. Nothing here derives it from a request, which is #50.
+    /// </summary>
+    private const string Configured = "https://media.example.org";
+
     private static readonly DateTimeOffset _now = new(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
 
     private static readonly Guid _operator = Guid.Parse("11112222-3333-4444-5555-666677778888");
@@ -57,17 +63,25 @@ public class MintedCodeIsNotHandedBackTests
         // minting anything at all.
         Assert.Equal(InvitationCode.Length, InvitationCode.Canonicalise(minted.Code)!.Length);
 
+        // And it may carry the link, which is the same credential with a host
+        // in front of it. #50 put it here and only here, so this leg is the one
+        // that tells the two responses apart: without it, a change that stopped
+        // minting a link would leave every assertion below green.
+        Assert.NotNull(minted.Link);
+        Assert.Contains(minted.Code, minted.Link, StringComparison.Ordinal);
+
         var identifier = minted.Invitation.Id;
 
-        NothingShapedLikeACodeIn("the listing", minted.Code, Assert.IsType<OkObjectResult>(controller.List().Result).Value);
-        NothingShapedLikeACodeIn("one invitation", minted.Code, Assert.IsType<OkObjectResult>(controller.One(identifier).Result).Value);
+        NothingShapedLikeACodeIn("the listing", minted.Code, minted.Link, Assert.IsType<OkObjectResult>(controller.List().Result).Value);
+        NothingShapedLikeACodeIn("one invitation", minted.Code, minted.Link, Assert.IsType<OkObjectResult>(controller.One(identifier).Result).Value);
         NothingShapedLikeACodeIn(
             "the revocation",
             minted.Code,
+            minted.Link,
             Assert.IsType<OkObjectResult>((await controller.Revoke(identifier)).Result).Value);
     }
 
-    private static void NothingShapedLikeACodeIn(string route, string code, object? body)
+    private static void NothingShapedLikeACodeIn(string route, string code, string link, object? body)
     {
         Assert.NotNull(body);
 
@@ -81,11 +95,18 @@ public class MintedCodeIsNotHandedBackTests
             + ". A code or a keyed hash rendered as hexadecimal both read that way, and neither belongs in a response an operator's browser keeps.");
 
         Assert.DoesNotContain(code, json, StringComparison.OrdinalIgnoreCase);
+
+        // The link is refused by name as well as by shape. A response that
+        // carried it would already fail the run above, because the code is in
+        // it, and naming it here is what makes the sentence a reader takes from
+        // this file the one #50 decided: the mint may carry the link and no
+        // route that reads an invitation back may.
+        Assert.DoesNotContain(link, json, StringComparison.OrdinalIgnoreCase);
     }
 
     private static InvitesController ControllerOver(OwnedDirectory directory)
         => new(
-            new InvitationOperations(new StubStoreDirectory(directory.Path), new TestClock(_now)),
+            new InvitationOperations(new StubStoreDirectory(directory.Path), new TestClock(_now), new StubPublicAddress(Configured)),
             new StubOperatorIdentity(_operator))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },

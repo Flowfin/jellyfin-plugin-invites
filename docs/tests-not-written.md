@@ -79,13 +79,27 @@ the shape in source, and it has a fixture that trips it:
 $ bash .github/lint/invariants.sh selftest
 ```
 
-Status: both parts exist. The lint rule is there, and the unit test is
-`AForgedHostDoesNotReachTheLink` in `InvitationLinkTests`, which builds a link
-while a request carrying a forged host sits in the same process and asserts the
-configured address comes out. #50 is open, and it says of that test itself that
-the builder never sees the request, so nothing in the process could have
-carried the forged host into the link and the test could not have failed. What
-this row asks is that the replacement exist, and it does at that strength.
+Status: both parts exist, and the second one is stronger than it was when this
+row was written. The lint rule is there.
+`AForgedHostDoesNotReachTheLink` in `InvitationLinkTests` is still there too and
+is still the weak form: it builds a link while a request carrying a forged host
+sits in the same process, and says of itself that the builder never sees that
+request, so nothing could have carried the host into the link and the leg could
+not have failed.
+
+What moved is that a route now answers with a link.
+`AForgedHostDoesNotReachTheMintedLink` in `InvitesControllerTests` forges the
+host on the request the mint action is answering and asserts the configured
+address in the link that came back, which is the shape this row is about: the
+value asserted is one the code produced from a request rather than one produced
+beside a request. It was seen to fail, by building the link against a different
+address and by returning none at all.
+
+Its bound is one spelling. The forgery is set through the `Host` header,
+because the greppable rules refuse the request object own host member and the
+forwarded header names as text anywhere in this tree and take no exemption for a
+test. Those spellings are covered by the rules instead, and more widely: no file
+here may name them at all.
 
 ### A test that an invitation mail arrives
 
