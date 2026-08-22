@@ -122,14 +122,14 @@ other direction.
 
 ## The three that failed
 
-The operator's label first. #38 leaves it open and #82 has minting accept one.
-It is the field most likely to end up holding a person's full name and mail
-address, because that is the obvious thing to type into a box that says what
-this link is for. The plugin works without it: an invitation is already
-identifiable by its identifier, who minted it and when. The recommendation is
-that it is not stored. If it is kept anyway, it is kept as a field the operator
-is told is stored in clear and shown in the administrator view, and it is
-covered by the same retention as the record.
+The operator's label first. This page said #38 leaves it open and #82 has
+minting accept one; both have closed and neither carries the field, which the
+last section reads back. It is still the one most likely to end up holding a
+person's full name and mail address, because that is the obvious thing to type
+into a box that says what this link is for. The plugin works without it: an
+invitation is identifiable by its identifier, who minted it and when. The
+recommendation is that it is not stored. If it is kept anyway, it is kept in
+clear, shown in the administrator view, and covered by the record's retention.
 
 Then a contact address for the invited person. Decision 9 in #11 is whether the
 guided setup collects one. This inventory is the argument for collecting none:
@@ -305,6 +305,35 @@ that uncovered population instead of resetting its clock. What those sentences
 rest on is which file writes, which route is above it, and which line matched,
 and a paste carrying the path and the line says all three without a figure that
 goes stale the next time something is inserted higher up.
+
+The operator's label row above said two things about the tracker that stopped
+being true. #38 was described as leaving the field open and #82 as having minting
+accept one. Both have closed, and neither carries it: no member of the record is
+that field, and the mint request carries the template name, the validity and the
+use count and nothing an operator would type a person's name into.
+
+    $ git grep -E '^    public [A-Za-z<>?]+ [A-Za-z]+ \{ get' -- Jellyfin.Plugin.Invites/Controllers/MintRequest.cs
+    Jellyfin.Plugin.Invites/Controllers/MintRequest.cs:    public string? Template { get; set; }
+    Jellyfin.Plugin.Invites/Controllers/MintRequest.cs:    public int? ValidityDays { get; set; }
+    Jellyfin.Plugin.Invites/Controllers/MintRequest.cs:    public int? Uses { get; set; }
+
+`Template` is not that field. It is the operator picking which grant to hand out,
+and the record keeps it as the template name, which is its own row above.
+
+So the recommendation this page made is what the tree took, and the row stays
+because the recommendation is the thing being recorded and because nothing
+refuses the field. What holds the absence in the record is
+`InvitationRecordTests.EveryPublicMemberOfTheRecordIsARowInThePersonalDataInventory`,
+which reads the members of the type against the rows of the table above. It was
+seen to bite: putting a member on the record for exactly this field reds that
+test and nothing else.
+
+    $ dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release
+    ...InvitationRecordTests.EveryPublicMemberOfTheRecordIsARowInThePersonalDataInventory [FAIL]
+    Fehler!      : Fehler:     1, erfolgreich:   438, übersprungen:     8, gesamt:   447
+
+Nothing holds the mint request to anything, so a label accepted at the route and
+dropped before the record would pass every check in this tree.
 
 Two pastes on this page still ask for line numbers and both are kept. The one
 under `## The setup form` prints nothing at all, because what it is evidence of
