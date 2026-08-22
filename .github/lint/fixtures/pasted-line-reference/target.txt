@@ -1,0 +1,4 @@
+The first line of the target.
+A line a fixture points at.
+A second line a fixture points at.
+The last line of the target.
