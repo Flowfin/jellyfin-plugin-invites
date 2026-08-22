@@ -476,3 +476,27 @@ Only that quotation was read. The line numbers in the first pass are already
 disclosed as stale where the second pass says the packaging metadata gained
 fields, and no item on this page was re-judged for this reading. No server was
 run.
+
+## Read again on 2026-08-22, for what the last failing item waits on
+
+Nothing on this page is re-judged here, and no item's verdict moves. What has
+moved is outside the tree, so it is recorded underneath rather than by editing a
+landed pass.
+
+The pass above leaves one failing item, the per-version checksum, source address
+and timestamp, and both passes say it waits on the eleventh entry in #11, which
+decides where the manifest is hosted. That entry is answered, in a comment on
+that issue dated 2026-08-20: the manifest is self-hosted under Flowfin's own
+control, and there is no submission to the official catalogue now. The reason
+recorded with it is that the official catalogue is not filled by submitting to
+it, so submission would mean moving the repository into another organisation
+rather than choosing a distribution route.
+
+So the item stops waiting on a decision and starts waiting on work. #119 is the
+manifest and #155 is the first release the manifest would describe, and neither
+has landed. The item still fails and it fails for a different reason than the
+sentence above it gives.
+
+This is a reading of the tracker rather than of the tree, and nothing in this
+repository holds it. The item's own verdict was not re-run, no field of
+`build.yaml` was re-read for this note, and no server was run.

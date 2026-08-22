@@ -68,8 +68,8 @@ anything about whether an answer is the right one, which is what a reader is for
 | `prettier.yml` | adopted, landed | #19 adopted formatting checks for the non-C# files. It landed at `5c98896b` as `prettier.yaml`, and reports `Non-C# files are formatted`. Its glob is the served-page surface and does not reach markdown, which is written in the file itself. |
 | `publish-beta.yml` | deferred to M12 | Same as the other publishing workflows, there is nothing to publish before a release process exists. |
 | `publish-failure-alert.yml` | deferred to M12 | It alerts on a publishing failure, so it cannot land before publishing does. |
-| `publish-jf12-beta.yml` | deferred to M12 | Whether a second server line is carried at all is an open decision in #11. |
-| `publish-jf12-stable.yml` | deferred to M12 | Same as above, and it doubles the publishing surface if the answer is two lines. |
+| `publish-jf12-beta.yml` | declined | Item 1 in #11 is answered and the answer is one line, 10.11, decided on #97. A second publishing channel for a line this plugin is not built against would publish a claim nobody has checked. |
+| `publish-jf12-stable.yml` | declined | Same as above. Carrying the second line is a build matrix, a second packaging manifest and a second channel, and none of the three exists here; when a second line is wanted those are what get copied rather than this file. |
 | `publish.yml` | deferred to M12 | The release process is written in M12 and this is the workflow that runs it. |
 | `regenerate-manifest.yml` | deferred to M12 | It maintains the manifest a catalogue reads, which does not exist until something is published. |
 | `scorecard.yml` | adopted, landed | Already in the tree at `e776ccf`. |

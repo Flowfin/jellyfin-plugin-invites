@@ -46,9 +46,11 @@ A username, a password, and a password confirmation. That is the whole form.
 
 Anything else needs two things before it exists: a row in
 [docs/personal-data.md](personal-data.md) naming what reads it and what deletes
-it, and a reason written where the change is argued. One candidate is named in
-the plan and is not decided here, a contact address for the invited person,
-which is decision 9 in #11.
+it, and a reason written where the change is argued. The one candidate the plan
+named, a contact address for the invited person, is decision 9 in #11 and is
+answered: the guided setup collects none. So it is a field that was refused
+rather than one nobody has got to, and adding it later is a decision to reopen
+rather than a gap to fill.
 
 ## The presentation rules
 

@@ -106,10 +106,11 @@ here may name them at all.
 It needs a mail server and a network.
 
 There is no mail path in the plan. The operator copies a link and sends it
-themselves, and whether that ever changes is item 5 in #11, which is not
-answered. So this row has nothing to replace today. If a sending path is ever
-added, the replacement is a test against a fake transport that asserts what was
-handed to it, and never a test that anything left the machine.
+themselves, and item 5 in #11 is answered: this plugin never sends an invitation
+itself. So this row has nothing to replace today, and the reason is a decision
+rather than an open question. If a sending path is ever added it is a milestone
+of its own, and the replacement here is a test against a fake transport that
+asserts what was handed to it, never a test that anything left the machine.
 
 Status: nothing to cover, and the row exists so that adding a mail path does not
 also quietly add a mail server to the suite.

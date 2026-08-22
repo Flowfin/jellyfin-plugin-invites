@@ -20,19 +20,20 @@ so there is no public registration path into this flow. An invitation can never
 create an administrator and never widens an account that already exists. The
 link carries neither a credential nor the account template it grants.
 
-Four things this flow touches are not decided, and each one is marked where it
-appears rather than answered here.
+Four things this flow touches were open when it was drawn and all four are
+answered in #11. The table below is what each answer does to the flow, and it
+replaces the list of open questions that stood here.
 
-| Open question | Where it lands in this flow | Decision |
+| Question | What the answer is | What it does to this flow |
 | --- | --- | --- |
-| Single use or multi use, and which is the default | `Consuming` decrements a count; whether the default count is one decides whether an invitation is normally spent by its first redemption | #11 item 2 |
-| Who sets the password, and whether to defer to a sign-in provider | `Credential` is drawn as the invited person choosing a password. A server running single sign-on wants a different terminal state, and that is a second flow rather than a branch inside this one | #11 item 4, #66 |
-| Whether the setup form collects a contact address | Adds a field to `Form` and a row to the record. It changes no transition | #11 item 9, #34 |
-| Whether an invited account expires with its invitation | Nothing in this flow. It is a scheduled task acting on an account this flow already created | #11 item 3, #68 |
+| Single use or multi use, and which is the default | Redeemable once, item 2 | `Consuming` still decrements a count and the count still exists, and the ordinary invitation is spent by its first redemption |
+| Who sets the password, and whether to defer to a sign-in provider | The invited person sets it, and on a server running single sign-on the flow defers to the identity provider, item 4 | `Credential` stays the invited person choosing a password. The sign-on server keeps its own terminal state, which is a second flow rather than a branch inside this one, and is #66 |
+| Whether the setup form collects a contact address | None is collected, item 9 | `Form` gains no field and the record gains no row. It changes no transition, and it is not a gap for a later change to fill |
+| Whether an invited account expires with its invitation | It does not, and where an operator asks for a lapse the account is deactivated rather than deleted, off by default, item 3 | Nothing in this flow. It is a scheduled task acting on an account this flow already created, and it is #68 |
 
-The rest of the document is written against the planned path, which is the
-password path, because that is what the plan assumes everywhere else. Where the
-sign-in-provider answer would change a cell, the cell says so.
+The rest of the document is written against the password path, which is what the
+plan assumes everywhere else. Where the sign-in-provider flow would change a
+cell, the cell says so.
 
 ## The routes
 

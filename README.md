@@ -52,18 +52,26 @@ true. The issues that turn each into a refusal in the source are named against
 their rows in [docs/threat-model.md](docs/threat-model.md), and none of those
 refusals is code yet.
 
-The mail one is narrower than the others and is worth saying exactly. Nothing
-sends mail today and nothing in the plan does. Whether sending is ever added is
-item 5 in #11, which has no answer, and the issue says that if it is wanted it
-is a milestone of its own with a mail or webhook configuration surface behind
-it. So read that bullet as what the plugin does rather than as a promise about
-what it will never do.
+The mail one is narrower than the others and is worth saying exactly, and this
+paragraph said the question behind it was open. Item 5 in #11 is answered: this
+plugin never sends an invitation itself. A sending path arrives with three
+things that do not exist here, a mail or webhook configuration, a contact
+address to send to, and an outgoing route off the server, and each of them is a
+surface of its own. Item 9 in the same place answers the second of the three in
+the same direction, so the guided setup collects no contact address either.
+
+That makes the bullet a decision rather than a gap, which is why it is written
+out instead of being left as an absence. An operator who reads nothing about
+sending concludes it was forgotten and finds out otherwise after installing. If
+sending is ever wanted it is a milestone of its own rather than a setting, and
+the answer today is no.
 
 ## Supported server line
 
-Jellyfin 10.11.0 and later, on `net9.0`. That is the oldest server the packaging
-metadata claims to load on rather than a preference, and it is one value read
-from one file:
+The 10.11 line, on `net9.0`, and one line rather than two. That is item 1 in
+#11, answered on #97, and this section read `10.11.0 and later` before it was.
+The number in the manifest is the oldest server of that line the plugin claims
+to load on, and it is one value read from one file:
 
 ```
 $ git grep -nE '^(targetAbi|framework):' -- build.yaml
@@ -74,6 +82,13 @@ build.yaml:7:framework: "net9.0"
 `Directory.Build.props` derives the floor build from that same line, so the
 claim in the manifest is what the plugin is compiled against rather than a
 second number somebody keeps in step by hand.
+
+`targetAbi` is a floor and no field beside it names a ceiling, so a server on a
+later line installs this plugin today and nothing refuses it. That is the gap
+rather than the decision. #97 is where the plugin compares the running server
+against the line it was built for and declines instead of half working, and it
+is not built, so read the heading as what this plugin is built and tested
+against rather than as something the packaging enforces.
 
 ## Installing
 
