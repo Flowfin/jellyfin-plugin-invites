@@ -131,13 +131,13 @@ invitation is identifiable by its identifier, who minted it and when. The
 recommendation is that it is not stored. If it is kept anyway, it is kept in
 clear, shown in the administrator view, and covered by the record's retention.
 
-Then a contact address for the invited person. Decision 9 in #11 is whether the
-guided setup collects one. This inventory is the argument for collecting none:
-the plugin's job ends when an account exists, account recovery is the server's
-job, and an address collected here is the only field that would make this
-plugin hold contact data about a person the server does not already hold.
-Written as a parameter rather than a refusal, because it is the maintainer's
-call and not this document's.
+Then a contact address for the invited person. This paragraph wrote it as a
+parameter because the call was the maintainer's. It has been made, and it is
+the one this inventory argued for: decision 9 in #11 is answered and the guided
+setup collects none, because the plugin's job ends when an account exists,
+account recovery is the server's job, and an address collected here would be
+the only field making this plugin hold contact data the server does not already
+hold. The last section says what holds it off the record.
 
 Last, the address a redemption came from. This one is worth separating with
 care,
@@ -340,3 +340,23 @@ under `## The setup form` prints nothing at all, because what it is evidence of
 is an absence and the status it exited is what carries that. The one under
 `## What deletes anything` about the redemption half prints two, and both of
 them still reproduce.
+
+The contact address row is held off the record by the same guard as the operator
+label, and it was proved for this field rather than inferred from that one.
+Giving the record a member for it reds one test and no other:
+
+    $ dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release
+    ...InvitationRecordTests.EveryPublicMemberOfTheRecordIsARowInThePersonalDataInventory [FAIL]
+    Fehler!      : Fehler:     1, erfolgreich:   444, übersprungen:     8, gesamt:   453
+
+The probe was restored from a copy taken beforehand and nothing tracked carries
+it. The bound is the same as the label's: the guard reads the record type, so a
+value accepted at a route and dropped before the record walks past it.
+
+The paragraph about that row, under `## The three that failed`, was rewritten to
+the same number of lines it had. That is not a style: `docs/rate-limit.md` pastes
+a line of this page with its number, so a paragraph here that grows breaks a
+reference in a file this change is not otherwise touching, which is the defect
+`.github/lint/pasted-line-reference.sh` was written for and the one it refused
+here. Taking the number out of that paste is the repair, and it belongs to #31,
+which owns that page.
