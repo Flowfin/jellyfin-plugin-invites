@@ -1,0 +1,119 @@
+# Dependency updates for this repository, decided on #23.
+#
+# Everything the bot does here is named in this file rather than inherited from a
+# preset, because a bot that can raise a version is a bot whose merged output is
+# code this project did not write, and the rules deciding that should be readable
+# next to the tree they act on.
+#
+# There are two entries per ecosystem rather than one. `applies-to` splits a
+# routine version bump from an advisory-driven one, and the split is what carries
+# the rule that a security update is not reviewed with the same attention: it has
+# its own label, it is never grouped, it is not held to the monthly window, and
+# the exclusions below do not reach it. One entry per ecosystem cannot express
+# any of that, because every one of those settings would then apply to both.
+version: 2
+
+updates:
+  # --- NuGet, routine ------------------------------------------------------
+  - package-ecosystem: "nuget"
+    directory: "/"
+    applies-to: version-updates
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 3
+    ignore:
+      # The Jellyfin server packages are not a staleness question. Their version
+      # is the server line this plugin is built for, decided in
+      # Directory.Build.props and read from the same place by the packaging
+      # manifest and the floor build, so a bot raising it would move the plugin
+      # to a server line nobody chose and would do it by editing a number three
+      # other things derive from. Moving that line is a deliberate change with
+      # its own issue. This exclusion is on the routine entry only: an advisory
+      # against either package still reaches the entry below.
+      - dependency-name: "Jellyfin.Controller"
+      - dependency-name: "Jellyfin.Model"
+    groups:
+      test-packages:
+        # The test-only packages move together. They are one decision to a
+        # reader: either the suite still runs on the new versions or it does
+        # not, and the check that answers that is the same run either way.
+        # coverlet.msbuild is in this group and was not in the Renovate rule
+        # this file replaces. It is test-only and it moves under the same
+        # question, and leaving it out would have produced a pull request per
+        # month whose whole content is a coverage collector.
+        patterns:
+          - "Microsoft.NET.Test.Sdk"
+          - "xunit"
+          - "xunit.runner.visualstudio"
+          - "coverlet.msbuild"
+      analyzers:
+        # The analyzers are separate from the test packages. Warnings are errors
+        # in this tree, so an analyzer version is the one dependency bump that
+        # can red the build for a reason in the plugin's own source rather than
+        # in a dependency.
+        patterns:
+          - "SerilogAnalyzer"
+          - "StyleCop.Analyzers"
+          - "SmartAnalyzers.MultithreadingAnalyzer"
+
+  # --- NuGet, advisory -----------------------------------------------------
+  - package-ecosystem: "nuget"
+    directory: "/"
+    applies-to: security-updates
+    schedule:
+      interval: "daily"
+    labels:
+      - "dependencies"
+      - "security"
+    open-pull-requests-limit: 10
+    # No groups and no ignore. An advisory arrives on its own, carrying the
+    # `security` label that tells a reader before they open it that this one is
+    # not routine, and it reaches the Jellyfin packages that the routine entry
+    # leaves alone.
+
+  # --- Actions, routine ----------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    applies-to: version-updates
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+    open-pull-requests-limit: 3
+    groups:
+      # First, because a dependency joins the first group whose patterns match
+      # it. github/codeql-action/init and .../analyze are two dependencies to
+      # the bot and one thing to the workflow: a run whose two steps are on
+      # different versions stops with "Loaded a configuration file for version
+      # X, but running version Y", so neither half of a split is repairable on
+      # its own. This group is not restricted by update type, because that
+      # failure does not care whether the jump was major.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
+      actions:
+        # Everything else that is not a major jump arrives as one pull request
+        # rather than one per action.
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    # A major action jump is left ungrouped by the update-types above, so it
+    # arrives on its own. It is the case where the inputs, the outputs or the
+    # permissions of a step can have changed underneath, and grouping it with
+    # routine bumps is how that gets read as routine.
+
+  # --- Actions, advisory ---------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    applies-to: security-updates
+    schedule:
+      interval: "daily"
+    labels:
+      - "dependencies"
+      - "security"
+    open-pull-requests-limit: 10
