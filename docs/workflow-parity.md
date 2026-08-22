@@ -129,13 +129,12 @@ How often each of this repository's labels is used:
 ```
 $ gh issue list --state all --limit 300 --json number,labels \
     --jq '[.[] | .labels[].name] | group_by(.) | map({label: .[0], count: length}) | sort_by(-.count) | .[] | "\(.count)\t\(.label)"'
-38	security
-28	enhancement
-17	ci
+39	security
+29	enhancement
+18	ci
 16	tests
-12	planning
-11	documentation
-1	question
+13	planning
+12	documentation
 ```
 
 `security` and `planning` appear in the shared list neither as a label nor as an
@@ -148,9 +147,16 @@ $ gh api -H "Accept: application/vnd.github.raw" \
 40:    - enhancement
 ```
 
-So a run deletes them, and with them 50 label attachments across the issues that
-carry them. `enhancement` survives but not under its own name: it is listed as an
-alias of `feature`, so the 28 issues carrying it end up carrying `feature` instead,
-and anything that filters on `enhancement` stops matching.
+So a run deletes them, and with them every attachment the two rows above account
+for. `enhancement` survives but not under its own name: it is listed as an alias
+of `feature`, so the issues carrying it end up carrying `feature` instead, and
+anything that filters on `enhancement` stops matching.
+
+The two sentences above used to restate three of those counts, and all three had
+drifted: the table said 38, 28 and 12 where the command now prints 39, 29 and 13,
+and a `question` row it carried is gone because nothing uses that label any more.
+The counts move with every issue opened, so a number written into a sentence
+beside the table that produces it goes stale on the next one. The table is the
+measurement and the sentences point at it rather than repeating it.
 
 The workflow runs on a monthly schedule and nothing here would say it had happened.
