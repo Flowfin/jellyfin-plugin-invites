@@ -12,23 +12,23 @@ the store is `Jellyfin.Plugin.Invites/Storage/InvitationStore.cs` under #39, and
 since the administrator routes landed an operator who mints an invitation writes
 one:
 
-    $ git grep -n 'new InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:165:            var store = new InvitationStore(directory);
-    origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:188:        return new InvitationStore(plugin.DataFolderPath);
-    origin/master:Jellyfin.Plugin.Invites/Storage/StoreLoad.cs:127:                ConsistencyReport.OfALoad(new InvitationStore(directory), accountsTheServerHas));
+    $ git grep 'new InvitationStore' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            var store = new InvitationStore(directory);
+    origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:        return new InvitationStore(plugin.DataFolderPath);
+    origin/master:Jellyfin.Plugin.Invites/Storage/StoreLoad.cs:                ConsistencyReport.OfALoad(new InvitationStore(directory), accountsTheServerHas));
 
-    $ git grep -n 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:166:            var contents = store.Read();
-    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
-    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:239:            var contents = store.Read();
-    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
-    origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:126:        return Of(store.Read().Invitations, accountsTheServerHas);
+    $ git grep 'store.Read()\|store.Write(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            var contents = store.Read();
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            store.Write(contents.Invitations.Add(minted));
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            var contents = store.Read();
+    origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            store.Write(contents.Invitations.Replace(found, revoked));
+    origin/master:Jellyfin.Plugin.Invites/Storage/ConsistencyReport.cs:        return Of(store.Read().Invitations, accountsTheServerHas);
 
 Both writes are in `InvitationOperations` and both have a route above them:
 
-    $ git grep -n '_operations\.Mint(\|_operations\.Revoke(' origin/master -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
-    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:95:            var minting = _operations.Mint(
-    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:192:        var revoked = _operations.Revoke(id, revokedBy);
+    $ git grep '_operations\.Mint(\|_operations\.Revoke(' origin/master -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
+    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:            var minting = _operations.Mint(
+    origin/master:Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:        var revoked = _operations.Revoke(id, revokedBy);
 
 So a server whose operator has minted once holds an invitations file, and the
 rows of the record table below that are filled in on that file are the
@@ -190,19 +190,21 @@ used to be that nothing put a record there. Records are put there now, and what
 is absent is the removal:
 
 ```
-$ git grep -nE '\.Write\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
-origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
-origin/master:Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
-origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
-origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
-$ git grep -nE '\.Remove\(|\.Delete\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:161:                File.Delete(Path);
+$ git grep -E '\.Write\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            store.Write(contents.Invitations.Add(minted));
+origin/master:Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            store.Write(contents.Invitations.Replace(found, revoked));
+origin/master:Jellyfin.Plugin.Invites/Storage/HashSecret.cs:            file.Write(value, 0, value.Length);
+origin/master:Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:            writer.Write(json);
+origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:            writer.Write(written);
+$ git grep -E '\.Remove\(|\.Delete\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:                File.Delete(Path);
 ```
 
-Five writers and two of them are callers, which is the pair the section above
-names. The other three are the hash secret writing itself, the store's own
-writing member, and the claim on the directory. The one deleter in the plugin
+These two commands lost their `-n`, and two of the six numbers they printed were
+stale when it came off. The last section says why the numbers went rather than
+being corrected. Five writers and two of them are callers, which is the pair
+the section above names. The other three are the hash secret writing itself,
+the store's own writing member, and the claim on the directory. The one deleter in the plugin
 removes the claim file on the way out and reaches no record.
 
 So an invitation minted today is kept until somebody removes the file by hand.
@@ -289,3 +291,23 @@ $ for n in 110 111 112 113 114 115 116; do
 So the page that would carry this is not owned by anything open. That is a gap
 in the plan rather than a step that was skipped, and it is the reason #34 stays
 open with this file landed.
+
+Five of the commands pasted above once printed line numbers and no longer do.
+Nine of the numbers they carried had stopped being true: everything the pastes
+named inside `InvitationOperations.cs` and `InvitesController.cs` had moved down
+those files as they grew, and the pasted output stayed where it was. Nothing
+here was going to catch it. `.github/lint/pasted-exit-status.sh` re-runs a
+pasted command and judges the exit status it carries, and says in its own header
+that it deliberately does not read pasted output, because comparing output means
+normalising line numbers and a mismatch there is as often a reflow as a drift.
+So the numbers came out rather than being corrected, which takes this page out of
+that uncovered population instead of resetting its clock. What those sentences
+rest on is which file writes, which route is above it, and which line matched,
+and a paste carrying the path and the line says all three without a figure that
+goes stale the next time something is inserted higher up.
+
+Two pastes on this page still ask for line numbers and both are kept. The one
+under `## The setup form` prints nothing at all, because what it is evidence of
+is an absence and the status it exited is what carries that. The one under
+`## What deletes anything` about the redemption half prints two, and both of
+them still reproduce.

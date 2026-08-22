@@ -138,9 +138,15 @@ The stored form is keyed, which this paragraph said it was not.
 draws and holds, and the minting path is what constructs it:
 
 ```
-git grep -n 'new InvitationCodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:168:            var hash = new InvitationCodeHash(
+git grep 'new InvitationCodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:            var hash = new InvitationCodeHash(
 ```
+
+The line number came out of that command rather than being corrected. It read
+168, the construction had moved off that line, and the paste stayed as it was
+because nothing re-runs a pasted output. What the sentence rests on is which
+file constructs the hash, so the number was carrying nothing and can no longer
+go stale under it.
 
 `InvitationCodeHashTests.TheValueIsNotTheUnkeyedHashOfTheCode` holds that the
 stored value is not the plain digest of the code, and
