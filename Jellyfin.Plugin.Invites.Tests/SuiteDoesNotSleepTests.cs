@@ -21,7 +21,7 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// refuses.
 /// </para>
 /// <para>
-/// <b>Why it is a leg and not a sentence.</b> Six files in this suite say in
+/// <b>Why it is a leg and not a sentence.</b> Five files in this suite say in
 /// their own comments that nothing in them sleeps, and until this class nothing
 /// refused one. A rule carried only by comments is a rule the next test class
 /// does not know about, and the shape somebody actually writes is a wait added
