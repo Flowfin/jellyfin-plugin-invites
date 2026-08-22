@@ -57,6 +57,24 @@ updates:
           - "SerilogAnalyzer"
           - "StyleCop.Analyzers"
           - "SmartAnalyzers.MultithreadingAnalyzer"
+    # Hold a newly published version for seven days before it may enter a pull
+    # request, so a release compromised between publish and adoption has time to
+    # surface in the advisory feeds first. The number is the one
+    # Flowfin/jellyfin-plugin-sso already carries, so the fleet holds one figure
+    # rather than one per board.
+    #
+    # No tier keys. GitHub's own cooldown table does not list github-actions for
+    # the semver tiers at all, and shortening the patch tier for NuGet would
+    # speed up only the non-security bumps, which is the tier a registry
+    # compromise publishes into.
+    #
+    # What the hold does not reach, and no comment here should claim otherwise:
+    # a tag moved onto a malicious commit. The release keeps its original
+    # publication date, so there is no new publication for a date-based hold to
+    # delay. What stands against that here is every `uses:` being a commit hash
+    # plus the unpinned-uses audit in .github/workflows/zizmor.yml.
+    cooldown:
+      default-days: 7
 
   # --- NuGet, advisory -----------------------------------------------------
   - package-ecosystem: "nuget"
@@ -72,6 +90,13 @@ updates:
     # `security` label that tells a reader before they open it that this one is
     # not routine, and it reaches the Jellyfin packages that the routine entry
     # leaves alone.
+    # GitHub's cooldown does not apply to security updates, in its own words, so
+    # this key governs nothing on this entry and an advisory is not held by it.
+    # It is written anyway because the workflow audit reads the entry rather than
+    # what the entry is for, and a suppression would be a second thing to keep
+    # true.
+    cooldown:
+      default-days: 7
 
   # --- Actions, routine ----------------------------------------------------
   - package-ecosystem: "github-actions"
@@ -106,6 +131,24 @@ updates:
     # arrives on its own. It is the case where the inputs, the outputs or the
     # permissions of a step can have changed underneath, and grouping it with
     # routine bumps is how that gets read as routine.
+    # Hold a newly published version for seven days before it may enter a pull
+    # request, so a release compromised between publish and adoption has time to
+    # surface in the advisory feeds first. The number is the one
+    # Flowfin/jellyfin-plugin-sso already carries, so the fleet holds one figure
+    # rather than one per board.
+    #
+    # No tier keys. GitHub's own cooldown table does not list github-actions for
+    # the semver tiers at all, and shortening the patch tier for NuGet would
+    # speed up only the non-security bumps, which is the tier a registry
+    # compromise publishes into.
+    #
+    # What the hold does not reach, and no comment here should claim otherwise:
+    # a tag moved onto a malicious commit. The release keeps its original
+    # publication date, so there is no new publication for a date-based hold to
+    # delay. What stands against that here is every `uses:` being a commit hash
+    # plus the unpinned-uses audit in .github/workflows/zizmor.yml.
+    cooldown:
+      default-days: 7
 
   # --- Actions, advisory ---------------------------------------------------
   - package-ecosystem: "github-actions"
@@ -117,3 +160,10 @@ updates:
       - "dependencies"
       - "security"
     open-pull-requests-limit: 10
+    # GitHub's cooldown does not apply to security updates, in its own words, so
+    # this key governs nothing on this entry and an advisory is not held by it.
+    # It is written anyway because the workflow audit reads the entry rather than
+    # what the entry is for, and a suppression would be a second thing to keep
+    # true.
+    cooldown:
+      default-days: 7
