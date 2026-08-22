@@ -1,0 +1,49 @@
+name: '📍 Pasted Line References'
+
+on:
+  # Every branch and every pull request. This drift arrives from two directions
+  # and neither of them is a change to a document: a line number goes stale when
+  # something is inserted above the match, so the pull request that breaks a
+  # reference is usually one that never opened the page carrying it.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  pasted-line-reference:
+    name: Every pasted line reference still points at its line
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        # A reference naming a revision is resolved with git, and every revision
+        # this tree's documents name is one this repository holds, so the full
+        # history is fetched rather than the single commit a shallow checkout
+        # leaves. A reference the clone cannot resolve is reported as not
+        # evaluated, which would turn a shallow checkout into a quiet pass.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. Every
+        # reference in this tree agrees today, so the step below cannot fire, and
+        # a rule that had stopped recognising the shape would go green forever
+        # while the documents drifted underneath it. That is the failure that
+        # makes a documentation check worse than none: the page is trusted
+        # because a green mark stands behind it.
+        run: bash .github/lint/pasted-line-reference.sh selftest
+
+      - name: Every pasted line reference is read back
+        run: bash .github/lint/pasted-line-reference.sh check .

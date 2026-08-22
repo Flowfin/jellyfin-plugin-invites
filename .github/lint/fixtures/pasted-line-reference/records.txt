@@ -1,0 +1,10 @@
+# References this tree quotes as they read on a day, rather than as claims about
+# this commit. One entry per line: the document, a tab, and the reference text as
+# the document carries it.
+#
+# An entry is a debt and not a dispensation. It is refused when the reference it
+# names starts agreeing again, and refused when no document carries it at all, so
+# it cannot outlive the repair it stands in for.
+.github/lint/fixtures/pasted-line-reference/recorded-quotation.md	.github/lint/fixtures/pasted-line-reference/target.txt:3:A line a fixture points at.
+.github/lint/fixtures/pasted-line-reference/record-has-caught-up.trip.md	.github/lint/fixtures/pasted-line-reference/target.txt:2:A line a fixture points at.
+.github/lint/fixtures/pasted-line-reference/clean.md	.github/lint/fixtures/pasted-line-reference/target.txt:4:The last line of the target.

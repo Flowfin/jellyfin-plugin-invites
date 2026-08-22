@@ -1,0 +1,31 @@
+# References this tree quotes as they read on a day, rather than as claims about
+# this commit. One entry per line: the document, a tab, and the reference exactly
+# as the document carries it.
+#
+# An entry is a debt and not a dispensation. `.github/lint/pasted-line-reference.sh`
+# refuses an entry whose reference has started agreeing with the tree again, and
+# refuses an entry no document carries, so neither direction lets one outlive the
+# repair it stands in for.
+#
+# Everything below is in `docs/catalogue-checklist.md`. That page is a record of
+# two catalogue passes, one on 2026-08-07 and one on 2026-08-16, and it says of
+# itself that a verdict recorded against one version says nothing about a later
+# one. Its quotations are what the files carried on those days, and the lines
+# have moved since for reasons the record is not about. Reading them as claims
+# about this commit would refuse the page for being a record.
+#
+# What retires these is #119, which owns that page. The repair there is to name
+# the revision each pass was made at, in the `<rev>:<path>:<line>:<content>` form
+# the check reads, so that a dated quotation is resolved at its own date and this
+# register is not needed for it. Nothing here decides that for #119, and no line
+# of that page is edited from this file.
+docs/catalogue-checklist.md	build.yaml:2:name: "Template"
+docs/catalogue-checklist.md	build.yaml:4:version: "0.1.0.0"
+docs/catalogue-checklist.md	build.yaml:5:targetAbi: "10.11.0.0"
+docs/catalogue-checklist.md	build.yaml:7:overview: "Short description about your plugin"
+docs/catalogue-checklist.md	build.yaml:11:category: "General"
+docs/catalogue-checklist.md	build.yaml:12:owner: "jellyfin"
+docs/catalogue-checklist.md	build.yaml:15:changelog: >
+docs/catalogue-checklist.md	build.yaml:16:  changelog
+docs/catalogue-checklist.md	Jellyfin.Plugin.Invites/Configuration/configPage.html:32:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+docs/catalogue-checklist.md	Jellyfin.Plugin.Invites/Configuration/configPage.html:144:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
