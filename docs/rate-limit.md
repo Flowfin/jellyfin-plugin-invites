@@ -200,6 +200,28 @@ Doubling the attempts adds exactly one bit to the requirement, against the
 forty-one bits of headroom the code carries. That is the whole cost of the
 simpler counter, and it is why the window is fixed rather than sliding.
 
+### A challenge is not one of the defences, and that costs something
+
+Item 10 in #11 answers whether bot defence is in scope. It is, as the limiter on
+this page and as the lockout beside it, and not as a challenge. No captcha, and
+nothing else that asks the person to prove themselves to a third party.
+
+Two reasons, and the second is the one an operator should weigh. A challenge
+either binds a third party into the redemption path of a self-hosted server, or
+it needs a surface this plugin does not have, and the presentation rules in
+[docs/setup-never-asks.md](setup-never-asks.md) already refuse the shape it
+arrives in. And it puts somebody who was invited by name in the position of
+proving themselves to a party the operator did not choose, which is the wrong
+thing to ask of an invitation.
+
+What that gives up, said plainly rather than left for a support thread. Rate
+limiting alone does not stop a determined attacker with many source addresses.
+The per-address number is what one address gets, so an attacker spread across
+enough of them buys attempts in proportion to how many they have, and the global
+number is the only thing standing behind that. What actually bounds the guess is
+the entropy in [docs/code-entropy.md](code-entropy.md); the limiter narrows the
+window, and it is not the thing making the code hard to find.
+
 ### What is deliberately not a number here
 
 There is no lockout that outlives its window. Being refused for the rest of the

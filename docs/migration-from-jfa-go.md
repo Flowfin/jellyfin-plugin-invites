@@ -79,10 +79,10 @@ of these is on a roadmap in this repository.
 
 | jfa-go does | Here |
 | --- | --- |
-| Sends invitations itself, by email and through Discord, Telegram and Matrix bots | Nothing. The operator copies a link and sends it. Whether sending is ever in scope is item 5 in #11 and it is not answered |
-| Confirms an email address before the account is made, through its `email_confirmation` setting | Nothing. Whether the setup form collects any contact address at all is item 9 in #11, and `docs/personal-data.md` is the argument for collecting none |
+| Sends invitations itself, by email and through Discord, Telegram and Matrix bots | Nothing, and it is decided rather than pending. The operator copies a link and sends it, and item 5 in #11 answers that this plugin never sends an invitation itself |
+| Confirms an email address before the account is made, through its `email_confirmation` setting | Nothing, and there is no address to confirm. Item 9 in #11 answers that the guided setup collects no contact address, and `docs/personal-data.md` is the argument behind it |
 | Offers a CAPTCHA on the account creation form, including Google reCAPTCHA | Nothing. Item 10 in #11 records why: a challenge means a third-party script on the redemption page and a runtime dependency, and this plugin has none |
-| Expires accounts a set time after they are created, deleting or disabling them, with reminder messages before it happens | Planned as disable only and off by default, in #68, and it waits on item 3 in #11. Deletion is not planned in any form |
+| Expires accounts a set time after they are created, deleting or disabling them, with reminder messages before it happens | Deactivation only and off by default, in #68. Item 3 in #11 answers it that way, and deletion is not planned in any form |
 | Gives a user their own limited invite to pass on, which it calls referrals | Nothing, and nothing planned |
 | Runs a "My Account" page where a person changes their own password and contact details | Nothing. The plugin's job ends when the account exists |
 | Resets passwords, working with Jellyfin's own forgot-password flow | Nothing. Account recovery is the server's job |
@@ -96,19 +96,23 @@ bit-of-everything user management app for Jellyfin". This plugin is one link
 turning into one account, and every row above is a thing it declines to be
 rather than a thing it has not got round to.
 
-## What is not decided yet
+## The two rows a reader used to have to wait on
 
-Two rows above would move if the maintainer answered #11 differently, and
-saying so here is cheaper than an operator discovering it.
+This section said two rows above would move once #11 was answered. It is
+answered, both rows are settled, and the section says which way rather than
+being deleted, because an operator who read the old wording is owed the outcome.
 
-Item 3 decides whether an invited account expires at all. Until it is answered
-#68 is written as disable, never delete, and off by default, so an operator
-coming from jfa-go's `delete_user` behaviour would find no equivalent.
+Item 3 decides whether an invited account expires at all. The answer is that it
+does not expire with its invitation, and where a lapse is asked for the account
+is deactivated and never deleted, off by default. So an operator coming from
+jfa-go's `delete_user` behaviour finds no equivalent and will not get one: a
+deleted account does not come back, and a deadline somebody else set is a poor
+reason to lose one.
 
-Item 5 decides whether this plugin ever sends an invitation itself. The plan
-assumes it does not, because the Jellyfin server has no mail path this plugin
-should be building, and adding one brings a mail or webhook configuration
-surface with it.
+Item 5 decides whether this plugin ever sends an invitation itself. The answer
+is no. The Jellyfin server has no mail path this plugin should be building, and
+adding one brings a mail or webhook configuration, a contact address and an
+outgoing route with it, which is three surfaces for one convenience.
 
 ## Moving over
 

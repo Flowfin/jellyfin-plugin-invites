@@ -145,8 +145,10 @@ Two clauses carry a qualification a reader should not have to derive.
 The first clause is one account only where the invitation is single use. A
 multi-use invitation is worth as many accounts as it has uses left, to whoever
 holds the link, and that is the price of the feature rather than a defect in it.
-Which of the two is the default is decision 2 in #11 and is not answered, so the
-common case is not yet decided and this file cannot state it.
+This paragraph said the common case was undecided. Decision 2 in #11 is
+answered: an invitation is redeemable once, so single use is the case the rest
+of this file is written against and a count above one is the operator asking for
+a wider blast radius deliberately.
 
 The fourth clause says listed rather than noticed. The operator is told what
 happened when they look, and nothing here alerts them.

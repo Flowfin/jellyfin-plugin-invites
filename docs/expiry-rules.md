@@ -144,4 +144,7 @@ of it, because expiry is not deletion, and the difference is an entry in
 [docs/limits.md](limits.md).
 
 Whether the account an invitation created expires along with it is a separate
-question, decision 3 in #11, and it is #68 rather than anything on this page.
+question, decision 3 in #11, and it is answered: an invited account does not
+expire with its invitation. Where an operator asks for one to lapse it is
+deactivated rather than deleted, and that behaviour is off by default. #68 is
+where it is built rather than anything on this page.
