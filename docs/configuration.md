@@ -14,9 +14,27 @@ so this file cannot quietly fall behind the type:
 The rows are checked against the type rather than generated from it. Four of the
 six columns are sentences somebody has to write, and a file generated whole is
 one nobody reviews the prose of. What the check reads is the property names on
-both sides, and it refuses either set holding a name the other does not. It does
-not read what a row says. Whether the sentence about what breaks is true is what
-the review is for.
+both sides, and it refuses either set holding a name the other does not.
+
+It reads one cell as well. The Default column states a fact the type also
+states, so a row whose default disagrees with the initialiser beside it is
+refused. That is the drift with the sharpest edge in this file: a reader who
+meets a wrong sentence about what breaks argues with it, and a reader who meets
+a wrong default believes it and configures against it.
+
+What it will not judge is a setting with no initialiser whose declared type has
+no unambiguous language default. A bool with no initialiser is false and an
+integer is zero, and those are compared; anything else is null, and whether a
+row should write that as unset, none or empty is a writing decision the check
+has no business taking. It names each such setting on every run, so a green mark
+is never read as every default having been compared.
+
+The Default cell carries the value and nothing else. A unit or a qualification
+belongs in Bounds, because the moment the check starts deciding that "7 days"
+and "7" are the same value, that column is prose again.
+
+Nothing else a row says is read. Whether the sentence about what breaks is true
+is what the review is for.
 
 ## The settings
 
