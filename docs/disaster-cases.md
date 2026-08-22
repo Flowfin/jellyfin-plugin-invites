@@ -8,11 +8,13 @@ discovered by whoever meets one.
 One of the three is detected and the other two are not, which is what this
 document has said from the day it was written rather than a position taken since.
 The third case below, two servers over one store, is refused when the server
-starts. The keyed hash secret and the redemption caller are still held by open
-issues, and each case names the issue where its handling lands. What this
-document fixes is what each case does and which of them the plugin is expected to
-notice, because that decides work in the issues that build the store rather than
-being read off them afterwards.
+starts. The keyed hash secret is no longer held by an open issue: a code is
+stored only as a value keyed under it, and rotating it is an operator action. The
+redemption caller still is, and no invitation is spent anywhere, which is why the
+first two cases are described against a store that only minting and revocation
+write to. What this document fixes is what each case does and which of them the
+plugin is expected to notice, because that decides work in the issues that build
+the store rather than being read off them afterwards.
 
 ## The shape they share
 
@@ -44,8 +46,9 @@ restore, which means the operator has to know what they revoked, which is what
 makes the revocation record in #54 worth keeping beyond the invitation it
 belongs to.
 
-Detected: no. Owned by #46 for what a restore does to live invitations, and #54
-for what a revocation leaves behind.
+Detected: no, and that is unchanged by the report described next. #46 asked for
+what a restore does to live invitations and has closed with that report landed;
+#54 holds what a revocation leaves behind and is open.
 
 What the load does report is narrower than detection and is not to be read as it.
 When the server starts, the store is compared against the accounts the server
