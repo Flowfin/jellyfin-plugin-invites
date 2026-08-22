@@ -48,8 +48,8 @@ made here rather than the paragraph deleted. A mint and a revocation both write
 the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:180:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:194:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:267:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
@@ -240,16 +240,32 @@ the commit this page is on rather than carried across from the commit where the
 fault was first written. The rebuild is part of each run: a revert followed by
 `--no-build` measures the binary the fault is still in.
 
+Three of the sites below sit at a different line than they did when the runs
+were first written, and two pasted line numbers further up this page had moved
+with them. What moved them is the rotation route landing in the same file under
+#30:
+
+    git log --oneline -S 'lock (_gate)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    d735aac Make rotating the hash secret an operator action, for #30
+    9619759 Serve the four administrator routes, for #82
+
+A line number in a paste is the part that ages without the claim around it
+changing, and the failure it produces is the expensive kind: the reader runs the
+command, gets a different line, and cannot tell a moved site from the fault the
+entry exists to catch. Every command on this page is the one that produced the
+output beside it at the commit this change lands on, and all seven faults were
+put back afterwards.
+
 **A code is shown once and cannot be recovered.** The mint routine was handed
 the code as the template label, one argument along from where it belongs, which
 is the slip that puts a live code in the store file:
 
-    $ sed -i '178s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '192s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode [FAIL]
       MintedCodeIsNotHandedBackTests.NoReadingRouteHandsBackAnythingShapedLikeACode [FAIL]
       InvitesControllerTests.MintingReturnsACodeThatMatchesTheStoredHash [FAIL]
-    Fehler!      : Fehler: 3, erfolgreich: 404, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 3, erfolgreich: 440, übersprungen: 8, gesamt: 451
 
 **A restored backup revives spent invitations**, for the part this page adds,
 which is reading the disagreement the plugin reports on load. The comparison was
@@ -263,7 +279,7 @@ inverted by dropping one character:
       StoreLoadTests.ALoadReportsWhatTheStoreDisagreesWithInBothDirections [FAIL]
       LoadOnStartTests.AStartOverAStoreThatDisagreesNamesBothDirections [FAIL]
       LoadOnStartTests.DisagreementsBeyondTheBoundAreCountedRatherThanNamed [FAIL]
-    Fehler!      : Fehler: 6, erfolgreich: 401, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 6, erfolgreich: 437, übersprungen: 8, gesamt: 451
 
 Two of those six assert that it happens on load, which is the word the entry
 uses, rather than only that the comparison answers correctly when somebody calls
@@ -278,7 +294,7 @@ offset cannot see:
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       StoredInstantTests.TheDecisionReadsTwoSpellingsOfOneClockReadingAlike(offsetHours: 13) [FAIL]
       StoredInstantTests.TheDecisionJudgesTwoSpellingsOfOneMomentAlike(offsetHours: 13) [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 405, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 2, erfolgreich: 441, übersprungen: 8, gesamt: 451
 
 **Revoking an invitation does not remove the accounts it already created.** A
 revocation rebuilds the record field by field, so the mistake this entry is
@@ -289,7 +305,7 @@ list that is no longer needed:
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       RevocationTests.TheAccountsAlreadyCreatedAreStillNamed [FAIL]
       RevocationTests.RevokingChangesNothingElseAboutTheRecord [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 405, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 2, erfolgreich: 441, übersprungen: 8, gesamt: 451
 
 Two rather than one, and the second is the wider of the pair: it holds every
 field the revocation carries across rather than this one, so a change dropping
@@ -306,15 +322,15 @@ rests on. The second was held by nothing, and a reading routine rewritten to hid
 what the clock had passed left the whole suite green. Three faults, one per
 assertion, each reddening exactly one:
 
-    $ sed -i '195s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '209s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillListed [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
 
-    $ sed -i '209s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '223s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillFoundByItsIdentifier [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
 
 The third is the one worth reading, because it does not filter anything a caller
 sees. It writes the shortened list back, which is the tidy-up somebody adds to a
@@ -331,7 +347,7 @@ reading routine believing it changes nothing:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.CrossingTheExpiryChangesNothingOnTheDisk [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 406, übersprungen: 8, gesamt: 415
+    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
 
 What that does not cover is the sentence about the retention rule. Removing a
 record once retention allows it is the sweep in #59 and nothing in this tree
@@ -341,7 +357,7 @@ schedule are the same tree today.
 Each fault was put back afterwards and the suite returns to where it started:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
-    Bestanden!   : Fehler: 0, erfolgreich: 407, übersprungen: 8, gesamt: 415
+    Bestanden!   : Fehler: 0, erfolgreich: 443, übersprungen: 8, gesamt: 451
 
 The other four entries are the username disclosure, the deleted library, the
 server line, and uninstall leaving accounts alone. No fault was run against any
