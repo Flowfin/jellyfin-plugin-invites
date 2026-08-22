@@ -171,7 +171,11 @@ running the suite:
 
     $ dotnet test --configuration Release --nologo
     Jellyfin.Plugin.Invites.Tests.InvitationCodeTests.EveryCharacterOfTheAlphabetIsMinted [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 342, übersprungen: 8, gesamt: 351
+
+The totals that used to sit under that line are gone rather than corrected. They
+read 342 passed of 351 and the suite is larger every week, so a reader re-running
+this got different numbers and no way to tell whether the finding had moved with
+them. What the sentence rests on is which test reds, and the line above is that.
 
 One test, and it names the alphabet rather than the entropy, so what the suite
 holds is the two constants the number was encoded as. That the twenty-six draws
