@@ -191,10 +191,19 @@ jobs:
           import os
           import sys
 
-          ours = os.environ["OURS"].lower()
-          theirs = os.environ["THEIRS"].lower()
+
+          def key(value):
+              # The server hands identifiers back without hyphens while every
+              # place this repository writes one has them, so both sides are
+              # reduced before they are compared. Without this the job reports
+              # both plugins missing while printing both of them.
+              return (value or "").replace("-", "").lower()
+
+
+          ours = key(os.environ["OURS"])
+          theirs = key(os.environ["THEIRS"])
           plugins = json.load(open("plugins.json", encoding="utf-8"))
-          seen = {p.get("Id", "").lower(): p for p in plugins}
+          seen = {key(p.get("Id")): p for p in plugins}
           for p in plugins:
               print("{0}  {1}  {2}".format(p.get("Id"), p.get("Version"), p.get("Name")))
 
