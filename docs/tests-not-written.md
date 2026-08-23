@@ -49,16 +49,52 @@ because nothing has been released.
 It needs a server binary, a media directory and somewhere to put both. External
 binary, and writes outside a temporary directory.
 
-Replaced by three things that each cover part of it. The ABI floor build in
+What those two clauses refuse is a test in the suite. The headless rule is
+executed against the suite, by a container with no network interface, so the
+clauses are read against what `dotnet test` does and not against every job this
+repository runs. A workflow job that starts a server on a runner breaks none of
+them. That distinction was left implicit while it cost nothing, and it stopped
+being free the day two such jobs landed, because this row went on describing a
+plugin nobody had seen load anywhere.
+
+Replaced by four things that each cover part of it. The ABI floor build in
 `.github/workflows/abi-floor.yaml` compiles the plugin against the package
 version the manifest's `targetAbi` names, so a call into a server member that
 arrived after the floor is caught at build time rather than at redemption time.
 The packaging job in `.github/workflows/package.yaml` builds the artefact the
-manifest lists. And one manual install per supported server line before a
-release, recorded in `docs/manual-checks.md`.
+manifest lists. Two jobs install that artefact into an unmodified published
+server image and put the question to the server itself:
+`.github/workflows/e2e-authorization.yaml` asserts that the plugin's one
+anonymous route answers and that every administrator route refuses an
+unauthenticated request, and `.github/workflows/e2e-identity.yaml` installs the
+upstream template beside this plugin and asserts that the server holds both
+under two identifiers with this plugin still serving its own route. And one
+manual install per supported server line before a release, recorded in
+`docs/manual-checks.md`.
 
-Status: the two workflows exist. The manual install has a place to be recorded
-and nothing recorded in it.
+The anonymous route answering is the part of those two jobs that belongs to this
+row rather than to the issue each was built for. A plugin the server failed to
+load answers 404 at every one of its addresses, so a job that reads 200 there
+has read the loading, and `e2e-authorization.yaml` gives that as its own reason
+for asserting the anonymous route before anything else.
+
+Status: the ABI floor build, the packaging job and the two server jobs exist,
+and both server jobs are green on the default branch, read at
+`a78856887b7bfbc9b30253c9852b051486451cc9`:
+
+```
+$ gh run list --workflow e2e-identity.yaml --branch master --limit 1 --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
+a7885688 success
+$ gh run list --workflow e2e-authorization.yaml --branch master --limit 1 --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
+a7885688 success
+```
+
+The manual install has a place to be recorded and nothing recorded in it, and
+that is the half of this row which has not moved. What the two jobs answer for
+is one server line on one image pinned by digest, the shipping version of the
+line `build.yaml` names in `targetAbi`. Per supported line is what the manual
+install is for, and a job pinned to one digest says nothing about the line above
+or below it.
 
 ### A test of the plugin behind a real reverse proxy with real certificates
 
@@ -259,8 +295,9 @@ single count hides which half of a row is missing.
 
 Row by row, which is the same thing each status line above says at more length.
 The setup page has neither of its two, because #107 is open and no manual check
-has been recorded. The real-server row has its two workflows and not its manual
-install. The reverse-proxy row has both. The mail row has nothing to replace and
+has been recorded. The real-server row has its ABI floor build, its
+packaging job and two jobs that install the packaged artefact into a published
+server, and not its manual install. The reverse-proxy row has both. The mail row has nothing to replace and
 says so. The dashboard row has all three for both pages. The sleeping row has
 the seam and the expiry boundary cases, and not the three behaviours that do not
 exist. The sibling row has its replacement, and that replacement is deliberately
