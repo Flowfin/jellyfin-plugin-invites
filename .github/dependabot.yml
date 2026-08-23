@@ -115,9 +115,18 @@ updates:
     # and one vulnerability rather than a month of bumps with one of them
     # urgent.
     #
-    # No cooldown either. A hold on an advisory is a hold on the patch for it,
-    # and the schedule above is the outer bound rather than the wait: an
-    # advisory update is raised when the advisory lands.
+    # The hold below does not hold anything. GitHub says in its own words that a
+    # cooldown does not apply to security updates, so an advisory is raised when
+    # the advisory lands rather than seven days later, and a hold on an advisory
+    # would be a hold on the patch for it. It is written out because the workflow
+    # audit refuses an update entry with no cooldown at all, by name and at high
+    # confidence, with `warning[dependabot-cooldown]: insufficient cooldown in
+    # Dependabot updates` pointed at the entry that lacks one.
+    #
+    # An entry left bare would red the gate on every push, and a suppression
+    # would take the rule off the routine entries as well.
+    cooldown:
+      default-days: 7
 
   # Routine action bumps.
   - package-ecosystem: "github-actions"
@@ -174,5 +183,7 @@ updates:
       - "dependencies"
       - "ci"
       - "security"
-    # Ungrouped and unheld, for the reasons written on the package advisory
-    # entry above.
+    # Ungrouped, and carrying the same inert hold as the package advisory entry
+    # above for the same two reasons.
+    cooldown:
+      default-days: 7
