@@ -16,14 +16,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
     <!-- The coverage collector. It is a build-time package rather than a
          dependency of anything that ships: the plugin's runtime dependency set
          stays empty, which is #35's rule. What the numbers are and why each one
          is what it is lives in docs/coverage-floors.md. -->
-    <PackageReference Include="coverlet.msbuild" Version="6.0.2" PrivateAssets="All" />
+    <PackageReference Include="coverlet.msbuild" Version="10.0.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
