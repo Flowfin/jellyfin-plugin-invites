@@ -292,9 +292,18 @@ decided.
 ## What is not settled here
 
 The response bodies are named by their fields rather than given as a schema.
-Writing a schema before the record type exists would fix a serialisation of
-fields #38 has not defined, and #38 is open with two of its fields waiting on
-decisions in #11.
+The reason written here was that the record type did not exist: #38 had not
+defined its fields and was open with two of them waiting on decisions in #11.
+That reason has expired in both halves. #38 is closed, `Invitation` carries its
+fields, and every numbered decision in #11 has an answer.
+
+What stands in its place is the promise at the top of this page rather than a
+gap. Nothing about these shapes is promised before `1.0.0`, so a schema written
+here would be a serialisation a caller reads as a commitment and this page is
+free to move in the next version. Naming the fields says what a response holds
+without saying it will keep holding it that way, which is the smaller claim and
+the true one. That changes on the release the promise section is written to be
+rewritten on.
 
 The status codes are not listed. They follow from the outcomes above, and
 committing to numbers before there is a controller means committing to what a
