@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
+using Jellyfin.Plugin.Invites.Configuration;
+using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 using Microsoft.Extensions.Hosting;
@@ -36,6 +38,15 @@ namespace Jellyfin.Plugin.Invites.Startup;
 /// backup shows up in.
 /// </para>
 /// <para>
+/// <b>It also reads the configured public address once.</b> #86 asks that a
+/// setting be judged when the plugin loads rather than only where it is used,
+/// and this is the moment the plugin has for that. An address an operator
+/// mistyped is otherwise met by whoever mints next, holding half an invitation
+/// they cannot hand to anybody. Nothing is corrected and nothing is guessed at:
+/// the setting is read, the same question <see cref="InvitationLink"/> asks is
+/// asked of it, and a setting that cannot be used is named.
+/// </para>
+/// <para>
 /// <b>What is written to the log obeys docs/logging.md.</b> The lines carry
 /// invitation identifiers and account identifiers, both rows of the inventory in
 /// docs/personal-data.md, and nothing else about a record. No code, no link and
@@ -58,6 +69,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     public const int MostNamedOneByOne = 20;
 
     private readonly IStoreDirectory _directory;
+    private readonly IPublicAddress _address;
     private readonly IServerAccounts _accounts;
     private readonly IClock _clock;
     private readonly ILogger<LoadOnStart> _logger;
@@ -67,12 +79,14 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// Initializes a new instance of the <see cref="LoadOnStart"/> class.
     /// </summary>
     /// <param name="directory">Where the store sits.</param>
+    /// <param name="address">The configured public address, read once.</param>
     /// <param name="accounts">The server's own account list.</param>
     /// <param name="clock">The time source the claim is stamped from.</param>
     /// <param name="logger">Where the answer goes.</param>
-    public LoadOnStart(IStoreDirectory directory, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
+    public LoadOnStart(IStoreDirectory directory, IPublicAddress address, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
     {
         _directory = directory;
+        _address = address;
         _accounts = accounts;
         _clock = clock;
         _logger = logger;
@@ -81,6 +95,8 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        ReportTheConfiguredAddress();
+
         var directory = _directory.Path;
         if (string.IsNullOrWhiteSpace(directory))
         {
@@ -136,6 +152,44 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     public void Dispose()
     {
         Release();
+    }
+
+    /// <summary>
+    /// Reads the configured public address and names the setting where it
+    /// cannot be used.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A setting nobody has written is the decided fresh-install value rather
+    /// than a fault, which docs/configuration.md argues under "A fresh install",
+    /// so it is passed over in silence. An operator who has not opened the
+    /// configuration page is not owed an error for not having opened it.
+    /// </para>
+    /// <para>
+    /// What the line does NOT carry is the value that was configured. Every
+    /// value in a log line here is a row in docs/personal-data.md, which a
+    /// server setting is not, and the two refusals that quote what was typed
+    /// are written for the operator who asked for something rather than for a
+    /// log a support thread will paste. The setting is named, the rule it
+    /// missed is not, and the refusal that says which rule arrives where an
+    /// operator is already looking.
+    /// </para>
+    /// </remarks>
+    private void ReportTheConfiguredAddress()
+    {
+        var configured = _address.PublicBaseUrl;
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return;
+        }
+
+        if (InvitationLink.WhyItCannotCarryALink(configured) is null)
+        {
+            return;
+        }
+
+        _logger.LogError(
+            "The public address this plugin is configured with cannot be used, so nothing minted against it would reach the person it was meant for. The setting is PublicBaseUrl on this plugin's own configuration page, and it wants an absolute http or https address such as https://media.example.org, with an optional path prefix and no query or fragment. Minting is refused while it stands, and the refusal names which of those it missed.");
     }
 
     private void Report(ConsistencyReport report)

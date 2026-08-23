@@ -167,6 +167,50 @@ public class InvitationLinkTests
     }
 
     /// <summary>
+    /// The question a caller asks before it needs a link answers exactly what
+    /// the refusal says. Two readings that could disagree are the drift this
+    /// pair exists against: a startup that passes an address a mint then
+    /// refuses is worse than no startup reading at all, because it reads as
+    /// having checked.
+    /// </summary>
+    /// <param name="configured">The address an operator wrote.</param>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    [InlineData("media.example.org")]
+    [InlineData("/redeem")]
+    [InlineData("ftp://media.example.org")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("https://media.example.org/?next=1")]
+    [InlineData("https://media.example.org/#top")]
+    public void TheQuestionAskedBeforehandCarriesTheWordingOfTheRefusal(string? configured)
+    {
+        var beforehand = InvitationLink.WhyItCannotCarryALink(configured);
+        var refused = Assert.Throws<ArgumentException>(() => InvitationLink.For(configured!, Code));
+
+        Assert.NotNull(beforehand);
+        Assert.StartsWith(beforehand, refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// And it answers with nothing where a link is built, so a caller reading
+    /// it does not report a fault an operator cannot find.
+    /// </summary>
+    /// <param name="configured">The address an operator wrote.</param>
+    [Theory]
+    [InlineData("https://media.example.org")]
+    [InlineData("https://media.example.org/")]
+    [InlineData("  https://media.example.org/  ")]
+    [InlineData("https://media.example.org:443")]
+    [InlineData("http://media.example.org:8096/jellyfin")]
+    public void TheQuestionAskedBeforehandIsSilentAboutAnAddressThatWorks(string configured)
+    {
+        Assert.Null(InvitationLink.WhyItCannotCarryALink(configured));
+        Assert.NotEmpty(InvitationLink.For(configured, Code));
+    }
+
+    /// <summary>
     /// A fresh install has no address, so it builds no links until an operator
     /// sets one. The alternative is a default that works on somebody's network
     /// and not on the operator's.
