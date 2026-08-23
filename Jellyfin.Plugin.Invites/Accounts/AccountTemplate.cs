@@ -46,8 +46,11 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// grant is #63, and the ceilings and their bounds are #65. Whether a grant may
 /// make an account that manages anything is #62, and it is refused there rather
 /// than here: a rule enforced in two places is a rule that drifts in one of
-/// them. This type refuses only the states that are not a grant at all, which
-/// is the same line <see cref="Invitations.Invitation"/> draws.
+/// them. The ten permission fields are #64's, and each one carries the posture
+/// that issue decided together with the sentence behind it: closed unless the
+/// permission reaches nothing beyond the invited person. This type refuses only
+/// the states that are not a grant at all, which is the same line
+/// <see cref="Invitations.Invitation"/> draws.
 /// </para>
 /// </remarks>
 public sealed class AccountTemplate : IEquatable<AccountTemplate>
@@ -59,6 +62,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// <param name="mayDownload">Whether it may download. See <see cref="MayDownload"/>.</param>
     /// <param name="mayPlayFromOutsideTheNetwork">Whether it may play remotely. See <see cref="MayPlayFromOutsideTheNetwork"/>.</param>
     /// <param name="mayManage">Whether it may manage anything. See <see cref="MayManage"/>.</param>
+    /// <param name="mayControlOtherSessions">Whether it may drive somebody else's session. See <see cref="MayControlOtherSessions"/>.</param>
+    /// <param name="mayWatchLiveTelevision">Whether it may watch live television. See <see cref="MayWatchLiveTelevision"/>.</param>
+    /// <param name="mayManageLiveTelevision">Whether it may schedule and remove recordings. See <see cref="MayManageLiveTelevision"/>.</param>
+    /// <param name="mayDeleteContent">Whether it may delete media from the server. See <see cref="MayDeleteContent"/>.</param>
+    /// <param name="mayManageCollections">Whether it may edit collections. See <see cref="MayManageCollections"/>.</param>
+    /// <param name="mayManageSubtitles">Whether it may fetch and remove subtitles. See <see cref="MayManageSubtitles"/>.</param>
+    /// <param name="mayManageLyrics">Whether it may fetch and remove lyrics. See <see cref="MayManageLyrics"/>.</param>
+    /// <param name="mayChangeItsOwnPreferences">Whether it may change its own display preferences. See <see cref="MayChangeItsOwnPreferences"/>.</param>
     /// <param name="remoteBitrateCeiling">The remote bitrate ceiling in bits a second, or <c>null</c>. See <see cref="RemoteBitrateCeiling"/>.</param>
     /// <param name="simultaneousStreamCeiling">How many streams at once, or <c>null</c>. See <see cref="SimultaneousStreamCeiling"/>.</param>
     /// <param name="parentalRatingCeiling">The parental rating ceiling, or <c>null</c>. See <see cref="ParentalRatingCeiling"/>.</param>
@@ -77,6 +88,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
         bool mayDownload,
         bool mayPlayFromOutsideTheNetwork,
         bool mayManage,
+        bool mayControlOtherSessions,
+        bool mayWatchLiveTelevision,
+        bool mayManageLiveTelevision,
+        bool mayDeleteContent,
+        bool mayManageCollections,
+        bool mayManageSubtitles,
+        bool mayManageLyrics,
+        bool mayChangeItsOwnPreferences,
         int? remoteBitrateCeiling,
         int? simultaneousStreamCeiling,
         int? parentalRatingCeiling,
@@ -137,6 +156,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
         MayDownload = mayDownload;
         MayPlayFromOutsideTheNetwork = mayPlayFromOutsideTheNetwork;
         MayManage = mayManage;
+        MayControlOtherSessions = mayControlOtherSessions;
+        MayWatchLiveTelevision = mayWatchLiveTelevision;
+        MayManageLiveTelevision = mayManageLiveTelevision;
+        MayDeleteContent = mayDeleteContent;
+        MayManageCollections = mayManageCollections;
+        MayManageSubtitles = mayManageSubtitles;
+        MayManageLyrics = mayManageLyrics;
+        MayChangeItsOwnPreferences = mayChangeItsOwnPreferences;
         RemoteBitrateCeiling = remoteBitrateCeiling;
         SimultaneousStreamCeiling = simultaneousStreamCeiling;
         ParentalRatingCeiling = parentalRatingCeiling;
@@ -161,9 +188,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// Gets a value indicating whether the account may download.
     /// </summary>
     /// <remarks>
-    /// Downloading takes a copy of the file off the server, so it is the one
-    /// playback permission whose effect outlives the account being disabled.
-    /// The value an operator should get by default is #64.
+    /// Closed. Downloading takes a copy of the file off the server, so it is
+    /// the one playback permission whose effect outlives the account being
+    /// disabled: revoking the invitation stops the next account and does not
+    /// reach the copy. #64's body puts this value in #11 and says it is off
+    /// unless that issue decides otherwise; all twelve numbered points there
+    /// have answers and none of them is this one, so what stands is the posture
+    /// #64 already states. It is handed to <c>EnableContentDownloading</c> on
+    /// the server's user policy.
     /// </remarks>
     public bool MayDownload { get; }
 
@@ -172,8 +204,13 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// network.
     /// </summary>
     /// <remarks>
-    /// The permission that decides whether an invitation is worth anything to
-    /// somebody who never reaches the operator's network. #64 owns the value.
+    /// Open, and it is the second of the two on this type that are. It decides
+    /// whether an invitation is worth anything to somebody who never reaches
+    /// the operator's network, which is who a link sent outside the household
+    /// is for, so closing it would make the ordinary invitation an account that
+    /// cannot play anything. It is handed to <c>EnableRemoteAccess</c>. What it
+    /// does not widen is what may be reached: the libraries are still
+    /// <see cref="Libraries"/>, one at a time.
     /// </remarks>
     public bool MayPlayFromOutsideTheNetwork { get; }
 
@@ -190,6 +227,107 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// .github/lint/invariants.sh is the other half of that ground.
     /// </remarks>
     public bool MayManage { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may drive somebody else's
+    /// playback session.
+    /// </summary>
+    /// <remarks>
+    /// Closed. Reaching another person's session is reaching another person,
+    /// and nothing about having been invited implies it. It is handed to
+    /// <c>EnableRemoteControlOfOtherUsers</c> on the server's user policy. This
+    /// is not <see cref="MayManage"/> in a smaller size: that field is the
+    /// administrator question and is refused in #62, and the eight fields from
+    /// here down are ordinary permissions whose value a template chooses.
+    /// </remarks>
+    public bool MayControlOtherSessions { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may watch live television.
+    /// </summary>
+    /// <remarks>
+    /// Closed. It is a library-shaped grant that <see cref="Libraries"/> does
+    /// not cover, and a server with tuners has a finite number of them, so an
+    /// invited account watching live television is occupying one the household
+    /// cannot then use. An operator who invited somebody in order to share live
+    /// television turns it on and pays that cost knowingly. It is handed to
+    /// <c>EnableLiveTvAccess</c>.
+    /// </remarks>
+    public bool MayWatchLiveTelevision { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may schedule and remove
+    /// recordings.
+    /// </summary>
+    /// <remarks>
+    /// Closed, and closed separately from watching, because it writes rather
+    /// than reads: it fills the server's disk and it can remove a recording
+    /// somebody else scheduled. It is handed to <c>EnableLiveTvManagement</c>.
+    /// </remarks>
+    public bool MayManageLiveTelevision { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may delete media from the
+    /// server.
+    /// </summary>
+    /// <remarks>
+    /// Closed. This is the one permission on the list whose effect no operator
+    /// action undoes: revoking the invitation and disabling the account both
+    /// leave the deleted file deleted. It is handed to
+    /// <c>EnableContentDeletion</c>, and the server carries
+    /// <c>EnableContentDeletionFromFolders</c> beside it, which is a narrowing
+    /// of the same grant and is named in <see cref="ServerDefaultsLeftAlone"/>
+    /// by whoever builds a template rather than being left unmentioned.
+    /// </remarks>
+    public bool MayDeleteContent { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may edit collections.
+    /// </summary>
+    /// <remarks>
+    /// Closed. A collection is shared, so editing one edits what every account
+    /// on the server sees, which is a wider reach than an invitation is for. It
+    /// is handed to <c>EnableCollectionManagement</c>.
+    /// </remarks>
+    public bool MayManageCollections { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may fetch and remove
+    /// subtitles.
+    /// </summary>
+    /// <remarks>
+    /// Closed, for two reasons rather than one. A subtitle fetched or deleted
+    /// changes the item everybody plays, and fetching one reaches a subtitle
+    /// provider over the network on the server's behalf, which is a request an
+    /// invited stranger should not be able to make the server send. It is
+    /// handed to <c>EnableSubtitleManagement</c>.
+    /// </remarks>
+    public bool MayManageSubtitles { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may fetch and remove lyrics.
+    /// </summary>
+    /// <remarks>
+    /// Closed, and closed for the same two reasons as
+    /// <see cref="MayManageSubtitles"/>: it changes a shared item and it sends
+    /// a request to a provider. It is handed to <c>EnableLyricManagement</c>.
+    /// </remarks>
+    public bool MayManageLyrics { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account may change its own display
+    /// preferences.
+    /// </summary>
+    /// <remarks>
+    /// Open, and it is the one permission on this list that is. It reaches
+    /// nothing outside the account: an audio language, a subtitle preference, a
+    /// home screen layout. An account that cannot set them is a support message
+    /// rather than a safer account, and the closed posture this type takes is
+    /// there to stop an invitation reaching other people rather than to stop
+    /// the invited person using what they were invited to. It is handed to
+    /// <c>EnableUserPreferenceAccess</c>.
+    /// </remarks>
+    public bool MayChangeItsOwnPreferences { get; }
 
     /// <summary>
     /// Gets the remote bitrate ceiling in bits a second, or <c>null</c> where
@@ -297,6 +435,14 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
             && MayDownload == other.MayDownload
             && MayPlayFromOutsideTheNetwork == other.MayPlayFromOutsideTheNetwork
             && MayManage == other.MayManage
+            && MayControlOtherSessions == other.MayControlOtherSessions
+            && MayWatchLiveTelevision == other.MayWatchLiveTelevision
+            && MayManageLiveTelevision == other.MayManageLiveTelevision
+            && MayDeleteContent == other.MayDeleteContent
+            && MayManageCollections == other.MayManageCollections
+            && MayManageSubtitles == other.MayManageSubtitles
+            && MayManageLyrics == other.MayManageLyrics
+            && MayChangeItsOwnPreferences == other.MayChangeItsOwnPreferences
             && RemoteBitrateCeiling == other.RemoteBitrateCeiling
             && SimultaneousStreamCeiling == other.SimultaneousStreamCeiling
             && ParentalRatingCeiling == other.ParentalRatingCeiling
@@ -311,18 +457,33 @@ public sealed class AccountTemplate : IEquatable<AccountTemplate>
     /// The two list fields enter as their lengths rather than as their
     /// contents, which is what <see cref="Invitations.Invitation"/> does and is
     /// enough for a bucket. Every field that decides equality is visible here.
+    /// It is built up rather than combined in one call because
+    /// <see cref="HashCode"/> combines at most eight values in one call and
+    /// this type carries more fields than that: a reader who finds the shorter
+    /// form back has found a field that was dropped to make it fit.
     /// </remarks>
     public override int GetHashCode()
     {
-        return HashCode.Combine(
-            Libraries.Length,
-            MayDownload,
-            MayPlayFromOutsideTheNetwork,
-            MayManage,
-            RemoteBitrateCeiling,
-            SimultaneousStreamCeiling,
-            ParentalRatingCeiling,
-            ServerDefaultsLeftAlone.Length);
+        var hash = default(HashCode);
+
+        hash.Add(Libraries.Length);
+        hash.Add(MayDownload);
+        hash.Add(MayPlayFromOutsideTheNetwork);
+        hash.Add(MayManage);
+        hash.Add(MayControlOtherSessions);
+        hash.Add(MayWatchLiveTelevision);
+        hash.Add(MayManageLiveTelevision);
+        hash.Add(MayDeleteContent);
+        hash.Add(MayManageCollections);
+        hash.Add(MayManageSubtitles);
+        hash.Add(MayManageLyrics);
+        hash.Add(MayChangeItsOwnPreferences);
+        hash.Add(RemoteBitrateCeiling);
+        hash.Add(SimultaneousStreamCeiling);
+        hash.Add(ParentalRatingCeiling);
+        hash.Add(ServerDefaultsLeftAlone.Length);
+
+        return hash.ToHashCode();
     }
 
     private static void RefuseARepeat(ImmutableArray<Guid> libraries, string parameterName, string what)
