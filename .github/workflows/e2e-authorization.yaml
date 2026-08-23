@@ -114,7 +114,6 @@ jobs:
         # is the moment the route table is serving.
         run: |
           set -euo pipefail
-          ready=0
           for _ in $(seq 1 90); do
             public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
             if [ "${public}" = "200" ]; then

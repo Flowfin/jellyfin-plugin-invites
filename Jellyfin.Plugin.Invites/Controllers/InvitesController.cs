@@ -128,7 +128,7 @@ public sealed class InvitesController : ControllerBase
     /// <response code="200">The records the store holds.</response>
     /// <response code="503">This plugin has no data directory.</response>
     /// <returns>The records.</returns>
-    [AllowAnonymous]
+    [Authorize(Policy = "RequiresElevation")]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
