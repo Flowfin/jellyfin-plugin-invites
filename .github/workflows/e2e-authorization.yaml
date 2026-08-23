@@ -104,20 +104,29 @@ jobs:
             --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
             "${JELLYFIN_IMAGE}"
 
-      - name: Wait for the server to answer
+      - name: Wait for the server to finish starting
+        # Two conditions rather than one. The public information route answers
+        # while the database migrations are still running, and everything else
+        # answers 503 for as long as that lasts, so a wait that stopped at the
+        # first 200 would hand the assertions below a server that refuses every
+        # address for a reason that has nothing to do with authorization. The
+        # second condition is the plugin's own public route leaving 503, which
+        # is the moment the route table is serving.
         run: |
           set -euo pipefail
-          for _ in $(seq 1 60); do
-            code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
-            if [ "${code}" = "200" ]; then
-              echo "The server answers on its public information route."
-              curl -s "${JELLYFIN_URL}/System/Info/Public"
-              echo
-              exit 0
+          ready=0
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and /redeem/{code} answers ${code}."
+                exit 0
+              fi
             fi
             sleep 2
           done
-          echo "::error::The server did not answer /System/Info/Public within two minutes, so nothing below could be asserted against it."
+          echo "::error::The server did not finish starting within three minutes, so nothing below could be asserted against it."
           docker logs jellyfin || true
           exit 1
 
