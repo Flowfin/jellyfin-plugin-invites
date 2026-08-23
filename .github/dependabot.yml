@@ -5,18 +5,26 @@
 # code this project did not write, and the rules deciding that should be readable
 # next to the tree they act on.
 #
-# One entry per ecosystem, which is the only shape available. Two entries split
-# by `applies-to` would let a routine bump and an advisory carry different labels
-# and different exclusions, and the configuration validator refuses the pair:
-# "Update configs must have a unique combination of 'package-ecosystem',
-# 'directory', and 'target-branch'." What follows is written for that constraint
-# rather than around it, and where it costs something the cost is stated in
-# place.
+# Two entries per ecosystem, split by `applies-to`. A routine bump and an
+# advisory are not the same decision and this file stops treating them as one: a
+# routine bump is held for seven days, leaves the Jellyfin packages alone and
+# arrives grouped, while an advisory is held for nothing, excludes nothing and
+# arrives carrying `security` so an operator can find it without reading four
+# diffs.
+#
+# The key has to be on both halves of a pair. An entry that omits it is a version
+# update configuration whatever the entry beside it says, so a pair carrying the
+# key on one side only collides on the rule the validator states as "Update
+# configs must have a unique combination of 'package-ecosystem', 'directory', and
+# 'target-branch'", and what that refuses is the file rather than the second
+# entry.
 version: 2
 
 updates:
+  # Routine package bumps.
   - package-ecosystem: "nuget"
     directory: "/"
+    applies-to: version-updates
     schedule:
       interval: "monthly"
     labels:
@@ -31,10 +39,17 @@ updates:
       # other things derive from. Moving that line is a deliberate change with
       # its own issue.
       #
-      # The three `version-update:` entries are what makes this an exclusion from
-      # ROUTINE bumps rather than from everything. An ignore naming a dependency
-      # and nothing else stops a security update for it as well, which would
-      # turn a decision about a server line into a silently unpatched package.
+      # The exclusion is on this entry rather than on the advisory one below,
+      # which is what keeps it an exclusion from ROUTINE bumps rather than from
+      # everything. An ignore reaching both kinds would turn a decision about a
+      # server line into two packages nobody patches.
+      #
+      # The three `version-update:` entries say the same thing a second time,
+      # from inside the rule rather than from the entry it sits on. They are
+      # kept because the two readings fail differently: if `applies-to` ever
+      # stops holding these two entries apart, an ignore naming a dependency and
+      # nothing else silently swallows the advisory as well, and the second
+      # statement is what stands between that and an unpatched package.
       - dependency-name: "Jellyfin.Controller"
         update-types:
           - "version-update:semver-major"
@@ -72,8 +87,7 @@ updates:
     # request, so a release compromised between publish and adoption has time to
     # surface in the advisory feeds first. The number is the one
     # Flowfin/jellyfin-plugin-sso already carries, so the fleet holds one figure
-    # rather than one per board. GitHub says in its own words that the cooldown
-    # does not apply to security updates, so an advisory is not held by this.
+    # rather than one per board.
     #
     # No tier keys. Shortening the patch tier would speed up only the
     # non-security bumps, and the patch tier is where a registry compromise
@@ -86,8 +100,29 @@ updates:
     cooldown:
       default-days: 7
 
+  # Advisories against packages.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    applies-to: security-updates
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "security"
+    # No ignore list and no groups. Every package this tree references is in
+    # scope for an advisory, the Jellyfin ones included, and an advisory arrives
+    # on its own so that what a reader is being asked to judge is one package
+    # and one vulnerability rather than a month of bumps with one of them
+    # urgent.
+    #
+    # No cooldown either. A hold on an advisory is a hold on the patch for it,
+    # and the schedule above is the outer bound rather than the wait: an
+    # advisory update is raised when the advisory lands.
+
+  # Routine action bumps.
   - package-ecosystem: "github-actions"
     directory: "/"
+    applies-to: version-updates
     schedule:
       interval: "monthly"
     labels:
@@ -120,7 +155,7 @@ updates:
     #
     # Every `uses:` in this tree is a commit hash with the tag in a trailing
     # comment, and the bot rewrites both together rather than replacing the pin
-    # with a tag. That is the documented behaviour and it is not measured here.
+    # with a tag. Measured on #290 rather than taken from the documentation.
     #
     # The same seven days as above, for the same reason. It does not reach a tag
     # moved onto a malicious commit, which publishes no new version; what stands
@@ -128,3 +163,16 @@ updates:
     # .github/workflows/zizmor.yml, which refuses a ref that is not a SHA.
     cooldown:
       default-days: 7
+
+  # Advisories against actions.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    applies-to: security-updates
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "security"
+    # Ungrouped and unheld, for the reasons written on the package advisory
+    # entry above.
