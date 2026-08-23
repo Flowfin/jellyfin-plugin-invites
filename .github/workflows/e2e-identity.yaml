@@ -99,7 +99,7 @@ jobs:
           THEIRS_ARTIFACT: ${{ steps.theirs.outputs.artifact }}
         run: |
           set -euo pipefail
-          for pair in "invites:${OURS_ARTIFACT}"; do
+          for pair in "invites:${OURS_ARTIFACT}" "template:${THEIRS_ARTIFACT}"; do
             name="${pair%%:*}"
             archive="${pair#*:}"
             if [ ! -f "${archive}" ]; then
