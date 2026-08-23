@@ -214,6 +214,7 @@ public class LoadOnStartTests
         var logger = new RecordingLogger<LoadOnStart>();
         using var load = new LoadOnStart(
             new StubStoreDirectory(null),
+            new StubPublicAddress(null),
             new StubServerAccounts([]),
             new TestClock(_started),
             logger);
@@ -239,6 +240,7 @@ public class LoadOnStartTests
         var logger = new RecordingLogger<LoadOnStart>();
         using var load = new LoadOnStart(
             new StubStoreDirectory(directory.Path),
+            new StubPublicAddress(null),
             new StubServerAccounts(null),
             new TestClock(_started),
             logger);
@@ -284,6 +286,95 @@ public class LoadOnStartTests
     }
 
     /// <summary>
+    /// An address that cannot be used is met when the server starts, and the
+    /// line names the setting rather than the value somebody typed.
+    /// </summary>
+    /// <param name="configured">The address an operator wrote.</param>
+    [Theory]
+    [InlineData("media.example.org")]
+    [InlineData("/redeem")]
+    [InlineData("ftp://media.example.org")]
+    [InlineData("https://media.example.org/?next=1")]
+    [InlineData("https://media.example.org/#top")]
+    public async Task AnAddressThatCannotBeUsedIsNamedWhenTheServerStarts(string configured)
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(directory.Path, logger, configured);
+
+        await load.StartAsync(CancellationToken.None);
+
+        var named = Assert.Single(
+            logger.Lines,
+            line => line.Message.Contains("PublicBaseUrl", StringComparison.Ordinal));
+        Assert.Equal(LogLevel.Error, named.Level);
+    }
+
+    /// <summary>
+    /// The line carries no part of what was configured. A server setting is not
+    /// a row in the inventory docs/logging.md holds every logged value to, and
+    /// the refusal that quotes what was typed is written for the operator who
+    /// asked for something rather than for a log.
+    /// </summary>
+    [Fact]
+    public async Task TheLineDoesNotCarryWhatWasConfigured()
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(directory.Path, logger, "ftp://kitchen.example.net");
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("kitchen.example.net", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A fresh install is silent. No address is the decided value for a server
+    /// that never opened the configuration page, so an error there would be an
+    /// error for every install that has not been configured yet.
+    /// </summary>
+    /// <param name="configured">The address, as a fresh install leaves it.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task AFreshInstallIsNotReportedAsAFault(string? configured)
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(directory.Path, logger, configured);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("PublicBaseUrl", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// An address that can be used is not remarked on.
+    /// </summary>
+    /// <param name="configured">The address an operator wrote.</param>
+    [Theory]
+    [InlineData("https://media.example.org")]
+    [InlineData("https://media.example.org/")]
+    [InlineData("http://media.example.org:8096/jellyfin")]
+    public async Task AnAddressThatCanBeUsedIsNotRemarkedOn(string configured)
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(directory.Path, logger, configured);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("PublicBaseUrl", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// A load with the store directory, the account list and a clock the test
     /// holds.
     /// </summary>
@@ -295,7 +386,29 @@ public class LoadOnStartTests
     {
         return new LoadOnStart(
             new StubStoreDirectory(directory),
+            new StubPublicAddress(null),
             new StubServerAccounts(accounts),
+            new TestClock(_started),
+            logger);
+    }
+
+    /// <summary>
+    /// A load whose configured public address is the one the test names, over a
+    /// store directory nobody holds.
+    /// </summary>
+    /// <param name="directory">The store directory.</param>
+    /// <param name="logger">Where the lines are kept.</param>
+    /// <param name="publicBaseUrl">The configured address.</param>
+    /// <returns>The load, not yet started.</returns>
+    private static LoadOnStart ALoadConfiguredWith(
+        string directory,
+        RecordingLogger<LoadOnStart> logger,
+        string? publicBaseUrl)
+    {
+        return new LoadOnStart(
+            new StubStoreDirectory(directory),
+            new StubPublicAddress(publicBaseUrl),
+            new StubServerAccounts([]),
             new TestClock(_started),
             logger);
     }

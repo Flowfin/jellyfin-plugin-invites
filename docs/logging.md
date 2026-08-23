@@ -9,8 +9,11 @@ never list is decided before there is a log call to argue with.
 One thing in this plugin writes a log line today, and it is the load the server
 makes when it starts: what the store claims about the accounts it created,
 against the accounts the server has, plus the refusal when another process
-already holds the store directory. Those lines carry invitation identifiers and
-account identifiers and nothing else out of a record. Everything else below is a
+already holds the store directory, plus the one setting that load reads. Those
+lines carry invitation identifiers and account identifiers and nothing else out
+of a record. The setting is named and its value is not, which is this document's
+rule rather than a courtesy: a value may be written only where it is a row in
+the inventory, and a server setting is not one. Everything else below is a
 constraint on code that #43 and the routes in M8 have yet to write, and the one
 greppable half of it is in `.github/lint/invariants.sh`.
 
@@ -101,11 +104,11 @@ exempted or switched off on that rule alone and the four spellings survive it.
 The cost the objection named was the cost of putting all seven behind one
 switch, and there is no longer one switch.
 
-The measurement is worth having beside it. There are eight log calls in the
+The measurement is worth having beside it. There are nine log calls in the
 plugin today, all in the routine that reads the store when the server starts:
 
     $ git grep -cPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)\s*\(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs:8
+    Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs:9
 
 The second rule's pattern fires on none of them, and on nothing else the plugin
 ships:
@@ -122,7 +125,7 @@ else, and `check` drops that directory:
 
 So a green `Invariant lint` says none of seven spellings appear, which is a
 larger claim than it was and still a much smaller one than the never list
-holding. The population it has been measured over is eight calls in one file,
+holding. The population it has been measured over is nine calls in one file,
 and the log calls the redemption path has not written yet are where a status
 code and an invitation code sit closest together.
 

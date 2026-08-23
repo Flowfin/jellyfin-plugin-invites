@@ -105,6 +105,33 @@ public static class InvitationLink
     }
 
     /// <summary>
+    /// Why the configured base address cannot carry a link, or <c>null</c>
+    /// where it can.
+    /// </summary>
+    /// <param name="publicBaseUrl">The configured address, as it is stored.</param>
+    /// <returns>The refusal, in the wording a mint is refused with, or <c>null</c>.</returns>
+    /// <remarks>
+    /// <para>
+    /// The rules are decided in one place and this is a second way of asking
+    /// the same question rather than a second copy of them. A caller that wants
+    /// to know before it needs a link gets the answer <see cref="For"/> would
+    /// give, so the two cannot drift into disagreeing about which addresses are
+    /// usable.
+    /// </para>
+    /// <para>
+    /// <see cref="Startup.LoadOnStart"/> is that caller. It reads the setting
+    /// when the server starts, so an address an operator mistyped is met then
+    /// rather than by whoever mints next. It does not write this sentence
+    /// anywhere: the refusal an operator acts on is the one that arrives in
+    /// place of what they asked for.
+    /// </para>
+    /// </remarks>
+    public static string? WhyItCannotCarryALink(string? publicBaseUrl)
+    {
+        return Read(publicBaseUrl, out _);
+    }
+
+    /// <summary>
     /// Reads the configured base address, refusing every shape that cannot
     /// carry a link.
     /// </summary>
@@ -112,41 +139,60 @@ public static class InvitationLink
     /// <returns>The address, absolute and http or https.</returns>
     private static Uri BaseAddress(string publicBaseUrl)
     {
-        if (string.IsNullOrWhiteSpace(publicBaseUrl))
+        var refusal = Read(publicBaseUrl, out var address);
+        if (address is null)
         {
-            throw new ArgumentException(
-                "No public address is configured, so there is no address to build an invitation link from. Set PublicBaseUrl to the address a stranger reaches this server on. It is not taken from the request on purpose: a request can say anything about which host it reached.",
-                nameof(publicBaseUrl));
-        }
-
-        if (!Uri.TryCreate(publicBaseUrl.Trim(), UriKind.Absolute, out var address))
-        {
-            throw new ArgumentException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "The configured public address is not an absolute address, so a link built from it would not resolve. It reads {0} and it wants a scheme and a host, as in https://media.example.org.",
-                    publicBaseUrl),
-                nameof(publicBaseUrl));
-        }
-
-        if (!string.Equals(address.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
-            && !string.Equals(address.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal))
-        {
-            throw new ArgumentException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "The configured public address carries the scheme {0}, and an invitation link is followed in a browser. It wants http or https.",
-                    address.Scheme),
-                nameof(publicBaseUrl));
-        }
-
-        if (address.Query.Length > 0 || address.Fragment.Length > 0)
-        {
-            throw new ArgumentException(
-                "The configured public address carries a query or a fragment, and appending a path to one produces an address that does not reach the redemption route. It wants a scheme, a host and at most a path prefix.",
-                nameof(publicBaseUrl));
+            throw new ArgumentException(refusal, nameof(publicBaseUrl));
         }
 
         return address;
+    }
+
+    /// <summary>
+    /// Decides whether the configured address can carry a link, and answers
+    /// with the address or with the reason it cannot.
+    /// </summary>
+    /// <param name="publicBaseUrl">The configured address.</param>
+    /// <param name="address">The address, where there is one.</param>
+    /// <returns>The refusal, or <c>null</c> where <paramref name="address"/> is set.</returns>
+    /// <remarks>
+    /// The two halves are exclusive by construction: every return that leaves
+    /// <paramref name="address"/> unset carries a sentence, and the one that
+    /// sets it carries none. That is what lets one caller read the address and
+    /// another read the sentence and both get the same verdict.
+    /// </remarks>
+    private static string? Read(string? publicBaseUrl, out Uri? address)
+    {
+        address = null;
+
+        if (string.IsNullOrWhiteSpace(publicBaseUrl))
+        {
+            return "No public address is configured, so there is no address to build an invitation link from. Set PublicBaseUrl to the address a stranger reaches this server on. It is not taken from the request on purpose: a request can say anything about which host it reached.";
+        }
+
+        if (!Uri.TryCreate(publicBaseUrl.Trim(), UriKind.Absolute, out var read))
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "The configured public address is not an absolute address, so a link built from it would not resolve. It reads {0} and it wants a scheme and a host, as in https://media.example.org.",
+                publicBaseUrl);
+        }
+
+        if (!string.Equals(read.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            && !string.Equals(read.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal))
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "The configured public address carries the scheme {0}, and an invitation link is followed in a browser. It wants http or https.",
+                read.Scheme);
+        }
+
+        if (read.Query.Length > 0 || read.Fragment.Length > 0)
+        {
+            return "The configured public address carries a query or a fragment, and appending a path to one produces an address that does not reach the redemption route. It wants a scheme, a host and at most a path prefix.";
+        }
+
+        address = read;
+        return null;
     }
 }
