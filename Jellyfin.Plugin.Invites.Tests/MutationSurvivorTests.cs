@@ -71,10 +71,18 @@ public class MutationSurvivorTests
             mayDownload,
             true,
             false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
             4_000_000,
             simultaneousStreamCeiling,
             13,
-            ImmutableArray.Create("EnableContentDeletion"));
+            ImmutableArray.Create("EnableSyncTranscoding"));
 
     /// <summary>
     /// Both factories refuse a null record, and the refusal is the whole of
@@ -118,6 +126,14 @@ public class MutationSurvivorTests
             false,
             true,
             false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
             0,
             0,
             0,

@@ -17,9 +17,9 @@ namespace Jellyfin.Plugin.Invites.Tests;
 public class AccountTemplateTests
 {
     /// <summary>
-    /// The grants #61 names, one per property. A property with no entry is a
-    /// grant nobody argued for, and an entry with no property is a grant the
-    /// issue asked for and the type does not carry.
+    /// The grants #61 and #64 name, one per property. A property with no entry
+    /// is a grant nobody argued for, and an entry with no property is a grant
+    /// an issue asked for and the type does not carry.
     /// </summary>
     private static readonly string[] GrantsTheIssueNames =
     {
@@ -27,6 +27,14 @@ public class AccountTemplateTests
         "MayDownload",
         "MayPlayFromOutsideTheNetwork",
         "MayManage",
+        "MayControlOtherSessions",
+        "MayWatchLiveTelevision",
+        "MayManageLiveTelevision",
+        "MayDeleteContent",
+        "MayManageCollections",
+        "MayManageSubtitles",
+        "MayManageLyrics",
+        "MayChangeItsOwnPreferences",
         "RemoteBitrateCeiling",
         "SimultaneousStreamCeiling",
         "ParentalRatingCeiling",
@@ -45,6 +53,14 @@ public class AccountTemplateTests
         bool mayDownload = false,
         bool mayPlayFromOutsideTheNetwork = true,
         bool mayManage = false,
+        bool mayControlOtherSessions = false,
+        bool mayWatchLiveTelevision = false,
+        bool mayManageLiveTelevision = false,
+        bool mayDeleteContent = false,
+        bool mayManageCollections = false,
+        bool mayManageSubtitles = false,
+        bool mayManageLyrics = false,
+        bool mayChangeItsOwnPreferences = true,
         int? remoteBitrateCeiling = 4_000_000,
         int? simultaneousStreamCeiling = 2,
         int? parentalRatingCeiling = 13,
@@ -54,10 +70,18 @@ public class AccountTemplateTests
             mayDownload,
             mayPlayFromOutsideTheNetwork,
             mayManage,
+            mayControlOtherSessions,
+            mayWatchLiveTelevision,
+            mayManageLiveTelevision,
+            mayDeleteContent,
+            mayManageCollections,
+            mayManageSubtitles,
+            mayManageLyrics,
+            mayChangeItsOwnPreferences,
             remoteBitrateCeiling,
             simultaneousStreamCeiling,
             parentalRatingCeiling,
-            serverDefaultsLeftAlone ?? ImmutableArray.Create("EnableContentDeletion", "EnableSyncTranscoding"));
+            serverDefaultsLeftAlone ?? ImmutableArray.Create("EnableSyncTranscoding", "MaxParentalSubRating"));
 
     /// <summary>
     /// The type carries the grants #61 names and nothing else. It reds in both
@@ -201,7 +225,7 @@ public class AccountTemplateTests
     public void ABlankFieldLeftAloneIsRefused(string blank)
     {
         var refusal = Assert.Throws<ArgumentException>(
-            () => Baseline(serverDefaultsLeftAlone: ImmutableArray.Create("EnableContentDeletion", blank)));
+            () => Baseline(serverDefaultsLeftAlone: ImmutableArray.Create("EnableSyncTranscoding", blank)));
 
         Assert.Equal("serverDefaultsLeftAlone", refusal.ParamName);
     }
@@ -271,7 +295,7 @@ public class AccountTemplateTests
         var one = Baseline();
         var another = Baseline(
             libraries: ImmutableArray.Create(FirstLibrary, SecondLibrary),
-            serverDefaultsLeftAlone: ImmutableArray.Create("EnableContentDeletion", "EnableSyncTranscoding"));
+            serverDefaultsLeftAlone: ImmutableArray.Create("EnableSyncTranscoding", "MaxParentalSubRating"));
 
         Assert.False(ReferenceEquals(one, another));
         Assert.Equal(one, another);
@@ -289,6 +313,14 @@ public class AccountTemplateTests
     [InlineData("MayDownload")]
     [InlineData("MayPlayFromOutsideTheNetwork")]
     [InlineData("MayManage")]
+    [InlineData("MayControlOtherSessions")]
+    [InlineData("MayWatchLiveTelevision")]
+    [InlineData("MayManageLiveTelevision")]
+    [InlineData("MayDeleteContent")]
+    [InlineData("MayManageCollections")]
+    [InlineData("MayManageSubtitles")]
+    [InlineData("MayManageLyrics")]
+    [InlineData("MayChangeItsOwnPreferences")]
     [InlineData("RemoteBitrateCeiling")]
     [InlineData("SimultaneousStreamCeiling")]
     [InlineData("ParentalRatingCeiling")]
@@ -301,10 +333,18 @@ public class AccountTemplateTests
             "MayDownload" => Baseline(mayDownload: true),
             "MayPlayFromOutsideTheNetwork" => Baseline(mayPlayFromOutsideTheNetwork: false),
             "MayManage" => Baseline(mayManage: true),
+            "MayControlOtherSessions" => Baseline(mayControlOtherSessions: true),
+            "MayWatchLiveTelevision" => Baseline(mayWatchLiveTelevision: true),
+            "MayManageLiveTelevision" => Baseline(mayManageLiveTelevision: true),
+            "MayDeleteContent" => Baseline(mayDeleteContent: true),
+            "MayManageCollections" => Baseline(mayManageCollections: true),
+            "MayManageSubtitles" => Baseline(mayManageSubtitles: true),
+            "MayManageLyrics" => Baseline(mayManageLyrics: true),
+            "MayChangeItsOwnPreferences" => Baseline(mayChangeItsOwnPreferences: false),
             "RemoteBitrateCeiling" => Baseline(remoteBitrateCeiling: null),
             "SimultaneousStreamCeiling" => Baseline(simultaneousStreamCeiling: 3),
             "ParentalRatingCeiling" => Baseline(parentalRatingCeiling: 18),
-            _ => Baseline(serverDefaultsLeftAlone: ImmutableArray.Create("EnableContentDeletion")),
+            _ => Baseline(serverDefaultsLeftAlone: ImmutableArray.Create("EnableSyncTranscoding")),
         };
 
         Assert.NotEqual(Baseline(), changed);
