@@ -1,0 +1,180 @@
+# The fourth clause of #83, executed rather than recorded.
+#
+# Three of that issue's clauses are held by the suite, which reads the plugin
+# assembly and asserts what each action declares. What no reading of the assembly
+# can answer is whether the server ACTS on the declaration, because a test host
+# built here would carry a policy this repository registered and would then be
+# answering for its own authorization rather than for Jellyfin's. The name
+# RequiresElevation is matched as a string for the same reason: neither
+# referenced package carries a constant to match it against, so a server that
+# renamed the policy leaves the suite green and refuses every request.
+#
+# So this job starts an unmodified published Jellyfin image with the packaged
+# plugin installed and asks the server itself. Nothing here configures the
+# server's authorization; it is the image's own.
+#
+# The wizard is deliberately not completed. A fresh server has no account, so
+# there is no credential to obtain and none is needed: what is asserted is what
+# an unauthenticated request gets, and that is the same request whether or not a
+# first user exists. Completing the wizard would add a route to this job that can
+# fail for its own reasons and would prove nothing extra.
+#
+# The anonymous route is asserted first and it is not decoration. A plugin that
+# failed to load answers 404 on every one of its addresses, and 404 is not 200,
+# so an authorization assertion written alone would pass loudest exactly when the
+# plugin was not there at all.
+name: '🔐 Route Authorization'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  authorization:
+    name: Every administrator route refuses an unauthenticated request
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    env:
+      # Pinned by digest rather than by tag, for the reason every action in this
+      # repository is pinned by commit: a tag is a name somebody else can move,
+      # and a server that changes underneath is one whose green runs mean less
+      # each time. This digest is jellyfin/jellyfin:10.11.11, the shipping
+      # version of the one server line build.yaml names in targetAbi.
+      JELLYFIN_IMAGE: 'jellyfin/jellyfin@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db'
+      JELLYFIN_URL: 'http://127.0.0.1:8096'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the committed lock file
+        run: |
+          set -euo pipefail
+          dotnet restore --locked-mode
+
+      - name: Build the plugin package
+        id: jprm
+        # The packaged plugin rather than a loose build output, so what the
+        # server loads is the shape a release would put in front of an operator.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: Install the package into a server data directory
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::The packaging step produced no archive at ${ARTIFACT}, so there is nothing to install and this job would be asserting against a server with no plugin."
+            exit 1
+          fi
+          mkdir -p "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          unzip -o "${ARTIFACT}" -d "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          ls -l "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+
+      - name: Start the server
+        run: |
+          set -euo pipefail
+          docker pull "${JELLYFIN_IMAGE}"
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/config:/config" \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
+            "${JELLYFIN_IMAGE}"
+
+      - name: Wait for the server to finish starting
+        # Two conditions rather than one. The public information route answers
+        # while the database migrations are still running, and everything else
+        # answers 503 for as long as that lasts, so a wait that stopped at the
+        # first 200 would hand the assertions below a server that refuses every
+        # address for a reason that has nothing to do with authorization. The
+        # second condition is the plugin's own public route leaving 503, which
+        # is the moment the route table is serving.
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and /redeem/{code} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not finish starting within three minutes, so nothing below could be asserted against it."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: The plugin is loaded, and its one anonymous route answers
+        # Without this the job's own failure mode is silent: a plugin that did
+        # not load answers 404 everywhere, and every assertion below would pass
+        # for the wrong reason.
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM")"
+          if [ "${code}" != "200" ]; then
+            echo "::error::GET /redeem/{code} answered ${code} rather than 200. The plugin's deliberately public route is the evidence that the assembly loaded at all, so nothing below that line can be trusted until it does."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "GET /redeem/{code} answered 200 without a credential, which is what that route is for."
+
+      - name: Every administrator route refuses an unauthenticated request
+        # The five actions InvitesController declares. They are written out one
+        # per line rather than discovered, because a discovery step here would
+        # read the same assembly the suite already reads and would inherit from
+        # outside it the question this job exists to answer.
+        run: |
+          set -euo pipefail
+          nil="00000000-0000-0000-0000-000000000000"
+          failed=0
+          check() {
+            method="$1"
+            path="$2"
+            code="$(curl -s -o /dev/null -w '%{http_code}' -X "${method}" "${JELLYFIN_URL}${path}")"
+            if [ "${code}" = "401" ]; then
+              printf 'refused  %-6s %-52s %s\n' "${method}" "${path}" "${code}"
+            else
+              printf 'ANSWERED %-6s %-52s %s\n' "${method}" "${path}" "${code}"
+              failed=1
+            fi
+          }
+          check GET "/Invites"
+          check GET "/Invites/${nil}"
+          check POST "/Invites"
+          check POST "/Invites/${nil}/Revoke"
+          check POST "/Invites/HashSecret/Rotate"
+          if [ "${failed}" -ne 0 ]; then
+            echo "::error::An administrator route answered an unauthenticated request with something other than 401. Every route this plugin registers is administrator-only except the redemption path, and the server rather than this repository is what decides that."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "All five administrator actions refused a request carrying no credential."
+
+      - name: Stop the server
+        if: always()
+        run: docker rm --force jellyfin || true
