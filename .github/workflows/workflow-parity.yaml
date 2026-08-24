@@ -1,0 +1,59 @@
+# The parity ledger is held to this repository's own workflow directory.
+#
+# docs/workflow-parity.md carries two hand checks, written into the page, that
+# somebody has to remember to run. Four times nobody did: a workflow landed, the
+# ledger went on describing the directory as it had been, and the change was
+# green. Three of the four were this direction, which a command over this tree
+# can decide, so it is decided on every push instead of being rediscovered.
+#
+# What it costs to get wrong is not tidiness. #24 builds the required-check list
+# by reading the rows this document marks adopted or kept, so a workflow with no
+# row is a check that quietly never reaches that list.
+#
+# The selftest runs first and on every run rather than at review time. The tree
+# agrees today, so the check step below cannot fire against it, and a rule that
+# had stopped finding the section at all would go green forever while the page it
+# holds drifted underneath it.
+#
+# The other direction of the ledger is not evaluated here and the run says so on
+# its own line. That table is a listing on another repository, this reads the
+# tree, and buying it would mean a network call on a route a merge takes, where a
+# failed call manufactures a refusal as readily as a wrong ledger does. The top of
+# .github/lint/workflow-parity.sh is where that trade is argued.
+#
+# The context this reports is `The ledger accounts for every workflow`, which is
+# the name to put in a ruleset rather than the workflow's display name.
+name: '📒 Workflow Parity'
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+# Read-only. The check reads two tracked subjects and writes nothing.
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    name: The ledger accounts for every workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        run: bash .github/lint/workflow-parity.sh selftest
+
+      - name: Every workflow has a row and every row has a workflow
+        run: bash .github/lint/workflow-parity.sh check .
