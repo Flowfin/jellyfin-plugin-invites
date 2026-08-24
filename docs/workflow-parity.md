@@ -23,16 +23,27 @@ file is still there.
 
 A workflow this repository has and this ledger does not name is a blank row rather
 than an absence, and it is the failure mode this file has already had: seven of them
-accumulated while the second table stood still. Nothing checks that, so it is checked
-by hand, and the two directions are written here rather than remembered. This
-repository's directory against the second table:
+accumulated while the second table stood still. The two directions are written here
+rather than remembered, and only one of them is executed.
+
+`.github/lint/workflow-parity.sh` refuses the first, on every push and every pull
+request, and it refuses two neighbours of it in the same pass: a row that owes a file
+and names none, and a row saying a workflow was removed while the file is here. Until
+it landed this direction was checked by hand, and three of this page's four recorded
+drifts were in it, each found after landing green. The command below is what it decides and is kept here
+because a reader wants to run it without a workflow. This repository's directory
+against the second table:
 
 ```
 $ git ls-files .github/workflows | sed 's|.*/||' \
     | while read -r f; do grep -qF "| \`$f\`" docs/workflow-parity.md || echo "$f"; done
 ```
 
-And the target gate's directory against the first one:
+And the target gate's directory against the first one, which nothing executes. That
+listing lives on another repository, a command over this tree cannot read it, and
+buying it would put a network call on a route a merge takes, where a failed call
+manufactures a refusal as readily as a wrong ledger does. Every run of the check
+prints that this direction was not evaluated, so a green mark is not read as both:
 
 ```
 $ gh api repos/iderex/jellyfin-plugin-sso/contents/.github/workflows --jq '.[].name' \
@@ -94,6 +105,7 @@ anything about whether an answer is the right one, which is what a reader is for
 | `package.yaml` | kept | This repository's own, landed by #20 at `fa2aa6fb`. It packages with JPRM on every pull request and generates a bill of materials, so a packaging mistake is found on the change that caused it rather than at a release. #35 is where the runtime dependency set it records is held empty. |
 | `pasted-exit-status.yaml` | kept | This repository's own, landed under #257. Every document here carries evidence rather than assertion, so a claim about an absence arrives as a command and the status it exited; the claim then ages when the code under it moves and nothing notices, because a stale paste is well-formed prose. This re-runs each pasted command and refuses a status that no longer reproduces. Reports `Every pasted exit status still holds`. Nothing on the target gate's list answers to it. What it deliberately does not read, including a prose claim of absence carrying no command, is written at the top of `.github/lint/pasted-exit-status.sh`. |
 | `pasted-line-reference.yaml` | kept | This repository's own, landed under #282. Its neighbour above judges a pasted exit status and declines pasted output by name, because comparing output means normalising line numbers, ordering and wrapping. A `path:line:content` reference is the subset where that reason does not hold: three fields, the third compared against one line of one file. It reads each one back and refuses a line that no longer carries what the page pasted. Reports `Every pasted line reference still points at its line`. Nothing on the target gate's list answers to it. What it deliberately does not read is written at the top of `.github/lint/pasted-line-reference.sh`, and `.github/lint/pasted-line-reference-records.txt` is where a dated quotation says it is one, refused in both directions rather than trusted. |
+| `workflow-parity.yaml` | kept | This repository's own, landed under #12. This page carried two hand checks somebody had to remember to run, and four times nobody did: a workflow landed, the table went on describing the directory as it had been, and the change was green. This decides the direction a command over this tree can decide, on every push. It refuses a workflow file with no row, a row that owes a file and names none, and a row saying a workflow was removed while the file is here. Reports `The ledger accounts for every workflow`. Nothing on the target gate's list answers to it, and the direction it does NOT evaluate is the first table above, which is a listing on another repository; every run prints that and what asking would cost. |
 | `pr-hygiene.yaml` | kept | This repository's answer to the target gate's `pr-hygiene.yml`, landed by #17 at `9f3245fd`. The legs a machine can decide, in two tiers, with the ones needing a person's judgement deliberately absent. Reports `Deterministic pull-request hygiene`. |
 | `prettier.yaml` | kept | This repository's answer to the target gate's `prettier.yml`, landed by #19 at `5c98896b`. Check mode only, never write mode, and it bites its own fixture before it scans the tree. Reports `Non-C# files are formatted`. |
 | `undefended-parity.yaml` | kept | This repository's own, landed under #112. It holds the undefended list in `docs/threat-model.md` to `SECURITY.md` in one direction, so an item softened or dropped in the policy reds. Reports `The policy carries every undefended item`. Nothing on the target gate's list answers to it. |
