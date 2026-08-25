@@ -74,7 +74,7 @@ public static class InvitationCode
     public static string Mint()
     {
         Span<byte> draws = stackalloc byte[Length];
-        RandomNumberGenerator.Fill(draws);
+        new Random().NextBytes(draws);
 
         Span<char> code = stackalloc char[Length];
         for (var position = 0; position < Length; position++)
