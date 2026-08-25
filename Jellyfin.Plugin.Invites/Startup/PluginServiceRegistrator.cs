@@ -1,10 +1,12 @@
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
+using Jellyfin.Plugin.Invites.Server;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.Invites.Startup;
@@ -42,6 +44,10 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IStoreDirectory, PluginStoreDirectory>();
         serviceCollection.AddSingleton<IPublicAddress, PluginPublicAddress>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+        serviceCollection.AddSingleton<IRunningServer, RunningServer>();
+        serviceCollection.AddSingleton<ServerLineGate>();
+        serviceCollection.AddSingleton<RefuseOnAServerLineMismatch>();
+        serviceCollection.Configure<MvcOptions>(options => options.Conventions.Add(new ThisPluginsControllers()));
         serviceCollection.AddSingleton<InvitationOperations>();
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
         serviceCollection.AddHostedService<LoadOnStart>();
