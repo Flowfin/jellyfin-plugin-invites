@@ -84,12 +84,14 @@ public sealed class InvitesController : ControllerBase
     /// <param name="request">The template, the validity and the use count.</param>
     /// <response code="200">Minted. The body carries the code, and nothing returns it again.</response>
     /// <response code="400">The template is missing, or the validity or the use count is outside its ceiling.</response>
+    /// <response code="409">This server already holds as many live invitations as the plugin allows. Nothing was written.</response>
     /// <response code="503">This plugin has no data directory, so there is no store to write to.</response>
     /// <returns>The code and the record.</returns>
     [Authorize(Policy = "RequiresElevation")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<ActionResult<MintedInvitation>> Mint([FromBody] MintRequest request)
     {
@@ -119,6 +121,14 @@ public sealed class InvitesController : ControllerBase
             // is the one the operation wrote, because an operator told "invalid
             // request" learns nothing about which ceiling they met.
             return BadRequest(refused.Message);
+        }
+        catch (LiveCeilingReachedException refused)
+        {
+            // A different code because it is a different kind of refusal. The
+            // request was acceptable and the store's state was not, so the
+            // operator's repair is to revoke an invitation rather than to change
+            // what they asked for, and 400 would send them at the wrong one.
+            return Conflict(refused.Message);
         }
     }
 

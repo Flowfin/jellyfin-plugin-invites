@@ -48,16 +48,23 @@ made here rather than the paragraph deleted. A mint and a revocation both write
 the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:194:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:267:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:263:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:336:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
 
-So an operator who has minted once has an invitations file, and the ceilings on
-this page are what bound how large it gets. What still does not exist is a
-redemption, so nothing grows the file from the public side: the routine that
-decides a presented code has no caller.
+So an operator who has minted once has an invitations file. This paragraph said
+the ceilings are what bound how large it gets, and that is the half to read
+carefully now that one of them acts. `InvitationOperations.LiveCeiling` bounds
+how many invitations may be LIVE at once, under #33, and a record that has
+expired, been spent or been revoked is not live and does not count against it. So
+the ceiling bounds what the outstanding set can authorise and not the size of the
+file, because the entry below on expiry not being deletion is what happens to the
+record instead. What bounds the file is retention, which is #59 and does not
+exist. What still does not exist as well is a redemption, so nothing grows the
+file from the public side: the routine that decides a presented code has no
+caller.
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
