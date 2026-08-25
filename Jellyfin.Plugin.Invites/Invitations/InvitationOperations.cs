@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using Jellyfin.Plugin.Invites.Codes;
 using Jellyfin.Plugin.Invites.Configuration;
+using Jellyfin.Plugin.Invites.Redemption;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 
@@ -63,6 +64,52 @@ public sealed class InvitationOperations
     /// </para>
     /// </remarks>
     public const int MaximumValidityDays = 90;
+
+    /// <summary>
+    /// The most invitations that may be live at once on one server.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #33 asks for three ceilings and this is the second of them. Live means
+    /// what <see cref="RedemptionDecision.IsLive"/> means and nothing else: a
+    /// record that a presented code could still turn into an account. A revoked,
+    /// expired or spent invitation is not live and does not count against this
+    /// number, so an operator makes room by revoking rather than by deleting.
+    /// </para>
+    /// <para>
+    /// <b>Where five hundred comes from.</b> docs/code-entropy.md sizes the code
+    /// against a live set it takes as ten thousand, says that is an assumption
+    /// until this ceiling exists, and says the requirement falls if the ceiling
+    /// is lower. Five hundred is a twentieth of that, so every figure on that
+    /// page stays an upper bound and none of its arithmetic is redone here.
+    /// </para>
+    /// <para>
+    /// <b>What it bounds.</b> With <see cref="InvitationMint.UsesCeiling"/> at
+    /// ten, the standing set can authorise five thousand accounts with no
+    /// further operator action. That number is the argument for #33's third
+    /// ceiling rather than against this one: this ceiling bounds what is
+    /// outstanding at an instant, and a bound on how many accounts may be
+    /// created in a period is the one that still holds when this one is set
+    /// badly. That third ceiling is not in this tree.
+    /// </para>
+    /// <para>
+    /// <b>What it does not bound, said plainly because the issue's own body
+    /// invites the wrong reading.</b> It is not a bound on how large the store
+    /// file may grow. An expired or spent record stays where it is, which
+    /// docs/limits.md holds as its own entry, and both the file and the lookup
+    /// that walks every record on a presented code count those too. Removing
+    /// them is retention, which is #59 and does not exist.
+    /// </para>
+    /// <para>
+    /// <b>Not measured.</b> Nobody has counted how many invitations a real
+    /// server holds. Five hundred is an upper bound on a household or a group of
+    /// friends rather than an observation, and an operator who meets it has a
+    /// case for making the number configurable, which is #86, rather than a
+    /// fault. A configured value has to be bounded by this constant rather than
+    /// replace it, or the number stops bounding anything.
+    /// </para>
+    /// </remarks>
+    public const int LiveCeiling = 500;
 
     private readonly IStoreDirectory _directory;
     private readonly IClock _clock;
@@ -133,6 +180,10 @@ public sealed class InvitationOperations
     /// The validity is zero or negative or above <see cref="MaximumValidityDays"/>,
     /// or the use count is outside what <see cref="InvitationMint"/> allows.
     /// </exception>
+    /// <exception cref="LiveCeilingReachedException">
+    /// The store already holds <see cref="LiveCeiling"/> live invitations.
+    /// Nothing is written.
+    /// </exception>
     /// <exception cref="InvalidOperationException">There is no store directory.</exception>
     public Minting Mint(Guid mintedBy, string templateLabel, TimeSpan? validity, int? uses)
     {
@@ -178,6 +229,24 @@ public sealed class InvitationOperations
             var directory = Directory();
             var store = new InvitationStore(directory);
             var contents = store.Read();
+
+            // Counted inside the gate, against the records this mint is about to
+            // be added to, and against the same clock reading the record will
+            // carry. Counting before the lock would count a store somebody else
+            // has since written to, which is the whole reason the gate is here.
+            var live = 0;
+            foreach (var record in contents.Invitations)
+            {
+                if (RedemptionDecision.IsLive(record, now))
+                {
+                    live++;
+                }
+            }
+
+            if (live >= LiveCeiling)
+            {
+                throw new LiveCeilingReachedException(live, LiveCeiling);
+            }
 
             var hash = new InvitationCodeHash(
                 HashSecret.OpenOrCreate(directory, contents.Invitations).Value);

@@ -57,11 +57,15 @@ public static class InvitationMint
     /// </para>
     /// <para>
     /// It is a constant here rather than a configured value because nothing in
-    /// this tree carries configuration yet. #86 is where the settings live and
-    /// #33 holds the other two ceilings, neither of which can be enforced at
-    /// this point: the count of live invitations needs a judgement of which
-    /// records are live, and how many accounts were created in a rolling window
-    /// needs the attempt trail.
+    /// this tree carries configuration yet. #86 is where the settings live.
+    /// </para>
+    /// <para>
+    /// #33 holds two more ceilings and one of them has since landed. The count
+    /// of live invitations is <see cref="InvitationOperations.LiveCeiling"/>,
+    /// enforced where the store can be read rather than here, because this
+    /// routine is handed one record and never sees the others. How many accounts
+    /// were created in a rolling window is the third and still needs the attempt
+    /// trail.
     /// </para>
     /// </remarks>
     public const int UsesCeiling = 10;

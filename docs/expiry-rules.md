@@ -9,7 +9,7 @@ none of them were. The record these rules judge is in the tree, as `Invitation`
 under #38, and so is the routine that judges it:
 
     git grep -n 'public static class RedemptionDecision' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:46:public static class RedemptionDecision
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:54:public static class RedemptionDecision
 
 The exclusive boundary is the comparison that routine makes, asserted at the
 exact instant, and the one clock reading is the argument it takes rather than a
