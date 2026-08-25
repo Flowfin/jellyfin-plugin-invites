@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// </remarks>
 public sealed class InvitationView
 {
-    private InvitationView(Invitation invitation)
+    private InvitationView(Invitation invitation, IReadOnlyCollection<Guid>? serverAccounts)
     {
         Id = invitation.Id;
         MintedBy = invitation.MintedBy;
@@ -39,7 +39,9 @@ public sealed class InvitationView
         RevokedAt = invitation.RevokedAt;
         RevokedBy = invitation.RevokedBy;
         Template = invitation.TemplateLabel;
-        AccountsProduced = invitation.AccountsProduced.ToArray();
+        AccountsProduced = invitation.AccountsProduced
+            .Select(account => new AccountView(account, Presence(account, serverAccounts)))
+            .ToArray();
     }
 
     /// <summary>
@@ -93,33 +95,72 @@ public sealed class InvitationView
     public string Template { get; }
 
     /// <summary>
-    /// Gets the accounts it created.
+    /// Gets the accounts it created, each with what became of it.
     /// </summary>
-    public IReadOnlyList<Guid> AccountsProduced { get; }
+    /// <remarks>
+    /// The pointer is kept when the account is gone rather than cleared, which
+    /// is #45's decision, so the list is the same length whatever the server
+    /// still holds and the difference is on each entry.
+    /// </remarks>
+    public IReadOnlyList<AccountView> AccountsProduced { get; }
 
     /// <summary>
     /// Reads one record into the shape a route returns.
     /// </summary>
     /// <param name="invitation">The record.</param>
+    /// <param name="serverAccounts">
+    /// Every account identifier the server has, or <c>null</c> where it does not
+    /// answer that question in a shape this plugin knows. There is no overload
+    /// without this argument: a caller that could leave it out is a caller that
+    /// can hand back a row claiming an account is there without having asked.
+    /// </param>
     /// <returns>The view.</returns>
     /// <exception cref="ArgumentNullException">The record is null.</exception>
-    public static InvitationView Of(Invitation invitation)
+    public static InvitationView Of(Invitation invitation, IReadOnlyCollection<Guid>? serverAccounts)
     {
         ArgumentNullException.ThrowIfNull(invitation);
 
-        return new InvitationView(invitation);
+        return new InvitationView(invitation, serverAccounts);
     }
 
     /// <summary>
     /// Reads several.
     /// </summary>
     /// <param name="invitations">The records.</param>
+    /// <param name="serverAccounts">
+    /// Every account identifier the server has, or <c>null</c>. Read once for
+    /// the whole listing rather than per row, so two rows of one response cannot
+    /// disagree about an account because the server changed between them.
+    /// </param>
     /// <returns>The views, in the order they were given.</returns>
     /// <exception cref="ArgumentNullException">The records are null.</exception>
-    public static IReadOnlyList<InvitationView> Of(IEnumerable<Invitation> invitations)
+    public static IReadOnlyList<InvitationView> Of(
+        IEnumerable<Invitation> invitations,
+        IReadOnlyCollection<Guid>? serverAccounts)
     {
         ArgumentNullException.ThrowIfNull(invitations);
 
-        return invitations.Select(Of).ToArray();
+        return invitations.Select(invitation => Of(invitation, serverAccounts)).ToArray();
+    }
+
+    /// <summary>
+    /// What became of one claimed account.
+    /// </summary>
+    /// <remarks>
+    /// An unanswered server is <see cref="AccountPresence.Unknown"/> rather than
+    /// an empty set, because reading it as an empty set reports every account
+    /// this plugin created as deleted.
+    /// </remarks>
+    /// <param name="account">The identifier the record claims.</param>
+    /// <param name="serverAccounts">What the server answered, or null.</param>
+    /// <returns>The state to render.</returns>
+    private static AccountPresence Presence(Guid account, IReadOnlyCollection<Guid>? serverAccounts)
+    {
+        if (serverAccounts is null)
+        {
+            return AccountPresence.Unknown;
+        }
+
+        return serverAccounts.Contains(account) ? AccountPresence.Present : AccountPresence.Gone;
     }
 }

@@ -322,7 +322,8 @@ public class InvitesControllerTests
     {
         var controller = new InvitesController(
             new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured)),
-            new StubOperatorIdentity(_operator))
+            new StubOperatorIdentity(_operator),
+            new StubServerAccounts(Array.Empty<Guid>()))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };
@@ -355,6 +356,14 @@ public class InvitesControllerTests
     /// constructor: with no clock and no store on the type, the comparison an
     /// action would need to make is one it has no argument for.
     /// </remarks>
+    /// <remarks>
+    /// The list is three types since #45 and it is still an allow-list rather
+    /// than a count. <c>IServerAccounts</c> is a read seam carrying one member
+    /// that hands back identifiers; it holds no clock, no store and nothing an
+    /// action could compare an expiry or a use count against, so the sentence
+    /// above is unchanged by its arrival. What would change it is a fourth type,
+    /// and adding one means editing this line and saying why here.
+    /// </remarks>
     [Fact]
     public void NothingHereCanBeHandedAClockOrAStore()
     {
@@ -367,8 +376,10 @@ public class InvitesControllerTests
         Assert.All(
             taken,
             type => Assert.True(
-                type == typeof(InvitationOperations) || type == typeof(IOperatorIdentity),
-                type.FullName + " can be handed to this controller. It takes the operations and the calling operator and nothing else, so that no action here can read a clock or a store and form an opinion the model layer already holds."));
+                type == typeof(InvitationOperations)
+                    || type == typeof(IOperatorIdentity)
+                    || type == typeof(IServerAccounts),
+                type.FullName + " can be handed to this controller. It takes the operations, the calling operator and the read seam over the server's accounts, and nothing else, so that no action here can read a clock or a store and form an opinion the model layer already holds."));
     }
 
     /// <summary>
@@ -559,7 +570,8 @@ public class InvitesControllerTests
                 new StubStoreDirectory(directory.Path),
                 clock,
                 new StubPublicAddress(configured)),
-            new StubOperatorIdentity(_operator))
+            new StubOperatorIdentity(_operator),
+            new StubServerAccounts(Array.Empty<Guid>()))
         {
             ControllerContext = new ControllerContext { HttpContext = context },
         };

@@ -233,7 +233,8 @@ public class LiveCeilingTests
                 new StubStoreDirectory(directory.Path),
                 new TestClock(_now),
                 new StubPublicAddress(Configured)),
-            new StubOperatorIdentity(_operator))
+            new StubOperatorIdentity(_operator),
+            new StubServerAccounts(Array.Empty<Guid>()))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };
