@@ -182,6 +182,15 @@ invitation identifier, the state, the uses remaining, the expiry and what the
 invitation created, which are the fields
 [docs/personal-data.md](personal-data.md) already holds.
 
+Each account the invitation created is an entry carrying its identifier and what
+became of it, rather than an identifier on its own. #45 decided that a record
+keeps its pointer at an account somebody has since deleted instead of clearing
+it, and a pointer that renders exactly like a live account is the blank that
+decision refuses. The three states are that the server has the account, that it
+does not, and that it did not answer in a shape this plugin reads. The third is
+its own value because reading an unanswered server as an empty set would report
+every account this plugin created as deleted.
+
 A route that returned codes here would make the arithmetic in
 [docs/code-entropy.md](code-entropy.md) irrelevant, whatever the code length
 is, and that page names this surface for exactly that reason.

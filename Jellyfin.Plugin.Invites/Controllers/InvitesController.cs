@@ -62,20 +62,32 @@ public sealed class InvitesController : ControllerBase
 {
     private readonly InvitationOperations _operations;
     private readonly IOperatorIdentity _caller;
+    private readonly IServerAccounts _accounts;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InvitesController"/> class.
     /// </summary>
     /// <param name="operations">The operations the routes translate.</param>
     /// <param name="caller">Where the calling operator's identity comes from.</param>
-    /// <exception cref="ArgumentNullException">Either argument is null.</exception>
-    public InvitesController(InvitationOperations operations, IOperatorIdentity caller)
+    /// <param name="accounts">
+    /// The read seam over the server's own accounts. Every route that hands back
+    /// a record asks it what became of the accounts that record claims, which is
+    /// #45: the pointer at a deleted account is kept, so something has to say
+    /// that it is now a pointer at nothing.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    public InvitesController(
+        InvitationOperations operations,
+        IOperatorIdentity caller,
+        IServerAccounts accounts)
     {
         ArgumentNullException.ThrowIfNull(operations);
         ArgumentNullException.ThrowIfNull(caller);
+        ArgumentNullException.ThrowIfNull(accounts);
 
         _operations = operations;
         _caller = caller;
+        _accounts = accounts;
     }
 
     /// <summary>
@@ -149,7 +161,7 @@ public sealed class InvitesController : ControllerBase
             return NoStore();
         }
 
-        return Ok(InvitationView.Of(_operations.All()));
+        return Ok(InvitationView.Of(_operations.All(), _accounts.Identifiers));
     }
 
     /// <summary>
@@ -180,7 +192,7 @@ public sealed class InvitesController : ControllerBase
 
         var found = _operations.One(id);
 
-        return found is null ? NotFound() : Ok(InvitationView.Of(found));
+        return found is null ? NotFound() : Ok(InvitationView.Of(found, _accounts.Identifiers));
     }
 
     /// <summary>
@@ -213,7 +225,7 @@ public sealed class InvitesController : ControllerBase
         var revokedBy = await _caller.OfAsync(HttpContext).ConfigureAwait(false);
         var revoked = _operations.Revoke(id, revokedBy);
 
-        return revoked is null ? NotFound() : Ok(InvitationView.Of(revoked));
+        return revoked is null ? NotFound() : Ok(InvitationView.Of(revoked, _accounts.Identifiers));
     }
 
     /// <summary>

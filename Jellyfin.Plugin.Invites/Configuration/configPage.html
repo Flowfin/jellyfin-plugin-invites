@@ -175,6 +175,37 @@
                     return cell;
                 }
 
+                // What became of the accounts an invitation claims, as one cell.
+                // The pointer at a deleted account is kept rather than cleared,
+                // which is #45, so the count alone would render a row whose
+                // accounts are all gone exactly like one whose accounts are all
+                // there.
+                //
+                // Both spellings of the state are read because the server
+                // decides which one arrives. Its serialiser is configured by
+                // the host and not by this plugin, and nothing this plugin
+                // references says whether an enumeration is written as its name
+                // or as its number, so a page reading one of the two would go
+                // blank on a server that sends the other.
+                function invitesAccountsCell(accounts) {
+                    if (!accounts || accounts.length === 0) {
+                        return invitesCell(0);
+                    }
+
+                    var gone = 0;
+                    for (var i = 0; i < accounts.length; i += 1) {
+                        if (accounts[i].Presence === "Gone" || accounts[i].Presence === 2) {
+                            gone += 1;
+                        }
+                    }
+
+                    if (gone === 0) {
+                        return invitesCell(accounts.length);
+                    }
+
+                    return invitesCell(accounts.length + " (" + gone + " gone)");
+                }
+
                 function invitesMoment(value) {
                     return invitesCell(value ? new Date(value).toLocaleString() : "");
                 }
@@ -189,7 +220,7 @@
                         invitesCell(invitation.UsesRemaining + " of " + invitation.UsesGranted),
                     );
                     row.appendChild(invitesMoment(invitation.RevokedAt));
-                    row.appendChild(invitesCell(invitation.AccountsProduced.length));
+                    row.appendChild(invitesAccountsCell(invitation.AccountsProduced));
 
                     var actions = document.createElement("td");
                     var button = document.createElement("button");

@@ -30,7 +30,12 @@ public sealed class MintedInvitation
         Code = minting.Code;
         Link = minting.Link;
         LinkRefusal = minting.LinkRefusal;
-        Invitation = InvitationView.Of(minting.Invitation);
+        // No server accounts are read here, and the null says so rather than
+        // standing in for an empty answer. A record this routine is handed has
+        // just been minted, so it claims no account and the list it produces is
+        // empty whatever the server holds. Asking would be one call into the
+        // user manager on the one route where the answer cannot change a byte.
+        Invitation = InvitationView.Of(minting.Invitation, serverAccounts: null);
     }
 
     /// <summary>
