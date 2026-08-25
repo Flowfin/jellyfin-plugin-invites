@@ -84,11 +84,12 @@ claim in the manifest is what the plugin is compiled against rather than a
 second number somebody keeps in step by hand.
 
 `targetAbi` is a floor and no field beside it names a ceiling, so a server on a
-later line installs this plugin today and nothing refuses it. That is the gap
-rather than the decision. #97 is where the plugin compares the running server
-against the line it was built for and declines instead of half working, and it
-is not built, so read the heading as what this plugin is built and tested
-against rather than as something the packaging enforces.
+later line still installs this plugin and the packaging does not refuse it. The
+plugin does. It compares the running server against that line when it starts and
+answers every one of its own addresses with a refusal naming both versions where
+they disagree, which is #97 and is built. So the heading is what this plugin is
+built and tested against, and what enforces it is the plugin rather than the
+manifest.
 
 ## Installing
 

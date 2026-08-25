@@ -89,8 +89,14 @@ reads. It is not a type waiting for a caller: it is registered, and the hosted
 service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:44:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:47:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:46:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:53:        serviceCollection.AddHostedService<LoadOnStart>();
+
+Both numbers moved again with this revision, by two and by six, and the sentence
+they support did not. Four registrations landed between them, the server-line
+comparison from #97 and the refusal it attaches to this plugin's controllers.
+Neither line is a different line of code; each is the same call further down the
+same method.
 
 That narrows the reason this line is undefended without moving it. An identifier
 is not an account: nothing here hands back a user object to modify, and the type
