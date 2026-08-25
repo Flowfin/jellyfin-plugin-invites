@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
+using Jellyfin.Plugin.Invites.Server;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 using Microsoft.Extensions.Hosting;
@@ -47,6 +48,16 @@ namespace Jellyfin.Plugin.Invites.Startup;
 /// asked of it, and a setting that cannot be used is named.
 /// </para>
 /// <para>
+/// <b>It is also where the plugin finds out it is on the wrong server.</b> #97
+/// asks that a mismatch leave no partial operation behind, and this is the only
+/// thing in the plugin that acts without a request having arrived: it claims a
+/// directory on disk and reads the server's accounts. So the verdict is read
+/// first and nothing below it runs on a mismatch. The routes are refused
+/// separately, by <see cref="RefuseOnAServerLineMismatch"/>, and the two halves
+/// are not the same half: one is what a request meets and this one is what
+/// happens whether or not a request ever arrives.
+/// </para>
+/// <para>
 /// <b>What is written to the log obeys docs/logging.md.</b> The lines carry
 /// invitation identifiers and account identifiers, both rows of the inventory in
 /// docs/personal-data.md, and nothing else about a record. No code, no link and
@@ -68,6 +79,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// </remarks>
     public const int MostNamedOneByOne = 20;
 
+    private readonly ServerLineGate _line;
     private readonly IStoreDirectory _directory;
     private readonly IPublicAddress _address;
     private readonly IServerAccounts _accounts;
@@ -78,13 +90,15 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="LoadOnStart"/> class.
     /// </summary>
+    /// <param name="line">The comparison against the server line this plugin was built for.</param>
     /// <param name="directory">Where the store sits.</param>
     /// <param name="address">The configured public address, read once.</param>
     /// <param name="accounts">The server's own account list.</param>
     /// <param name="clock">The time source the claim is stamped from.</param>
     /// <param name="logger">Where the answer goes.</param>
-    public LoadOnStart(IStoreDirectory directory, IPublicAddress address, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
+    public LoadOnStart(ServerLineGate line, IStoreDirectory directory, IPublicAddress address, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
     {
+        _line = line;
         _directory = directory;
         _address = address;
         _accounts = accounts;
@@ -95,6 +109,17 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        if (!_line.MayRun)
+        {
+            // Before anything else, and before anything is read or claimed.
+            // Nothing below this line is a read: the store directory is claimed
+            // for the lifetime of the process, so a plugin that got this far on
+            // the wrong server would be holding a claim no request of its own
+            // could ever use, against a second server that could.
+            _logger.LogError("{Finding}", _line.Verdict.Message);
+            return Task.CompletedTask;
+        }
+
         ReportTheConfiguredAddress();
 
         var directory = _directory.Path;
