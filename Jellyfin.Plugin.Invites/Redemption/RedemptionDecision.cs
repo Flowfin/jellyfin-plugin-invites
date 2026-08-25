@@ -37,10 +37,18 @@ namespace Jellyfin.Plugin.Invites.Redemption;
 /// nowhere.
 /// </para>
 /// <para>
-/// <b>What it does not check.</b> The global ceilings from #33 are not tested
-/// here, because nothing in the tree says what they are yet. When they exist
-/// they are one more argument to this routine and one more refusal below,
-/// rather than a second routine.
+/// <b>What it does not check.</b> The ceiling on how many accounts the plugin
+/// may create in a period, from #33, is not tested here, because nothing in the
+/// tree says what that number is yet. When it exists it is one more argument to
+/// this routine and one more refusal below, rather than a second routine.
+/// </para>
+/// <para>
+/// <b>The ceiling on live invitations is #33's too and is not a refusal here.</b>
+/// It is enforced at minting, so what this file owes it is the judgement rather
+/// than the comparison: <see cref="IsLive"/> answers whether one record is still
+/// able to produce an account, and minting counts with it. That keeps one
+/// authority for a fact two callers need and is why the routine is here rather
+/// than beside the store.
 /// </para>
 /// </remarks>
 public static class RedemptionDecision
@@ -94,34 +102,89 @@ public static class RedemptionDecision
             return RedemptionVerdict.NoSuchInvitation();
         }
 
+        var refusal = Refusal(match, now);
+
+        return refusal is null
+            ? RedemptionVerdict.Honoured(match)
+            : RedemptionVerdict.Refused(refusal.Value, match);
+    }
+
+    /// <summary>
+    /// Whether this record could still produce an account if somebody presented
+    /// its code at this instant.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the same question <see cref="Decide"/> asks, and it is asked
+    /// of the same routine.</b> #33 bounds how many live invitations may exist
+    /// at once, which means minting has to count them, and counting them is a
+    /// judgement about expiry and about a use count. The rule in the summary
+    /// above is that no such judgement is made anywhere else, so the count is
+    /// taken by asking here rather than by a second comparison written next to
+    /// the store. Both callers reach one implementation, so a change to what
+    /// "live" means cannot move for one of them and not the other.
+    /// </para>
+    /// <para>
+    /// <b>It is not a shorter <see cref="Decide"/>.</b> No code is presented and
+    /// nothing is looked up, so this answers only for a record the caller
+    /// already holds and can never stand in for a redemption. A caller that has
+    /// a presented code calls <see cref="Decide"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="invitation">The record to judge.</param>
+    /// <param name="now">
+    /// The clock reading, read once by the caller through <see cref="Time.IClock"/>.
+    /// </param>
+    /// <returns><c>true</c> where nothing about the record refuses it yet.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
+    public static bool IsLive(Invitation invitation, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(invitation);
+
+        return Refusal(invitation, now) is null;
+    }
+
+    /// <summary>
+    /// What refuses this record at this instant, or <c>null</c> where nothing
+    /// does.
+    /// </summary>
+    /// <remarks>
+    /// The three comparisons this plugin makes about a record live here and
+    /// nowhere else, which is what the invariant lint refuses outside this file.
+    /// </remarks>
+    /// <param name="record">The record being judged.</param>
+    /// <param name="now">The one clock reading for this judgement.</param>
+    /// <returns>The outcome that refuses it, or null.</returns>
+    private static RedemptionOutcome? Refusal(Invitation record, DateTimeOffset now)
+    {
         // Revoked first. All three refusals look the same to whoever presented
         // the code, so the order decides only what the operator's trail says,
         // and an operator who revoked a link is owed that answer rather than the
         // one the calendar happens to give. A revoked invitation also stays
         // revoked once its expiry passes, so the alternative order would quietly
         // rewrite the reason a week later.
-        if (match.IsRevoked)
+        if (record.IsRevoked)
         {
-            return RedemptionVerdict.Refused(RedemptionOutcome.Revoked, match);
+            return RedemptionOutcome.Revoked;
         }
 
         // Exclusive, so an invitation whose expiry is the instant T is honoured
         // strictly before T and refused at T. That direction is decided in
         // docs/expiry-rules.md and the exact instant is asserted under #102.
-        if (now >= match.ExpiresAt)
+        if (now >= record.ExpiresAt)
         {
-            return RedemptionVerdict.Refused(RedemptionOutcome.Expired, match);
+            return RedemptionOutcome.Expired;
         }
 
         // The record is the only authority for the count, which is #52. Nothing
         // here derives it from how many accounts the record produced: an
         // operator deleting one of those accounts must not restore a use.
-        if (match.UsesRemaining <= 0)
+        if (record.UsesRemaining <= 0)
         {
-            return RedemptionVerdict.Refused(RedemptionOutcome.Spent, match);
+            return RedemptionOutcome.Spent;
         }
 
-        return RedemptionVerdict.Honoured(match);
+        return null;
     }
 
     /// <summary>
