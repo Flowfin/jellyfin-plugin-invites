@@ -65,9 +65,9 @@ decides a presented code has no caller.
 `InvitationStore.Read` answers a directory with no file as no invitations rather
 than creating one, so reading at startup does not bring the file into being.
 
-So every entry below names the issue that owns the behaviour, and five of the
-nine are held by a test that was seen to fail. Which five, and what each one
-was broken with, is at the foot of this page. The other four were not put to that
+So every entry below names the issue that owns the behaviour, and six of the
+nine are held by a test that was seen to fail. Which six, and what each one
+was broken with, is at the foot of this page. The other three were not put to that
 check here, so nothing on this page says a test holds them. That accounting
 matters and is not a formality: an entry without one is a decision the plan has
 taken and nothing more, and a decision is something a later change can contradict
@@ -167,12 +167,23 @@ the operator through the attempt trail in #43 rather than through the page.
 ## The plugin refuses to run on a server line it was not built for
 
 The plugin checks the running server against the line it was built for at
-startup, and a mismatch disables its routes with a message naming both versions.
-No partial operation follows a mismatch.
+startup, and a mismatch makes every one of its addresses answer a refusal naming
+both versions. No partial operation follows a mismatch: the load that claims the
+store directory declines before it claims anything.
+
+The word to read carefully is refuse rather than remove. A plugin's controllers
+are discovered from its assembly by the server's own routing, and nothing takes
+an address back out of a route table that is already built, so the addresses
+continue to exist and none of them does anything.
 
 This plugin reaches server interfaces that move between server lines. A plugin
 that loaded anyway would fail somewhere further in, at a moment chosen by whoever
 happened to present a code, rather than at startup where the operator is looking.
+
+The comparison is equality on the major and minor parts of the version, against
+the `targetAbi` in `build.yaml` and nothing typed a second time. A server on a
+later line is refused as firmly as one on an earlier line, which is the whole
+difference between this and reading that field as a floor.
 
 Install the build for the line the server runs. Invitations already sent are
 unaffected by the plugin being unable to load, because their expiry is an
@@ -228,12 +239,12 @@ is its change to make rather than something this file can assert about itself.
     exit=1
 
 The done condition of #115 asks that every entry match the behaviour the tests
-assert. Five of the nine are shown below to be held by one, and that clause is
+assert. Six of the nine are shown below to be held by one, and that clause is
 met one entry at a time as the behaviours land rather than by this document.
 
 ## Which entries a test holds
 
-Each of the five was checked by breaking the thing the entry rests on and
+Each of the six was checked by breaking the thing the entry rests on and
 watching the suite, rather than by reading a test name and deciding it looked
 close enough. None of the faults is in the tree, and every run below was made at
 the commit this page is on rather than carried across from the commit where the
@@ -253,8 +264,11 @@ A line number in a paste is the part that ages without the claim around it
 changing, and the failure it produces is the expensive kind: the reader runs the
 command, gets a different line, and cannot tell a moved site from the fault the
 entry exists to catch. Every command on this page is the one that produced the
-output beside it at the commit this change lands on, and all seven faults were
-put back afterwards.
+output beside it at the commit this change lands on, and all ten faults were put
+back afterwards. The seven that were here before were re-run at this commit
+rather than carried across, which is why every total below reads differently
+from the revision that first wrote them while every failing test name is the
+same.
 
 **A code is shown once and cannot be recovered.** The mint routine was handed
 the code as the template label, one argument along from where it belongs, which
@@ -265,7 +279,7 @@ is the slip that puts a live code in the store file:
       MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode [FAIL]
       MintedCodeIsNotHandedBackTests.NoReadingRouteHandsBackAnythingShapedLikeACode [FAIL]
       InvitesControllerTests.MintingReturnsACodeThatMatchesTheStoredHash [FAIL]
-    Fehler!      : Fehler: 3, erfolgreich: 440, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 3, erfolgreich: 513, übersprungen: 8, gesamt: 524
 
 **A restored backup revives spent invitations**, for the part this page adds,
 which is reading the disagreement the plugin reports on load. The comparison was
@@ -279,7 +293,7 @@ inverted by dropping one character:
       StoreLoadTests.ALoadReportsWhatTheStoreDisagreesWithInBothDirections [FAIL]
       LoadOnStartTests.AStartOverAStoreThatDisagreesNamesBothDirections [FAIL]
       LoadOnStartTests.DisagreementsBeyondTheBoundAreCountedRatherThanNamed [FAIL]
-    Fehler!      : Fehler: 6, erfolgreich: 437, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 6, erfolgreich: 510, übersprungen: 8, gesamt: 524
 
 Two of those six assert that it happens on load, which is the word the entry
 uses, rather than only that the comparison answers correctly when somebody calls
@@ -294,7 +308,7 @@ offset cannot see:
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       StoredInstantTests.TheDecisionReadsTwoSpellingsOfOneClockReadingAlike(offsetHours: 13) [FAIL]
       StoredInstantTests.TheDecisionJudgesTwoSpellingsOfOneMomentAlike(offsetHours: 13) [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 441, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 2, erfolgreich: 514, übersprungen: 8, gesamt: 524
 
 **Revoking an invitation does not remove the accounts it already created.** A
 revocation rebuilds the record field by field, so the mistake this entry is
@@ -305,7 +319,7 @@ list that is no longer needed:
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       RevocationTests.TheAccountsAlreadyCreatedAreStillNamed [FAIL]
       RevocationTests.RevokingChangesNothingElseAboutTheRecord [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 441, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 2, erfolgreich: 514, übersprungen: 8, gesamt: 524
 
 Two rather than one, and the second is the wider of the pair: it holds every
 field the revocation carries across rather than this one, so a change dropping
@@ -325,12 +339,12 @@ assertion, each reddening exactly one:
     $ sed -i '209s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillListed [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
 
     $ sed -i '223s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillFoundByItsIdentifier [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
 
 The third is the one worth reading, because it does not filter anything a caller
 sees. It writes the shortened list back, which is the tidy-up somebody adds to a
@@ -347,34 +361,87 @@ reading routine believing it changes nothing:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.CrossingTheExpiryChangesNothingOnTheDisk [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 442, übersprungen: 8, gesamt: 451
+    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
 
 What that does not cover is the sentence about the retention rule. Removing a
 record once retention allows it is the sweep in #59 and nothing in this tree
 sweeps, so an expired record staying forever and an expired record removed on
 schedule are the same tree today.
 
+**The plugin refuses to run on a server line it was not built for.** Three
+faults, one per half of what the entry promises, and the other five that came
+with the behaviour are in the change that landed it rather than repeated here.
+
+The comparison loosened from equality to the floor the entry exists against,
+which is the shape a reader reaches for when an operator complains that the
+plugin will not load on a newer server:
+
+    $ the equality in Jellyfin.Plugin.Invites/Server/ServerLine.cs replaced by  running >= new Version(declared)
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.11", running: 10.12.0, mayRun: False) [FAIL]
+      ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.1", running: 10.11.0, mayRun: False) [FAIL]
+      ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.11", running: 11.11.0, mayRun: False) [FAIL]
+      ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.11", running: 12.0.0, mayRun: False) [FAIL]
+    Fehler!      : Fehler: 4, erfolgreich: 512, übersprungen: 8, gesamt: 524
+
+Four rows rather than three. The fourth is the pair that reads 10.1 against
+10.11, which a floor comparison answers as agreement because 10.1 sorts below
+10.11, and it is the row a comparison written as a prefix test answers wrongly
+in the other direction.
+
+The refusal scoped by a name rather than by the assembly a controller was
+declared in, which is the version that reads as tidier and quietly attaches this
+plugin's refusal to every controller the server has:
+
+    $ sed -i 's|if (controller.ControllerType.Assembly == _plugin)|if (controller.ControllerType.Name.EndsWith("Controller", StringComparison.Ordinal))|' Jellyfin.Plugin.Invites/Server/ThisPluginsControllers.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ServerLineTests.TheConventionTheServerIsHandedIsScopedToThisPlugin [FAIL]
+      ServerLineTests.TheScopeIsTheAssemblyItWasGiven [FAIL]
+      ServerLineTests.AControllerOutsideThisPluginIsLeftAlone [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 513, übersprungen: 8, gesamt: 524
+
+And the third part, that no partial operation follows a mismatch. The load is
+the only thing in this plugin that acts without a request, and it takes a claim
+on the store directory for the lifetime of the process. The refusal was left
+reporting and the early return dropped, which is the fault that leaves a plugin
+holding a directory it can never use against a second server that could:
+
+    $ the  return Task.CompletedTask;  removed from the mismatch branch of Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      LoadOnStartTests.AStartOnAnotherServerLineClaimsNothingAndReadsNothing [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
+
+What none of the three reaches is the server. Nothing here starts a Jellyfin, so
+that the server applies a convention a plugin adds to its own options, and that a
+browser meeting one of these addresses receives the refusal, are claims about a
+running installation rather than about this suite. The end-to-end install job is
+what stands nearest to them and it exercises a server on the declared line, where
+the plugin runs, rather than one on another.
+
 Each fault was put back afterwards and the suite returns to where it started:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
-    Bestanden!   : Fehler: 0, erfolgreich: 443, übersprungen: 8, gesamt: 451
+    Bestanden!   : Fehler: 0, erfolgreich: 516, übersprungen: 8, gesamt: 524
 
-The other four entries are the username disclosure, the deleted library, the
-server line, and uninstall leaving accounts alone. No fault was run against any
-of them here, and for three of the four there is nothing to run one against.
-Nothing in the plugin judges a username, resolves a library identifier, or
-compares the running server against the line it was built for:
+The other three entries are the username disclosure, the deleted library, and
+uninstall leaving accounts alone. No fault was run against any of them here, and
+for two of the three there is nothing to run one against. Nothing in the plugin
+judges a username or resolves a library identifier:
 
     git grep -niE 'Username' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -cv '///'
     0
     git grep -niE 'EnabledFolders|libraryId|ResolveLibrar' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
     exit=1
-    git grep -niE 'ApplicationVersion|ServerVersion|TargetAbi' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
 
-The first of the three is counted rather than statused. One line in the plugin
+The first of the two is counted rather than statused. One line in the plugin
 carries the word and it is inside a documentation comment, so that grep exits 0
 and what has to be zero is the count surviving the filter.
+
+A third grep stood beside these two until this revision. It asked whether
+anything in the plugin compares the running server against the line it was built
+for, and it found nothing. It finds something now, which is the server-line entry
+having moved up into the list above rather than a change to either of the two
+left here.
 
 The fourth is different and is worth separating from the other three, because it
 reads as covered and is not. Uninstall leaving accounts alone is true today
@@ -393,7 +460,7 @@ reason the file exists: the seam binds late, so a write hidden behind a
 looked-up name is invisible to the compiler and to the invariant lint, which
 reads source text.
 
-The entry is still not counted among the five. What is refused is the
+The entry is still not counted among the six. What is refused is the
 capability, and what the entry promises is an uninstall that leaves the accounts
 where they are. Exercising that needs a seam that can create an account so there
 is something to leave behind, which is #103, and nothing here stands in for it.
