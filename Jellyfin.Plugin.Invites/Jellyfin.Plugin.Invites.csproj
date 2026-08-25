@@ -38,4 +38,34 @@
     <EmbeddedResource Include="Setup\setupPage.html" />
   </ItemGroup>
 
+  <!--
+    The Jellyfin line this plugin claims, handed to the assembly so the number is
+    not typed a second time. build.yaml's targetAbi is the one place the version
+    is written and Directory.Build.props already derives the floor build from it;
+    the line is its major and minor parts, which is what #97 decided the start-up
+    comparison is made on. Jellyfin.Plugin.Invites/Server/DeclaredLine.cs reads
+    this back and nothing in the source carries the number.
+  -->
+  <PropertyGroup>
+    <JellyfinDeclaredServerLine>$([System.Text.RegularExpressions.Regex]::Match($(JellyfinAbiFloorVersion), '^[0-9]+\.[0-9]+'))</JellyfinDeclaredServerLine>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>JellyfinServerLine</_Parameter1>
+      <_Parameter2>$(JellyfinDeclaredServerLine)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!--
+    An assembly built without a readable line would compare nothing at start-up
+    and refuse every request on a server the plugin is built for, which is the
+    failure worse than the one the comparison exists for. It is refused here
+    instead, at the moment the number could not be read, with the file named.
+  -->
+  <Target Name="RefuseUnreadableDeclaredServerLine" BeforeTargets="BeforeBuild">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(JellyfinDeclaredServerLine)', '^[0-9]+\.[0-9]+$'))"
+           Text="No Jellyfin line could be derived from the targetAbi in $(PluginManifestPath). What was read was '$(JellyfinDeclaredServerLine)'. The line this plugin claims lives in that file and the start-up comparison in Server/ServerLine.cs is made against it." />
+  </Target>
+
 </Project>

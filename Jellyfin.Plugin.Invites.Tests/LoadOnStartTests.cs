@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
+using Jellyfin.Plugin.Invites.Server;
 using Jellyfin.Plugin.Invites.Startup;
 using Jellyfin.Plugin.Invites.Storage;
 using Microsoft.Extensions.Logging;
@@ -213,6 +214,7 @@ public class LoadOnStartTests
     {
         var logger = new RecordingLogger<LoadOnStart>();
         using var load = new LoadOnStart(
+            OnTheDeclaredLine(),
             new StubStoreDirectory(null),
             new StubPublicAddress(null),
             new StubServerAccounts([]),
@@ -239,6 +241,7 @@ public class LoadOnStartTests
 
         var logger = new RecordingLogger<LoadOnStart>();
         using var load = new LoadOnStart(
+            OnTheDeclaredLine(),
             new StubStoreDirectory(directory.Path),
             new StubPublicAddress(null),
             new StubServerAccounts(null),
@@ -375,6 +378,58 @@ public class LoadOnStartTests
     }
 
     /// <summary>
+    /// A start on a server that is not on the line this plugin was built for
+    /// claims nothing and reads nothing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is #97's third clause, that no partial operation follows a
+    /// mismatch, and the load is the only thing in this plugin that acts
+    /// without a request. The claim is the part that matters: it is taken for
+    /// the lifetime of the process, so a plugin that got this far on the wrong
+    /// server would be holding a directory against a second server that could
+    /// use it.
+    /// </para>
+    /// <para>
+    /// The store directory handed in is a real one the test owns, so an absent
+    /// claim file is the load having declined rather than the load having had
+    /// nowhere to write.
+    /// </para>
+    /// </remarks>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task AStartOnAnotherServerLineClaimsNothingAndReadsNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = new LoadOnStart(
+            new ServerLineGate("42.7", new StubRunningServer(new Version(9, 3, 1))),
+            new StubStoreDirectory(directory.Path),
+            new StubPublicAddress(null),
+            new StubServerAccounts([]),
+            new TestClock(_started),
+            logger);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.False(File.Exists(Path.Combine(directory.Path, StoreLock.FileName)));
+        var line = Assert.Single(logger.Lines);
+        Assert.Equal(LogLevel.Error, line.Level);
+        Assert.Contains("42.7", line.Message, StringComparison.Ordinal);
+        Assert.Contains("9.3.1", line.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A server on the declared line, for every load in this class that is not
+    /// about the line itself.
+    /// </summary>
+    /// <returns>The gate, agreeing.</returns>
+    private static ServerLineGate OnTheDeclaredLine()
+    {
+        return new ServerLineGate("42.7", new StubRunningServer(new Version(42, 7, 3)));
+    }
+
+    /// <summary>
     /// A load with the store directory, the account list and a clock the test
     /// holds.
     /// </summary>
@@ -385,6 +440,7 @@ public class LoadOnStartTests
     private static LoadOnStart ALoad(string directory, RecordingLogger<LoadOnStart> logger, params Guid[] accounts)
     {
         return new LoadOnStart(
+            OnTheDeclaredLine(),
             new StubStoreDirectory(directory),
             new StubPublicAddress(null),
             new StubServerAccounts(accounts),
@@ -406,6 +462,7 @@ public class LoadOnStartTests
         string? publicBaseUrl)
     {
         return new LoadOnStart(
+            OnTheDeclaredLine(),
             new StubStoreDirectory(directory),
             new StubPublicAddress(publicBaseUrl),
             new StubServerAccounts([]),

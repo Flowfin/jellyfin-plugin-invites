@@ -32,6 +32,7 @@ AREAS=(
   'template@Accounts@90@Jellyfin.Plugin.Invites/Accounts'
   'store@Storage@80@Jellyfin.Plugin.Invites/Storage'
   'startup@Startup@85@Jellyfin.Plugin.Invites/Startup'
+  'server@Server@90@Jellyfin.Plugin.Invites/Server'
   'clock@Time@90@Jellyfin.Plugin.Invites/Time'
   'controllers@Controllers@70@Jellyfin.Plugin.Invites/Controllers'
   'setup@Setup@90@Jellyfin.Plugin.Invites/Setup'
