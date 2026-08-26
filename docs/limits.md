@@ -234,10 +234,31 @@ same one-way direction as the revocation entry above.
 
 What goes with the plugin is the answer to which accounts came from invitations.
 That link lives in the invitation records and nowhere else, so the moment before
-an uninstall is the last moment it exists. If it matters to you, take a copy of
-the store file out of the plugin's data directory first, and expect to read it
-yourself: the view that presents the trail is #89 and the export is #91, and
-neither is built. Owned by #91, with the account side in #45 and #94.
+an uninstall is the last moment it exists. If it matters to you, take it before
+you remove the plugin.
+
+This paragraph said the view that presents the trail was not built and told you
+to read the store file yourself. It is built. Both directions of it landed under
+#89, so an administrator can read the trail off the plugin's own routes and save
+what they answer:
+
+    git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:113:    [HttpPost]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:164:    [HttpGet]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:192:    [HttpGet("{id}")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:240:    [HttpGet("Accounts/{accountId}")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:269:    [HttpPost("{id}/Revoke")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:324:    [HttpPost("HashSecret/Rotate")]
+
+`GET /Invites` hands back every record with the accounts it produced, and each
+of those says whether the server still has it. Copying the store file is still
+available and is still the only thing that carries the fields the view does not,
+so it is a fallback rather than the instruction it used to be.
+
+What is not built is an export as a named operation, offered at the moment an
+operator removes the plugin rather than found by one who thought of it first.
+That is #91 and it is the part this entry cannot promise. Owned by #91, with the
+account side in #45 and #94.
 
 ## What this page does not do yet
 
