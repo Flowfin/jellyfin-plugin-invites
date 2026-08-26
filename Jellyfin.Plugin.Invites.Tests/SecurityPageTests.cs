@@ -37,10 +37,14 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// followed, which is a smaller claim than the page being honest.
 /// </para>
 /// <para>
-/// It also says nothing about a property that names no test. Three do, and that
-/// is the clause #112 is open on rather than something this leg can refuse:
-/// a page is free to state a property and stay silent about what holds it, and
-/// refusing that would be refusing the page for the shape of its prose.
+/// It also says nothing about a property that names no test, and that is the
+/// clause #112 is open on rather than something this leg can refuse: a page is
+/// free to state a property and stay silent about what holds it, and refusing
+/// that would be refusing the page for the shape of its prose. How many such
+/// properties there are is deliberately not written here. It was, as a count,
+/// and the count went stale the day the rate-limit property acquired its tests;
+/// the page is where that is read, section by section, because a name can sit
+/// in a section that is not the property it holds.
 /// </para>
 /// </remarks>
 public class SecurityPageTests
