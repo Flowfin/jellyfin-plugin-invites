@@ -49,10 +49,15 @@ the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:263:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:336:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:380:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
+
+The second of those five was pasted at line 336 and the paste is re-run here
+rather than the number edited on its own. What moved it was the reverse lookup
+in #89 landing above it in the same file; the line it names is the same line of
+source and nothing this paragraph says about it has changed.
 
 So an operator who has minted once has an invitations file. This paragraph said
 the ceilings are what bound how large it gets, and that is the half to read
