@@ -336,7 +336,9 @@ public class RouteInventoryTests
     /// reason the inventory above was: the first route added has to carry its
     /// requirement in the change that adds it, rather than inherit one from a
     /// class attribute that a later refactor can remove without turning anything
-    /// red. It reads five actions today, the four from #82 and the one from #74.
+    /// red. What it reads is every action the assembly places, derived rather than
+/// counted here: this sentence gave a number and the number was wrong by one
+/// from the day rotation landed, which is what a hand count in a comment does.
     /// </summary>
     [Fact]
     public void EveryActionOfEveryPlacedControllerCarriesItsOwnRequirement()

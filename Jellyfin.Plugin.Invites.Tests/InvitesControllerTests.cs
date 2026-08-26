@@ -339,6 +339,9 @@ public class InvitesControllerTests
             Assert.IsType<ObjectResult>(controller.One(Guid.NewGuid()).Result).StatusCode);
         Assert.Equal(
             StatusCodes.Status503ServiceUnavailable,
+            Assert.IsType<ObjectResult>(controller.WhichInvitationsCreated(Guid.NewGuid()).Result).StatusCode);
+        Assert.Equal(
+            StatusCodes.Status503ServiceUnavailable,
             Assert.IsType<ObjectResult>((await controller.Revoke(Guid.NewGuid())).Result).StatusCode);
         Assert.Equal(
             StatusCodes.Status503ServiceUnavailable,

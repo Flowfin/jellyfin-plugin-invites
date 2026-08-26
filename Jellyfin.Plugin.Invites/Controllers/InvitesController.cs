@@ -15,7 +15,7 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Five operations and no more, and it was four.</b> There is no route that
+/// <b>Six operations and no more, and it was four.</b> There is no route that
 /// deletes a record, because removal is retention rather than a button; no
 /// route that creates an account, because an operator who wants one has the
 /// server's own user editor; and no route that returns a code after minting.
@@ -33,6 +33,16 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// while looking like a present one. Keeping the surface at four would have
 /// made rotation an offline edit of a key file, and then the counter and the
 /// refusal serve nobody. #30 is where that was decided.
+/// </para>
+/// <para>
+/// <b>Why the sixth arrived, and it adds no state.</b> docs/api.md asks that
+/// the reason be written before anybody adds one, and this one is #89's second
+/// direction: an operator looking at an account wants to know which invitation
+/// produced it, and until now only the opposite question had an answer. The
+/// claim is already on the record, so this route reads what the listing reads
+/// and stores nothing new. What it is worth is that the question an operator
+/// actually asks - where did this account come from - stops being a manual walk
+/// of every row of the listing.
 /// </para>
 /// <para>
 /// <b>Nothing here decides anything about a record.</b> Expiry, the use count and
@@ -193,6 +203,51 @@ public sealed class InvitesController : ControllerBase
         var found = _operations.One(id);
 
         return found is null ? NotFound() : Ok(InvitationView.Of(found, _accounts.Identifiers));
+    }
+
+    /// <summary>
+    /// Returns every invitation that claims to have created one account.
+    /// </summary>
+    /// <param name="accountId">The server's own identifier for the account.</param>
+    /// <response code="200">
+    /// The records that claim it, in the same shape as a row of the listing.
+    /// Empty where none does.
+    /// </response>
+    /// <response code="503">This plugin has no data directory.</response>
+    /// <returns>The records, without their codes and without their hashes.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>An empty list rather than a not-found.</b> This plugin puts no mark on
+    /// an account, so an account it never created reads exactly like one an
+    /// operator made by hand, and on any server most accounts are the second.
+    /// A 404 would make the ordinary answer an error and would leave a caller
+    /// unable to tell "this plugin did not create it" from "this route is not
+    /// there". The sibling route above answers 404 for a reason that does not
+    /// apply here: an invitation identifier either names a record or names
+    /// nothing, and an account identifier names a thing outside this plugin
+    /// either way.
+    /// </para>
+    /// <para>
+    /// <b>It hands back a list because the store can disagree with itself.</b>
+    /// Two records claiming one account is the state an operator would most
+    /// want to see, and a route shaped to return one record would have to
+    /// choose between them silently. The choice is the model's rather than
+    /// this type's and the reasoning is on
+    /// <see cref="InvitationOperations.AllClaiming"/>.
+    /// </para>
+    /// </remarks>
+    [Authorize(Policy = "RequiresElevation")]
+    [HttpGet("Accounts/{accountId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public ActionResult<IReadOnlyList<InvitationView>> WhichInvitationsCreated([FromRoute] Guid accountId)
+    {
+        if (!_operations.StoreIsAvailable)
+        {
+            return NoStore();
+        }
+
+        return Ok(InvitationView.Of(_operations.AllClaiming(accountId), _accounts.Identifiers));
     }
 
     /// <summary>
