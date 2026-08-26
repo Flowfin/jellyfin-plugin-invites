@@ -12,11 +12,15 @@ and who would rather not be the one who knows everybody's password.
 
 > [!WARNING]
 >
-> None of it works yet. What installs today adds one page to the server
-> dashboard and there is nothing on that page to set. No invitation can be
-> minted, no link can be redeemed, and no account is created by this plugin.
-> Everything below describes what is being built and says which part is written
-> down and which part is running code.
+> The half an operator drives runs. The half an invited person drives does not.
+> What installs today adds one page to the server dashboard, and on it an
+> operator sets the public address, mints an invitation, reads the outstanding
+> ones, revokes one and rotates the key the codes are stored under. **No link
+> can be redeemed and no account is created by this plugin**, so an invitation
+> minted today cannot be spent by anybody. Everything below describes what is
+> being built and says which part is written down and which part is running
+> code, and [docs/operator-guide.md](docs/operator-guide.md) walks the half that
+> runs.
 
 ## The shape of it
 
@@ -49,8 +53,10 @@ document is implemented.
 
 The first four are settled and every issue in the plan is written to keep them
 true. The issues that turn each into a refusal in the source are named against
-their rows in [docs/threat-model.md](docs/threat-model.md), and none of those
-refusals is code yet.
+their rows in [docs/threat-model.md](docs/threat-model.md). One of the four has a
+refusal in the source today: the seam this plugin reaches the server's accounts
+through declares no member that writes one, and the suite holds it to that rather
+than to a comment. The other three wait on the redemption path.
 
 The mail one is narrower than the others and is worth saying exactly, and this
 paragraph said the question behind it was open. Item 5 in #11 is answered: this
@@ -116,8 +122,10 @@ automate, and what a person does instead is in
 
 ## Screenshots
 
-None yet. The configuration page has nothing on it to photograph and the setup
-page does not exist. They arrive with the pages, in #84 and #74.
+None yet. The configuration page has four sections on it to photograph and
+nobody has taken a picture of one; the setup page is served and has no post
+behind it, so a screenshot of it would show a form that cannot be submitted.
+They arrive with #84 and #74.
 
 ## Security
 
@@ -125,9 +133,11 @@ This plugin creates accounts, so a defect in it hands somebody an account on a
 server they were never invited to. The posture is that invitation codes are
 bearer credentials and are treated as such: minted from a cryptographic source,
 stored only as a keyed hash, indistinguishable in failure, expiring, revocable,
-and unable to produce an administrator. Every one of those is a decision
-recorded in an issue today rather than a line of code, and the document that
-says which is which, including what is not defended at all, is
+and unable to produce an administrator. Four of those six are running code: the
+minting, the keyed hash, the expiry comparison and revocation. The two that are
+not are indistinguishable failure and the refusal to mint an administrator, and
+both wait on the redemption path, which does not exist. The document that says
+which is which, including what is not defended at all, is
 [docs/threat-model.md](docs/threat-model.md). How to report something is
 [SECURITY.md](SECURITY.md).
 
