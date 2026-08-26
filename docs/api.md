@@ -125,17 +125,25 @@ created. Whatever it says, it says to anybody who visits it.
 
 ## The administrator routes
 
-Five operations and no more. Every one of them requires an administrator, and
+Six operations and no more. Every one of them requires an administrator, and
 #83 is where that is asserted against the assembly rather than promised here.
 
 It was four, from #82, and the fifth is rotation of the keyed hash secret. #30
 is where that was decided and the reason is worth reading before anybody adds a
-sixth: the routine that plans a rotation already counts what it invalidates and
-already refuses a confirmation made against a store that has moved, and with no
-route none of it reached an operator. A mechanism that cannot be reached is an
+seventh: the routine that plans a rotation already counts what it invalidates
+and already refuses a confirmation made against a store that has moved, and with
+no route none of it reached an operator. A mechanism that cannot be reached is an
 absent one that looks present. The alternative kept the surface at four and made
 rotation an offline edit of a key file, which serves the counter and the refusal
 to nobody.
+
+The sixth is the reverse lookup, from an account to the invitations that claim
+it, and #89 is where it was asked for. That issue wants both directions of one
+view, and only one of them had a route: an operator holding an account and
+asking where it came from had to walk every row of the listing by hand. It
+stores nothing to make the answer possible, because the claim is already on the
+record, which is why it is a route and a shape rather than a change to the
+store.
 
 ### `POST /Invites`
 
@@ -205,6 +213,29 @@ Returns one invitation.
 
 The same shape as one row of the list, and under the same rule: no code, no
 hash.
+
+### `GET /Invites/Accounts/{accountId}`
+
+Returns every invitation that claims to have created one account.
+
+| Parameter | In | Required | What it is |
+| --- | --- | --- | --- |
+| `accountId` | path | yes | The server's own identifier for the account, as `AccountsProduced` on a listing row carries it |
+
+The reverse of the listing, and #89's second direction. Each entry is the same
+shape as one row of the list, under the same rule: no code, no hash.
+
+An account no record claims answers `200` with an empty array rather than `404`.
+That is the ordinary case rather than a failure: this plugin puts no mark on an
+account, so an account it never created reads exactly like one an operator made
+by hand, and on a real server most accounts are the second. It also keeps "this
+plugin did not create it" distinguishable from a route that is not there.
+
+More than one entry is possible and is not an error to the caller. Two records
+claiming one account is a store disagreeing with itself, and it is the state an
+operator would most want to see, so the route reports it rather than picking one
+of the two. `docs/disaster-cases.md` is where that state comes from and
+`ConsistencyReport` is the other reading of the same data.
 
 ### `POST /Invites/{id}/Revoke`
 

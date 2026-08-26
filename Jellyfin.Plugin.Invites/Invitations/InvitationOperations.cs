@@ -294,6 +294,50 @@ public sealed class InvitationOperations
     }
 
     /// <summary>
+    /// Every invitation whose record claims it created a given account.
+    /// </summary>
+    /// <param name="account">The server's own identifier for the account.</param>
+    /// <returns>
+    /// The records that claim it, in the order the store holds them, and empty
+    /// where none does.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Empty is an ordinary answer here and not a missing one.</b> This
+    /// plugin puts no mark on an account, so an account it never created is
+    /// indistinguishable from one an operator made by hand, and on any real
+    /// server most accounts are the second. A lookup that treated "no record
+    /// claims this" as a failure would make the common case an error.
+    /// </para>
+    /// <para>
+    /// <b>Every claimant comes back rather than the first.</b> Two records
+    /// claiming one account is a store disagreeing with itself, and answering
+    /// "where did this account come from" with one of the two and no sign of
+    /// the other hides exactly the thing an operator asked the question to
+    /// find. <see cref="ConsistencyReport"/> takes the same position on the
+    /// same data, and says on itself that it reports what the store says
+    /// rather than tidying it.
+    /// </para>
+    /// <para>
+    /// <b>Nothing is stored to make this answerable.</b> The claim already sits
+    /// on the record as <see cref="Invitation.AccountsProduced"/>, so this walks
+    /// what the listing already reads. One read serves the whole walk, under the
+    /// same monitor every other operation takes, so two entries of one answer
+    /// cannot come from two states of the file.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    public ImmutableArray<Invitation> AllClaiming(Guid account)
+    {
+        lock (_gate)
+        {
+            return Store().Read().Invitations
+                .Where(invitation => invitation.AccountsProduced.Contains(account))
+                .ToImmutableArray();
+        }
+    }
+
+    /// <summary>
     /// Revokes one invitation.
     /// </summary>
     /// <param name="id">The non-secret identifier.</param>
