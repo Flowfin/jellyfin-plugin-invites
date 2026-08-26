@@ -284,35 +284,40 @@ the commit this page is on rather than carried across from the commit where the
 fault was first written. The rebuild is part of each run: a revert followed by
 `--no-build` measures the binary the fault is still in.
 
-Three of the sites below sit at a different line than they did when the runs
-were first written, and two pasted line numbers further up this page had moved
-with them. What moved them is the rotation route landing in the same file under
-#30:
+Four of the ten commands below named a line that carried something else, and
+this section says so because it is the failure it already warns about, met
+rather than predicted. A line number in a paste is the part that ages without
+the claim around it changing, and the failure it produces is the expensive kind:
+the reader runs the command, gets a different line, and cannot tell a moved site
+from the fault the entry exists to catch.
 
-    git log --oneline -S 'lock (_gate)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    d735aac Make rotating the hash secret an operator action, for #30
-    9619759 Serve the four administrator routes, for #82
+What moved them is #33's live ceiling extracting a routine into two of these
+files, and it moved this page in the same change without the runs being made
+again:
 
-A line number in a paste is the part that ages without the claim around it
-changing, and the failure it produces is the expensive kind: the reader runs the
-command, gets a different line, and cannot tell a moved site from the fault the
-entry exists to catch. Every command on this page is the one that produced the
-output beside it at the commit this change lands on, and all ten faults were put
-back afterwards. The seven that were here before were re-run at this commit
-rather than carried across, which is why every total below reads differently
-from the revision that first wrote them while every failing test name is the
-same.
+    git log --oneline -1 --format='%h %s' 391787d
+    391787d Bound how many invitations may be live at once, for #33
+
+So the declaration this paragraph makes had been false for two commits before
+anybody ran the commands. Nothing catches this shape: the lint that refuses a
+moved reference reads a `path:line:text` paste and a `sed` address is not one,
+which is #282's subject rather than this page's and is written into #115.
+
+Every command on this page is the one that produced the output beside it at the
+commit this change lands on, and all ten faults were put back afterwards. Every
+total below moved, which is the suite having grown, and two of the ten redden
+more tests than they did, which is named at each of the two.
 
 **A code is shown once and cannot be recovered.** The mint routine was handed
 the code as the template label, one argument along from where it belongs, which
 is the slip that puts a live code in the store file:
 
-    $ sed -i '192s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '261s/templateLabel: templateLabel);/templateLabel: code);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode [FAIL]
       MintedCodeIsNotHandedBackTests.NoReadingRouteHandsBackAnythingShapedLikeACode [FAIL]
       InvitesControllerTests.MintingReturnsACodeThatMatchesTheStoredHash [FAIL]
-    Fehler!      : Fehler: 3, erfolgreich: 513, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 3, erfolgreich: 528, übersprungen: 8, gesamt: 539
 
 **A restored backup revives spent invitations**, for the part this page adds,
 which is reading the disagreement the plugin reports on load. The comparison was
@@ -326,7 +331,7 @@ inverted by dropping one character:
       StoreLoadTests.ALoadReportsWhatTheStoreDisagreesWithInBothDirections [FAIL]
       LoadOnStartTests.AStartOverAStoreThatDisagreesNamesBothDirections [FAIL]
       LoadOnStartTests.DisagreementsBeyondTheBoundAreCountedRatherThanNamed [FAIL]
-    Fehler!      : Fehler: 6, erfolgreich: 510, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 6, erfolgreich: 525, übersprungen: 8, gesamt: 539
 
 Two of those six assert that it happens on load, which is the word the entry
 uses, rather than only that the comparison answers correctly when somebody calls
@@ -337,11 +342,11 @@ comparison was moved off the moments and onto the wall-clock readings, which is
 exactly what the entry is about and what a suite spelling every instant at one
 offset cannot see:
 
-    $ sed -i '111s/if (now >= match.ExpiresAt)/if (now.DateTime >= match.ExpiresAt.DateTime)/' Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    $ sed -i '174s/if (now >= record.ExpiresAt)/if (now.DateTime >= record.ExpiresAt.DateTime)/' Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       StoredInstantTests.TheDecisionReadsTwoSpellingsOfOneClockReadingAlike(offsetHours: 13) [FAIL]
       StoredInstantTests.TheDecisionJudgesTwoSpellingsOfOneMomentAlike(offsetHours: 13) [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 514, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 2, erfolgreich: 529, übersprungen: 8, gesamt: 539
 
 **Revoking an invitation does not remove the accounts it already created.** A
 revocation rebuilds the record field by field, so the mistake this entry is
@@ -352,11 +357,15 @@ list that is no longer needed:
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       RevocationTests.TheAccountsAlreadyCreatedAreStillNamed [FAIL]
       RevocationTests.RevokingChangesNothingElseAboutTheRecord [FAIL]
-    Fehler!      : Fehler: 2, erfolgreich: 514, übersprungen: 8, gesamt: 524
+      AGoneAccountTests.AClaimedAccountTheServerNoLongerHasRendersAsGone [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 528, übersprungen: 8, gesamt: 539
 
-Two rather than one, and the second is the wider of the pair: it holds every
+Three rather than two, and the second is the wider of the pair: it holds every
 field the revocation carries across rather than this one, so a change dropping
-some other field is caught by the same assertion. The entry's other half, that
+some other field is caught by the same assertion. The third arrived with #45 and
+is a different question again: a revocation that dropped the accounts would make
+the row that says which of them are gone say nothing at all, so the entry is now
+held on the operator's side as well as on the record's. The entry's other half, that
 revoking stops the invitation from being redeemed again, is the revocation
 outcome and is held by `RedemptionDecisionTests.ARevokedInvitationIsRefused`,
 which was put to a fault under #57 rather than here.
@@ -367,17 +376,21 @@ at the instant, and the record stays where it was so an operator can still see
 it and account for it. The first half is the comparison the timezone entry above
 rests on. The second was held by nothing, and a reading routine rewritten to hide
 what the clock had passed left the whole suite green. Three faults, one per
-assertion, each reddening exactly one:
+assertion. Two of the three redden exactly one test and the first reddens three
+now, because #33's ceiling asks the same routine the same question, which is the
+ceiling being held by the same reading rather than by a second one:
 
-    $ sed -i '209s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '278s/.*/            return Store().Read().Invitations.Where(invitation => invitation.ExpiresAt > _clock.UtcNow).ToImmutableArray();/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillListed [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
+      LiveCeilingTests.AnExpiredInvitationDoesNotCountAgainstTheCeiling [FAIL]
+      LiveCeilingTests.LivenessIsTheSameQuestionARedemptionAsks [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 528, übersprungen: 8, gesamt: 539
 
-    $ sed -i '223s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    $ sed -i '292s/invitation.Id == id);/invitation.Id == id \&\& invitation.ExpiresAt > _clock.UtcNow);/' Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.AnInvitationPastItsExpiryIsStillFoundByItsIdentifier [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 1, erfolgreich: 530, übersprungen: 8, gesamt: 539
 
 The third is the one worth reading, because it does not filter anything a caller
 sees. It writes the shortened list back, which is the tidy-up somebody adds to a
@@ -394,7 +407,7 @@ reading routine believing it changes nothing:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       ExpiryIsNotDeletionTests.CrossingTheExpiryChangesNothingOnTheDisk [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 1, erfolgreich: 530, übersprungen: 8, gesamt: 539
 
 What that does not cover is the sentence about the retention rule. Removing a
 record once retention allows it is the sweep in #59 and nothing in this tree
@@ -415,7 +428,7 @@ plugin will not load on a newer server:
       ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.1", running: 10.11.0, mayRun: False) [FAIL]
       ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.11", running: 11.11.0, mayRun: False) [FAIL]
       ServerLineTests.TheComparisonIsEqualityOnTheLine(declared: "10.11", running: 12.0.0, mayRun: False) [FAIL]
-    Fehler!      : Fehler: 4, erfolgreich: 512, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 4, erfolgreich: 527, übersprungen: 8, gesamt: 539
 
 Four rows rather than three. The fourth is the pair that reads 10.1 against
 10.11, which a floor comparison answers as agreement because 10.1 sorts below
@@ -431,7 +444,7 @@ plugin's refusal to every controller the server has:
       ServerLineTests.TheConventionTheServerIsHandedIsScopedToThisPlugin [FAIL]
       ServerLineTests.TheScopeIsTheAssemblyItWasGiven [FAIL]
       ServerLineTests.AControllerOutsideThisPluginIsLeftAlone [FAIL]
-    Fehler!      : Fehler: 3, erfolgreich: 513, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 3, erfolgreich: 528, übersprungen: 8, gesamt: 539
 
 And the third part, that no partial operation follows a mismatch. The load is
 the only thing in this plugin that acts without a request, and it takes a claim
@@ -442,7 +455,7 @@ holding a directory it can never use against a second server that could:
     $ the  return Task.CompletedTask;  removed from the mismatch branch of Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       LoadOnStartTests.AStartOnAnotherServerLineClaimsNothingAndReadsNothing [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 515, übersprungen: 8, gesamt: 524
+    Fehler!      : Fehler: 1, erfolgreich: 530, übersprungen: 8, gesamt: 539
 
 What none of the three reaches is the server. Nothing here starts a Jellyfin, so
 that the server applies a convention a plugin adds to its own options, and that a
@@ -454,7 +467,7 @@ the plugin runs, rather than one on another.
 Each fault was put back afterwards and the suite returns to where it started:
 
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
-    Bestanden!   : Fehler: 0, erfolgreich: 516, übersprungen: 8, gesamt: 524
+    Bestanden!   : Fehler: 0, erfolgreich: 531, übersprungen: 8, gesamt: 539
 
 The other three entries are the username disclosure, the deleted library, and
 uninstall leaving accounts alone. No fault was run against any of them here, and
