@@ -139,6 +139,7 @@ drifts from it.
 
 | Document | What it settles |
 | --- | --- |
+| [docs/operator-guide.md](docs/operator-guide.md) | The walk from installing to revoking, and what to do when somebody says the link does not work |
 | [docs/redemption-flow.md](docs/redemption-flow.md) | Every state and branch from following a link to holding an account |
 | [docs/api.md](docs/api.md) | Every route, its parameters and its responses, and what the API deliberately does not offer |
 | [docs/threat-model.md](docs/threat-model.md) | What is defended, how, and what is not defended |
