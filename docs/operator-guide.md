@@ -105,6 +105,21 @@ nothing in it. That refusal is not built, because the template is not built. Whe
 it arrives, an invitation that grants nothing will be refused at minting; today
 there is no list to be empty.
 
+**An access schedule is not something an invitation grants, and that is not the
+same as not being able to have one.** If you want an invited account limited to
+certain hours, a child's account that works after school and not at two in the
+morning, the server does that on the account itself rather than through this
+plugin. The field is `AccessSchedules` on the account's policy, which this plugin
+never writes and deliberately does not carry on a template: a schedule needs its
+own value type, its own bounds and its own refusals, and the server already does
+the whole job on an account that exists. So mint and send the invitation as
+usual, and set the schedule on the account once the person has one.
+
+What is not claimed here is where the server puts that field on screen. The name
+is read off the server's own type, and nobody has opened the account page on a
+running server to say which menu it sits under, so look for it where the server
+lets you edit an account rather than for the spelling above.
+
 ## Step 4: mint the first invitation
 
 The Invite somebody form at the top of the page takes three things.
