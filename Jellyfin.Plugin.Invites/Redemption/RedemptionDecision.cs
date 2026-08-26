@@ -145,6 +145,67 @@ public static class RedemptionDecision
     }
 
     /// <summary>
+    /// The instant a retention period is counted from for this record, or
+    /// <c>null</c> where the record is still live.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is here for the same reason <see cref="IsLive"/> is.</b> #59
+    /// deletes records that stopped being usable long enough ago, so the sweep
+    /// has to know when a record stopped being usable, and that is a judgement
+    /// about an expiry and a use count. The rule this file states is that no such
+    /// judgement is made anywhere else, so the sweep asks here instead of
+    /// comparing timestamps beside the store. What "usable" means therefore
+    /// cannot move for the sweep without moving for a redemption.
+    /// </para>
+    /// <para>
+    /// <b>Revocation and expiry each name their own instant and the earlier one
+    /// wins.</b> A record revoked a week before it would have expired stopped
+    /// being usable when it was revoked; a record revoked after it had already
+    /// expired stopped being usable at the expiry. Taking the later of the two
+    /// would keep the first record a week longer than the rule allows.
+    /// </para>
+    /// <para>
+    /// <b>A spend leaves no instant on the record, and this is where that costs
+    /// something.</b> <see cref="Invitation.UsesRemaining"/> reaching zero is not
+    /// timestamped, so a record that is spent and not yet expired has nothing on
+    /// it saying when that happened. This answers with its expiry, which is
+    /// always later than the spend, because a record can only be spent while it
+    /// is still live. So such a record is kept longer than the rule requires
+    /// rather than deleted before the rule allows, and that is the direction to
+    /// err in: deleting a record early destroys the trail an operator needs, and
+    /// keeping one late is a record that is deleted at the next sweep after its
+    /// expiry. A spent-at instant on the record would close the gap and it is
+    /// #52's field to add, not this routine's to guess at.
+    /// </para>
+    /// </remarks>
+    /// <param name="invitation">The record to judge.</param>
+    /// <param name="now">
+    /// The clock reading, read once by the caller through <see cref="Time.IClock"/>.
+    /// </param>
+    /// <returns>
+    /// The instant retention runs from, or <c>null</c> where the record could
+    /// still produce an account.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
+    public static DateTimeOffset? RetentionStartsAt(Invitation invitation, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(invitation);
+
+        if (Refusal(invitation, now) is null)
+        {
+            return null;
+        }
+
+        if (invitation.RevokedAt is { } revoked && revoked < invitation.ExpiresAt)
+        {
+            return revoked;
+        }
+
+        return invitation.ExpiresAt;
+    }
+
+    /// <summary>
     /// What refuses this record at this instant, or <c>null</c> where nothing
     /// does.
     /// </summary>

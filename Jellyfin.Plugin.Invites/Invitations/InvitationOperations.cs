@@ -383,6 +383,66 @@ public sealed class InvitationOperations
     }
 
     /// <summary>
+    /// Removes every record whose retention period has run out.
+    /// </summary>
+    /// <returns>
+    /// The identifiers of the records that were removed, in the order the store
+    /// held them, and empty where nothing was.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Under the same monitor as everything else, which is the clause of #59
+    /// that is easiest to satisfy by accident and easiest to lose.</b> A sweep
+    /// that opened the store for itself would be the second writer this store has
+    /// never had, arriving on a schedule, and it would race a mint that had
+    /// already read the records it is about to write back. Being a method here
+    /// rather than a routine beside the scheduled task is what makes it
+    /// impossible to hold the file without holding the gate.
+    /// </para>
+    /// <para>
+    /// <b>One clock reading for the whole sweep.</b> Reading the clock per record
+    /// would let two records with the same expiry be judged differently in one
+    /// run, which is a difference nobody could reproduce afterwards.
+    /// </para>
+    /// <para>
+    /// <b>Nothing is written where nothing is removed.</b> A sweep that rewrote
+    /// the file every night would change the bytes on disk daily for no reason,
+    /// which costs an operator watching a backup differ and costs this plugin the
+    /// ability to say that the file only moves when something happened.
+    /// </para>
+    /// <para>
+    /// <b>No field of a surviving record is touched.</b> #59 asks in as many words
+    /// that the sweep never mark anything expired, and the shape here is stronger
+    /// than remembering not to: the kept records are the ones the filter passed
+    /// through, so there is no code path that could write a changed one.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    public ImmutableArray<Guid> Sweep()
+    {
+        var now = _clock.UtcNow;
+
+        lock (_gate)
+        {
+            var store = Store();
+            var held = store.Read().Invitations;
+
+            var kept = held.Where(record => !Retention.MayBeRemoved(record, now)).ToImmutableArray();
+            if (kept.Length == held.Length)
+            {
+                return ImmutableArray<Guid>.Empty;
+            }
+
+            store.Write(kept);
+
+            return held
+                .Where(record => Retention.MayBeRemoved(record, now))
+                .Select(record => record.Id)
+                .ToImmutableArray();
+        }
+    }
+
+    /// <summary>
     /// Works out what rotating the keyed hash secret would cost, without
     /// rotating it.
     /// </summary>
