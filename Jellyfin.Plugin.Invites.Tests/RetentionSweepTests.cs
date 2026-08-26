@@ -143,13 +143,22 @@ public class RetentionSweepTests
     }
 
     /// <summary>
-    /// A sweep with nothing to remove writes nothing at all. A task that rewrote
-    /// the file every night would move the bytes an operator backs up daily for
+    /// A sweep with nothing to remove does not write the file at all. A task that
+    /// rewrote it every night would move the bytes an operator backs up daily for
     /// no reason, and would take away the ability to say that the file changes
     /// only when something happened.
     /// </summary>
+    /// <remarks>
+    /// The assertion is on the file's own write time rather than on its contents,
+    /// and that is the whole point of writing it this way. The serialisation is
+    /// deterministic, so a sweep that rewrote the same records would produce
+    /// byte-identical output and a content comparison would pass over exactly the
+    /// mistake this is about. The stamp is set to a fixed instant in the past
+    /// first, so the check is against a value the test chose rather than against
+    /// whatever the clock did during the run.
+    /// </remarks>
     [Fact]
-    public void ASweepWithNothingToRemoveDoesNotTouchTheFile()
+    public void ASweepWithNothingToRemoveDoesNotWriteTheFile()
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
@@ -160,9 +169,13 @@ public class RetentionSweepTests
         var path = new InvitationStore(directory.Path).Path;
         var before = File.ReadAllBytes(path);
 
+        var stamped = new DateTime(2001, 2, 3, 4, 5, 6, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(path, stamped);
+
         clock.MoveTo(_minted.AddDays(10));
 
         Assert.Empty(operations.Sweep());
+        Assert.Equal(stamped, File.GetLastWriteTimeUtc(path));
         Assert.Equal(before, File.ReadAllBytes(path));
     }
 
