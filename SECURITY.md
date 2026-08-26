@@ -204,24 +204,82 @@ four are identical on the wire waits for the route that writes them.
 
 ### Redemption is rate limited
 
-It is not. Nothing in this repository limits or locks out anything:
+**Nothing is limited today.** That sentence is first because the paragraphs under
+it name a dozen tests, and a reader who takes the list for the property would be
+reading the opposite of what this section says. A counter exists and no route
+calls it:
 
 ```
-git grep -lniE '\b(rate ?limit|lockout|throttle)' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Time/IClock.cs
+git grep -ln 'MayJudge' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
 ```
 
-The one file that matches names those windows as clock reads that a seam will
-have to serve, and limits nothing. This paragraph also said there is no endpoint
-to limit, and there is one: `GET /redeem/{code}` is reachable without an
-account. It serves a page and reads no invitation, so there is nothing on it yet
-for a limiter to stand in front of, and the moment a presented code is judged
-there will be.
+The one file is the definition. An attempt is a presented code being judged, and
+no route judges one: `GET /redeem/{code}` is reachable without an account, serves
+a page and reads no invitation, so there is nothing on it for a limiter to stand
+in front of. Every test named below drives the counter directly and not one of
+them is about a request.
+
+This paragraph used to say that nothing in this repository limits anything and
+quoted a command over the plugin's sources returning only the clock seam. That
+stopped being true when `AttemptLimiter` landed, and the difference between "no
+counter" and "a counter nothing calls" is the whole reason this section is worth
+reading twice.
+
+What the counter does, and what holds each part of it.
+
+It counts to the two numbers [docs/rate-limit.md](docs/rate-limit.md) decided, in
+fixed windows, per source address and across all of them.
+`AttemptLimiterTests.OneAddressGetsExactlyTheDecidedNumberInItsWindow` and
+`AttemptLimiterTests.AllSourcesTogetherGetTheDecidedNumberInASecond` hold the two
+ceilings, and
+`AttemptLimiterTests.TheNumbersInTheCodeAreTheNumbersOnThePageThatDecidedThem`
+holds them against the sentence on that page rather than against a second copy of
+the numbers, so moving either one in the source without moving it on the page
+reddens.
+
+A refused request is not an attempt and is not counted, which is what makes the
+guarantee exact rather than approximate.
+`AttemptLimiterTests.AnExhaustedAddressCannotSpendTheGlobalAllowanceByBeingRefused`
+and `AttemptLimiterTests.AnAddressRefusedGloballyHasSpentNoneOfItsOwnAllowance`
+hold both directions of it.
+
+Each window turns at its boundary and not a tick before it.
+`ClockBoundaryTests.ThePerAddressWindowTurnsAtTheBoundary` and
+`ClockBoundaryTests.TheGlobalWindowTurnsAtTheBoundary` ask at the tick before the
+boundary, at it and the tick after, and
+`ClockBoundaryTests.TheFixedWindowLetsTwiceTheRateThroughAcrossABoundary` asserts
+what a fixed window costs rather than leaving it on the page: twice the stated
+rate across a boundary, read against the sentence that admits it.
+
+The counter leaves with the process, which is the lifetime the two numbers were
+chosen under rather than an implementation detail.
+`AttemptLimiterTests.TheCounterHoldsNothingThatCouldOutliveTheProcess` holds that
+nothing it keeps is a file, a stream or a path, and
+`LimiterRegistrationTests.TheLimiterIsRegisteredForTheLifetimeItsNumbersRestOn`
+holds that the server is handed one counter rather than one per request, which is
+the difference between a limit and an empty counter per attempt.
+
+Two costs it carries even once something calls it, asserted rather than
+described.
+`ClockBoundaryTests.AClockSteppingBackwardsAcrossAWindowHandsTheAllowanceBack`
+holds that a clock going backwards hands the allowance back early, and
+`ClockBoundaryTests.AJumpPastSeveralWindowsGivesOneAllowanceBack` holds that a
+jump forward gives one allowance rather than one per window skipped. Neither is a
+defect: [docs/rate-limit.md](docs/rate-limit.md) settles that the counter may
+never be the thing the arithmetic rests on, because an attacker resets it by
+waiting and an operator resets it by upgrading, and a backwards clock is one more
+way to reset something already resettable.
+
+What the counter holds about a person is one source address for the length of its
+window, which `AttemptLimiterTests.AnAddressIsHeldForItsWindowAndNoLonger` reads
+back as a count rather than as the addresses.
 
 This property is on the list because the entropy calculation quotes a figure
 that assumes a limiter, and reading the code length as sufficient on its own
 would be reading the unthrottled row of that page, not the throttled one. Both
-rows are on it, and the unthrottled one is what holds today.
+rows are on it, and the unthrottled one is what holds today, because nothing
+calls the counter.
 
 ### An invitation expires, at an instant the plugin does not argue with
 
