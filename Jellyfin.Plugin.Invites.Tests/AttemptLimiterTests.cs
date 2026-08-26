@@ -56,34 +56,79 @@ public class AttemptLimiterTests
     }
 
     /// <summary>
-    /// A refused attempt is not counted, so an address being refused does not go
-    /// on spending an allowance it no longer has. Asserted by refusing one
-    /// address many times over and watching a second address still get its own
-    /// twenty.
+    /// An address that has spent its allowance cannot go on taking the global
+    /// allowance away from everybody else by being refused.
     /// </summary>
+    /// <remarks>
+    /// <b>This is the assertion the obvious version of this test does not make,
+    /// and the difference is the clock.</b> Refusing the exhausted address once a
+    /// second proves nothing, because the global window turns between every one of
+    /// them and a counter that wrongly counted those refusals would look exactly
+    /// like one that did not. So the refusals here all fall inside one global
+    /// window, and the second address then asks for the whole global allowance in
+    /// that same window. Found by applying the fault: raising the global counter
+    /// before the per-address check left the spaced-out version green.
+    /// </remarks>
     [Fact]
-    public void ARefusedAttemptIsNotAnAttempt()
+    public void AnExhaustedAddressCannotSpendTheGlobalAllowanceByBeingRefused()
     {
         var clock = new TestClock(_start);
         var limiter = new AttemptLimiter(clock);
 
         for (var attempt = 1; attempt <= AttemptLimiter.PerAddressCeiling; attempt++)
         {
-            clock.Advance(TimeSpan.FromSeconds(1));
+            clock.Advance(AttemptLimiter.GlobalWindow);
             Assert.True(limiter.MayJudge("198.51.100.7"));
         }
 
+        clock.Advance(AttemptLimiter.GlobalWindow);
+
         for (var refused = 1; refused <= 50; refused++)
         {
-            clock.Advance(TimeSpan.FromSeconds(1));
             Assert.False(limiter.MayJudge("198.51.100.7"));
         }
 
-        for (var attempt = 1; attempt <= AttemptLimiter.PerAddressCeiling; attempt++)
+        for (var attempt = 1; attempt <= AttemptLimiter.GlobalCeiling; attempt++)
         {
-            clock.Advance(TimeSpan.FromSeconds(1));
-            Assert.True(limiter.MayJudge("203.0.113.9"), "The second address was refused at attempt " + attempt + ", so the first one's refusals were counted against the global limit.");
+            Assert.True(
+                limiter.MayJudge("203.0.113.9"),
+                "The second address was refused at attempt " + attempt + " of the global allowance, in the same window the first address spent only refusals in. A refusal took a slot from somebody who had not used one.");
         }
+    }
+
+    /// <summary>
+    /// And the same in the other direction, within one window: an address refused
+    /// by the global limit has not spent any of its own allowance either.
+    /// </summary>
+    [Fact]
+    public void AnAddressRefusedGloballyHasSpentNoneOfItsOwnAllowance()
+    {
+        var clock = new TestClock(_start);
+        var limiter = new AttemptLimiter(clock);
+
+        for (var attempt = 1; attempt <= AttemptLimiter.GlobalCeiling; attempt++)
+        {
+            Assert.True(limiter.MayJudge("198.51.100." + attempt.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        for (var refused = 1; refused <= 30; refused++)
+        {
+            Assert.False(limiter.MayJudge("203.0.113.9"));
+        }
+
+        clock.Advance(AttemptLimiter.GlobalWindow);
+
+        var allowed = 0;
+        for (var attempt = 1; attempt <= AttemptLimiter.PerAddressCeiling + 5; attempt++)
+        {
+            clock.Advance(AttemptLimiter.GlobalWindow);
+            if (limiter.MayJudge("203.0.113.9"))
+            {
+                allowed++;
+            }
+        }
+
+        Assert.Equal(AttemptLimiter.PerAddressCeiling, allowed);
     }
 
     /// <summary>
@@ -132,40 +177,6 @@ public class AttemptLimiterTests
         clock.Advance(AttemptLimiter.GlobalWindow);
 
         Assert.True(limiter.MayJudge("203.0.113.9"));
-    }
-
-    /// <summary>
-    /// An attempt refused by the global limit does not spend the address's own
-    /// allowance. Raising one counter for a request the other refused is the same
-    /// mistake as counting a refusal, one limit along.
-    /// </summary>
-    [Fact]
-    public void AGloballyRefusedAttemptDoesNotSpendTheAddressesOwnAllowance()
-    {
-        var clock = new TestClock(_start);
-        var limiter = new AttemptLimiter(clock);
-
-        for (var attempt = 1; attempt <= AttemptLimiter.GlobalCeiling; attempt++)
-        {
-            Assert.True(limiter.MayJudge("198.51.100." + attempt.ToString(CultureInfo.InvariantCulture)));
-        }
-
-        for (var refused = 1; refused <= 30; refused++)
-        {
-            Assert.False(limiter.MayJudge("203.0.113.9"));
-        }
-
-        var allowed = 0;
-        for (var attempt = 1; attempt <= AttemptLimiter.PerAddressCeiling; attempt++)
-        {
-            clock.Advance(AttemptLimiter.GlobalWindow);
-            if (limiter.MayJudge("203.0.113.9"))
-            {
-                allowed++;
-            }
-        }
-
-        Assert.Equal(AttemptLimiter.PerAddressCeiling, allowed);
     }
 
     /// <summary>
