@@ -144,10 +144,17 @@ care,
 because seeing a value and holding it are different things. Rate limiting and
 lockout in #31 need the source address while the request is being decided, and
 need nothing of it afterwards. Storing it in the trail is what turns a counter
-into a record of where a person was. The recommendation is that #31 keeps it in
+into a record of where a person was. The recommendation was that #31 keeps it in
 memory for as long as its window and no longer, and that the trail does not
 carry it. #43 allows the field if this inventory does, and this inventory does
 not.
+
+The first half is no longer a recommendation. `AttemptLimiter` landed under #31,
+it takes the clock and nothing else, and the addresses it is holding go when the
+window turns rather than being swept one at a time. A test reads the count back
+across a window boundary and a second one reads the type's own members to say
+nothing durable is among them. The second half is unchanged and still a
+recommendation: nothing writes a trail at all.
 
 ## Retention
 
