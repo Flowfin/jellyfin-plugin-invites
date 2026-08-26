@@ -262,14 +262,17 @@ account side in #45 and #94.
 
 ## What this page does not do yet
 
-It is linked from the readme, in the table of documents, and it is not linked
-from the operator guide, which does not exist. #111 is that guide, and the link
-is its change to make rather than something this file can assert about itself.
+This section said the page is linked from the readme and not from the operator
+guide, because that guide does not exist, and pasted a listing of `docs` that
+returned nothing for it. The guide exists and links this page, so the clause is
+met and both halves of it are read here rather than one:
 
     git grep -c 'docs/limits.md' -- README.md
     README.md:1
-    git ls-files docs | grep -i 'guide' ; echo "exit=$?"
-    exit=1
+    git grep -c 'limits.md' -- docs/operator-guide.md
+    docs/operator-guide.md:1
+
+That is the link clause of #115 and nothing else about this page moves with it.
 
 The done condition of #115 asks that every entry match the behaviour the tests
 assert. Six of the nine are shown below to be held by one, and that clause is
