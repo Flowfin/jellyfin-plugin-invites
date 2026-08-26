@@ -206,8 +206,10 @@ a second answer.
 | Accounts | How many accounts it produced, and how many of those the server no longer has |
 
 An expired or spent invitation is still in this table. Expiry is not deletion:
-the record stays until a retention sweep removes it, and that sweep is not built,
-so today nothing removes a record at all.
+the record stays until the retention sweep removes it. That sweep runs daily on
+the server's own scheduler and takes records that stopped being usable more than
+ninety days ago, so an invitation that stops working stays visible here for a
+quarter and then goes. Nothing it removes is an account.
 
 ## The four questions that come up afterwards
 

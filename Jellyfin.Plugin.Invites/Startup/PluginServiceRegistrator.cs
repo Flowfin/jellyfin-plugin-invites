@@ -1,11 +1,13 @@
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Invitations;
+using Jellyfin.Plugin.Invites.Maintenance;
 using Jellyfin.Plugin.Invites.Server;
 using Jellyfin.Plugin.Invites.Storage;
 using Jellyfin.Plugin.Invites.Time;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,6 +52,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.Configure<MvcOptions>(options => options.Conventions.Add(new ThisPluginsControllers()));
         serviceCollection.AddSingleton<InvitationOperations>();
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
+        serviceCollection.AddSingleton<IScheduledTask, RetentionSweep>();
         serviceCollection.AddHostedService<LoadOnStart>();
     }
 }
