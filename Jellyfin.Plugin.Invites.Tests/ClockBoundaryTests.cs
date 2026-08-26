@@ -34,14 +34,15 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// file, which would show in a round trip rather than here.
 /// </para>
 /// <para>
-/// <b>Where each direction is declared.</b> The limiter's window shape is stated
-/// on docs/rate-limit.md, and it is read below rather than paraphrased, so a page
-/// that stops saying it reddens rather than passing. Retention's direction is
-/// declared only in the remark on
-/// <see cref="Retention.MayBeRemoved(Invitation, DateTimeOffset)"/>; no page under
-/// docs/ states it, so the assertions here and in <see cref="RetentionTests"/>
-/// pin the direction the source declares and there is nothing independent to
-/// compare either against.
+/// <b>Where each direction is declared.</b> Both are on a page and both are read
+/// off it here rather than paraphrased, so a page that stops saying what it says
+/// reddens rather than passing. The limiter's window shape is on
+/// docs/rate-limit.md. Retention's was on nothing but the remark on
+/// <see cref="Retention.MayBeRemoved(Invitation, DateTimeOffset)"/> until
+/// docs/personal-data.md was made to carry it, which is what
+/// <see cref="TheRetentionBoundaryIsTheDirectionThisPageStates"/> exists for: an
+/// assertion resting only on the source it judges is the code being its own
+/// authority.
 /// </para>
 /// <para>
 /// Nothing here sleeps. Every boundary is crossed by moving an injected clock or
@@ -73,6 +74,47 @@ public class ClockBoundaryTests
     /// An instant on a whole second, which is the first tick of a global window.
     /// </summary>
     private static readonly DateTimeOffset _secondBoundary = new(2026, 3, 1, 9, 0, 1, TimeSpan.Zero);
+
+    /// <summary>
+    /// The retention boundary is the direction docs/personal-data.md states, and
+    /// that page is read rather than paraphrased.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="RetentionTests"/> already asks the routine at the tick before
+    /// the boundary, at it and after it. This is a different subject rather than
+    /// a fourth copy of that: those assertions and the routine agree with each
+    /// other and with nothing else, so a direction changed deliberately in both
+    /// leaves no trace anywhere a reader looks first. What is asserted here is
+    /// that the page and the routine say the same thing.
+    /// </para>
+    /// <para>
+    /// The sentence is matched by its shape after the page's line breaks are
+    /// reduced to single spaces, so a reflow does not redden it and a page that
+    /// stopped stating the direction does.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheRetentionBoundaryIsTheDirectionThisPageStates()
+    {
+        var page = new Regex(@"\s+", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5))
+            .Replace(PersonalDataPage(), " ");
+
+        var stated = new Regex(
+            @"A record whose period ends exactly at the moment the sweep reads the clock may be removed; one tick earlier it may not\.",
+            RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(5));
+
+        Assert.True(
+            stated.IsMatch(page),
+            "docs/personal-data.md no longer states which way the retention boundary goes, so the routine is its own authority for it again. Restore the sentence or move this assertion to whatever replaced it.");
+
+        var record = ExpiredAt(_expires);
+        var boundary = _expires + Retention.RecordRetention;
+
+        Assert.True(Retention.MayBeRemoved(record, boundary));
+        Assert.False(Retention.MayBeRemoved(record, boundary - TimeSpan.FromTicks(1)));
+    }
 
     /// <summary>
     /// A clock stepping backwards across the retention boundary makes the record
@@ -361,12 +403,29 @@ public class ClockBoundaryTests
     /// quoted here.
     /// </summary>
     /// <returns>The page.</returns>
-    private static string RateLimitPage()
+    private static string RateLimitPage() => Page("rate-limit.md");
+
+    /// <summary>
+    /// The page that states which way the retention boundary goes.
+    /// </summary>
+    /// <returns>The page.</returns>
+    private static string PersonalDataPage() => Page("personal-data.md");
+
+    /// <summary>
+    /// One page out of the tree the suite is running from.
+    /// </summary>
+    /// <remarks>
+    /// The solution file has to be beside it, so a directory that happens to hold
+    /// a page of the same name is not read as this repository's.
+    /// </remarks>
+    /// <param name="name">The file under <c>docs/</c>.</param>
+    /// <returns>The page.</returns>
+    private static string Page(string name)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var page = Path.Combine(directory.FullName, "docs", "rate-limit.md");
+            var page = Path.Combine(directory.FullName, "docs", name);
             var solution = Path.Combine(directory.FullName, "Jellyfin.Plugin.Invites.sln");
             if (File.Exists(page) && File.Exists(solution))
             {
@@ -379,6 +438,8 @@ public class ClockBoundaryTests
         throw new FileNotFoundException(
             "No ancestor of "
             + AppContext.BaseDirectory
-            + " holds both Jellyfin.Plugin.Invites.sln and docs/rate-limit.md, so this comparison read nothing. Failing rather than passing over an empty page.");
+            + " holds both Jellyfin.Plugin.Invites.sln and docs/"
+            + name
+            + ", so this comparison read nothing. Failing rather than passing over an empty page.");
     }
 }

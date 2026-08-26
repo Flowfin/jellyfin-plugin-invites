@@ -187,6 +187,22 @@ longer than ninety days rather than deleted sooner than the rule allows. The
 routine says so in place and a test asserts it; closing the gap is a spent-at
 field, which is #52's.
 
+The boundary itself is inclusive, and it is written here rather than only in the
+routine because a direction stated in one place is a direction the code is its
+own authority for. A record whose period ends exactly at the moment the sweep
+reads the clock may be removed; one tick earlier it may not. A sweep on a daily
+schedule will practically never land on that instant, so nothing turns on which
+way it went, and choosing it anyway is cheaper than leaving it to whoever reads
+the routine next. This is a different question from which instant the period
+counts from, where every rounding is towards keeping for the reason above, and
+the two are worth not reading as one.
+
+`ClockBoundaryTests.TheRetentionBoundaryIsTheDirectionThisPageStates` reads the
+sentence above out of this page and asks the routine at both instants, so the
+page and the code cannot drift apart without something going red. A page that
+stops carrying the sentence fails there rather than passing quietly, which is
+the direction to fail in.
+
 `trail-bound` is what bounds the attempt trail, and it has no number. Decision 8
 asks how long spent and expired invitation records are kept, which is the
 parameter above, so the answer to it does not set this one.
