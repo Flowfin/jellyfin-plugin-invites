@@ -44,15 +44,22 @@ So a server running this plugin today does get a directory and a claim file in
 it. This paragraph said it does not get an invitations file, because the only
 call that writes the records file was inside the file that declares it. Both
 halves of that were overtaken without the sentence moving, and the correction is
-made here rather than the paragraph deleted. A mint and a revocation both write
-the records file now:
+made here rather than the paragraph deleted. A mint, a revocation and the
+retention sweep all write the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:263:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:380:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:264:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:381:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:437:            store.Write(kept);
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
+
+Six lines rather than five, and the two that were already there each moved by
+one. The third caller is the sweep from #59, which removes a record by writing
+back the ones it kept, and the two above it moved because that method was added
+between them. The line-reference check refused the old numbers before this branch
+was pushed, which is how they came to be re-run rather than noticed.
 
 The second of those five was pasted at line 336 and the paste is re-run here
 rather than the number edited on its own. What moved it was the reverse lookup
@@ -66,8 +73,10 @@ how many invitations may be LIVE at once, under #33, and a record that has
 expired, been spent or been revoked is not live and does not count against it. So
 the ceiling bounds what the outstanding set can authorise and not the size of the
 file, because the entry below on expiry not being deletion is what happens to the
-record instead. What bounds the file is retention, which is #59 and does not
-exist. What still does not exist as well is a redemption, so nothing grows the
+record instead. What bounds the file is retention, which is #59 and is a
+scheduled sweep in the tree now: a record that stopped being usable more than
+ninety days ago is removed, and one that could still be redeemed never is. What
+still does not exist is a redemption, so nothing grows the
 file from the public side: the routine that decides a presented code has no
 caller.
 
@@ -412,10 +421,14 @@ reading routine believing it changes nothing:
       ExpiryIsNotDeletionTests.CrossingTheExpiryChangesNothingOnTheDisk [FAIL]
     Fehler!      : Fehler: 1, erfolgreich: 530, übersprungen: 8, gesamt: 539
 
-What that does not cover is the sentence about the retention rule. Removing a
-record once retention allows it is the sweep in #59 and nothing in this tree
-sweeps, so an expired record staying forever and an expired record removed on
-schedule are the same tree today.
+What that does not cover is the sentence about the retention rule, and that
+sentence has moved since this paragraph was written. It said that removing a
+record once retention allows it is the sweep in #59 and that nothing in this tree
+sweeps, so an expired record staying forever and one removed on schedule were the
+same tree. The sweep landed under #59 and the two are different trees now. What
+the fault above still does not reach is unchanged: it breaks the reading routines
+and says nothing about the removal, which is held in `RetentionSweepTests`
+instead.
 
 **The plugin refuses to run on a server line it was not built for.** Three
 faults, one per half of what the entry promises, and the other five that came

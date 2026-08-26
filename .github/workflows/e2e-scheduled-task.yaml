@@ -1,0 +1,226 @@
+# The first clause of #59, put to a server rather than argued.
+#
+# The suite can build the task, call it and assert what it removed, and none of
+# that answers the clause. What #59 asks is that the task run on the server's own
+# scheduler, and whether a server picks up an IScheduledTask a plugin registers is
+# not decidable from anything this project references: MediaBrowser.Model carries
+# the interface and nothing else, and the discovery lives in the server's own
+# assemblies, which this plugin does not reference and should not start
+# referencing to read one rule out of.
+#
+# So this job installs the packaged plugin into an unmodified published server
+# image, completes the startup wizard for a credential, and reads the server's own
+# scheduled task list. A task the server did not pick up is simply absent from it.
+#
+# The plugin's public route is asserted first, for the reason the authorization
+# job gives: a plugin that failed to load answers 404 on every one of its
+# addresses, and an assertion about a task list written alone would report a
+# missing task when what happened is that nothing was installed at all.
+#
+# What this does NOT assert is that the sweep ever removes a record on a real
+# server. That needs a store with an aged record in it, which needs a mint, which
+# needs an operator credential and a public address; the removal is held in the
+# suite instead, against a store on a disk with the clock moved.
+name: '🗓 Scheduled Task'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  scheduled-task:
+    name: The server's scheduler holds the retention sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    env:
+      # The same digest the other two end-to-end jobs pin, and for the same
+      # reason: a tag is a name somebody else can move, and a server that changes
+      # underneath is one whose green runs mean less each time. This digest is
+      # jellyfin/jellyfin:10.11.11, the shipping version of the one server line
+      # build.yaml names in targetAbi.
+      JELLYFIN_IMAGE: 'jellyfin/jellyfin@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db'
+      JELLYFIN_URL: 'http://127.0.0.1:8096'
+      # The identifier the task is filed under. Written out rather than read from
+      # the source, because what this job asserts is that the server holds THIS
+      # name: reading it from the tree under test would let a rename pass by
+      # moving the expectation with it, and an operator's own schedule for the
+      # task is filed against the name the server saw last.
+      TASK_KEY: 'InvitesRetentionSweep'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the committed lock file
+        run: |
+          set -euo pipefail
+          dotnet restore --locked-mode
+
+      - name: Build the plugin package
+        id: jprm
+        # The packaged plugin rather than a loose build output, so what the server
+        # loads is the shape a release would put in front of an operator.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: Install it into a server data directory
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::No archive at ${ARTIFACT}, so this job would be asking a server about a plugin that was never installed."
+            exit 1
+          fi
+          mkdir -p "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          unzip -o "${ARTIFACT}" -d "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          ls -lR "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins"
+
+      - name: Start the server
+        run: |
+          set -euo pipefail
+          docker pull "${JELLYFIN_IMAGE}"
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/config:/config" \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
+            "${JELLYFIN_IMAGE}"
+
+      - name: Wait for the server to finish starting
+        # The public information route answers while the database migrations are
+        # still running and everything else answers 503 until they finish, so the
+        # wait ends on this plugin's own public route leaving 503 rather than on
+        # the first 200 anywhere.
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and /redeem/{code} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not finish starting within three minutes."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: The plugin is loaded before anything is asked about its task
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM")"
+          if [ "${code}" != "200" ]; then
+            echo "::error::GET /redeem/{code} answered ${code} rather than 200, so the plugin is not loaded and a missing scheduled task would say nothing about the task."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "GET /redeem/{code} answered 200, so the plugin is loaded."
+
+      - name: Complete the startup wizard and take a token
+        # The task list is an administrator route, so this is the cheapest
+        # credential that can read it. The account exists only inside a container
+        # this job destroys, and the password is in the file for the same reason
+        # the address is: there is nothing here to keep.
+        run: |
+          set -euo pipefail
+          auth='MediaBrowser Client="scheduled-task-job", Device="ci", DeviceId="scheduled-task-job", Version="1"'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Configuration" \
+            -H 'Content-Type: application/json' \
+            -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
+          curl -fsS "${JELLYFIN_URL}/Startup/User" > /dev/null
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/User" \
+            -H 'Content-Type: application/json' \
+            -d '{"Name":"operator","Password":"scheduled-task-job-throwaway"}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/RemoteAccess" \
+            -H 'Content-Type: application/json' \
+            -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Complete"
+          token="$(curl -fsS -X POST "${JELLYFIN_URL}/Users/AuthenticateByName" \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: ${auth}" \
+            -d '{"Username":"operator","Pw":"scheduled-task-job-throwaway"}' \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessToken"])')"
+          if [ -z "${token}" ]; then
+            echo "::error::The wizard completed but no access token came back, so the task list cannot be read."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "::add-mask::${token}"
+          echo "JELLYFIN_TOKEN=${token}" >> "$GITHUB_ENV"
+          echo "The wizard is complete and a token was issued."
+
+      - name: The retention sweep is on the server's own task list
+        # Three assertions, because a task can be absent in more than one way.
+        # The list being non-empty is the scan seeing anything at all, so a route
+        # that answered with nothing is not read as a task that failed to
+        # register. The key being present is the task itself. And the trigger the
+        # server recorded is what decides whether it ever runs without somebody
+        # pressing a button.
+        run: |
+          set -euo pipefail
+          curl -fsS "${JELLYFIN_URL}/ScheduledTasks" \
+            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > tasks.json
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          wanted = os.environ["TASK_KEY"]
+          tasks = json.load(open("tasks.json", encoding="utf-8"))
+          for task in tasks:
+              print("{0}  {1}  {2}".format(task.get("Key"), task.get("Category"), task.get("Name")))
+
+          problems = []
+          if not tasks:
+              problems.append(
+                  "The server's task list is empty, so nothing here judged whether this "
+                  "plugin's task is on it.")
+
+          ours = [task for task in tasks if task.get("Key") == wanted]
+          if not ours:
+              problems.append(
+                  "No task on the server is keyed {0!r}, so the server did not pick up the "
+                  "retention sweep and it never runs.".format(wanted))
+          else:
+              triggers = ours[0].get("Triggers") or []
+              if not triggers:
+                  problems.append(
+                      "The task keyed {0!r} is on the server with no trigger, so it exists "
+                      "and only ever runs when somebody presses a button.".format(wanted))
+
+          if problems:
+              for problem in problems:
+                  print("::error::" + problem)
+              sys.exit(1)
+          print("The server holds the retention sweep, with {0} trigger(s).".format(
+              len(ours[0].get("Triggers") or [])))
+          PY
+
+      - name: Stop the server
+        if: always()
+        run: docker rm --force jellyfin || true

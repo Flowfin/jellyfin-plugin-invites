@@ -30,10 +30,13 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// filters, and the store is not where a filter would be written.
 /// </para>
 /// <para>
-/// Nothing here is about the retention sweep. Removing an expired record after
-/// the retention rule allows it is #59 and does not exist, and a record removed
-/// by that rule is a record deliberately deleted rather than one that vanished
-/// at its expiry.
+/// Nothing here is about the retention sweep. Removing an expired record once
+/// the retention rule allows it is <see cref="InvitationOperations.Sweep"/>
+/// under #59, and a record removed by that rule is a record deliberately
+/// deleted rather than one that vanished at its expiry. The instants below are
+/// weeks apart rather than months, so nothing here is inside the retention
+/// period by accident; what the sweep does is held in
+/// <see cref="RetentionSweepTests"/>.
 /// </para>
 /// </remarks>
 public class ExpiryIsNotDeletionTests

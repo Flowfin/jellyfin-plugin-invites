@@ -35,8 +35,8 @@ rows of the record table below that are filled in on that file are the
 identifier, the keyed hash, minted by, minted at, expires at, the use count and
 the template name, plus revoked at and revoked by once somebody revokes. `Minted
 by` and `Revoked by` are personal data about the operator, and they are held
-under the `record-retention` parameter named below with no sweep applying it
-yet.
+under the `record-retention` parameter named below, which a scheduled sweep
+applies.
 
 What is still not written is anything about the invited person. That waits on a
 redemption that commits, and the rows it would fill are `Accounts produced` and
@@ -166,9 +166,19 @@ This number is a decision rather than a measurement, so it carries the issue
 that decided it instead of a command. Nothing in this tree can be run to
 produce it, and nothing here should be read as having measured it.
 
-The sweep that applies it is #59. Shortening the period later deletes records on
-the next sweep rather than stopping new ones from being kept, which is the right
-way round and is not reversible.
+The sweep that applies it is #59 and it is in the tree: a daily scheduled task
+asks `InvitationOperations.Sweep` for the records whose period has run out.
+Shortening the period later deletes records on the next sweep rather than
+stopping new ones from being kept, which is the right way round and is not
+reversible.
+
+One thing about the counting is worth reading before the number is trusted. The
+period runs from the moment a record stopped being usable, and a spend is the one
+way of stopping that leaves no instant on the record. Such a record is therefore
+counted from its expiry, which is always later than the spend, so it is kept
+longer than ninety days rather than deleted sooner than the rule allows. The
+routine says so in place and a test asserts it; closing the gap is a spent-at
+field, which is #52's.
 
 `trail-bound` is what bounds the attempt trail, and it has no number. Decision 8
 asks how long spent and expired invitation records are kept, which is the
@@ -185,9 +195,10 @@ and no number.
 
 ## What deletes anything
 
-Nothing today, and the reason has moved to the other end of the sentence. It
-used to be that nothing put a record there. Records are put there now, and what
-is absent is the removal:
+The retention sweep does, and this paragraph said nothing did. It has said two
+different things in turn: first that nothing put a record there, then that
+records were put there and nothing took them away. Both have been overtaken, and
+the removal is a third writer of the store file rather than a deleter of it:
 
 ```
 $ git grep -E '\.Write\(' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
@@ -202,17 +213,20 @@ origin/master:Jellyfin.Plugin.Invites/Storage/StoreLock.cs:                File.
 
 These two commands lost their `-n`, and two of the six numbers they printed were
 stale when it came off. The last section says why the numbers went rather than
-being corrected. Five writers and two of them are callers, which is the pair
-the section above names. The other three are the hash secret writing itself,
-the store's own writing member, and the claim on the directory. The one deleter in the plugin
-removes the claim file on the way out and reaches no record.
+being corrected. Six writers and three of them are callers: a mint, a revocation
+and the retention sweep. The other three are the hash secret writing itself, the
+store's own writing member, and the claim on the directory. The one deleter in
+the plugin removes the claim file on the way out and reaches no record.
 
-So an invitation minted today is kept until somebody removes the file by hand.
-`record-retention` is ninety days and #59 is the sweep that would apply it, and
-until that lands the number on this page is a decision rather than a behaviour.
-That is a wider gap than the one this section used to describe, and it is the
-direction worth being exact about: a page saying nothing is written is read as
-safe, and what is true is that things are written and nothing takes them away.
+A record is removed by being left out of what the sweep writes back rather than
+by a delete, which is why the second command still returns one line and why
+reading it alone would say nothing is ever removed. What removes a record is the
+third `store.Write` above.
+
+So `record-retention` is a behaviour and no longer only a decision: a record that
+stopped being usable more than ninety days ago is gone at the next daily run,
+without an operator doing anything. What the sweep never removes is a record that
+could still be redeemed, and it reaches no account at all.
 
 The redemption half is unchanged. A `Redeem` controller exists and serves the
 page, and no redemption commits:
@@ -235,8 +249,9 @@ The greps are restricted to the plugin's own sources, because the suite declares
 a controller of its own to check the route inventory and the lint fixtures hold
 their violations on purpose, and neither is code this plugin runs.
 
-Three deleters are planned and no others. The retention sweep in #59 removes
-records the retention rule allows and never touches an account. Revocation in
+Three deleters are named and no others, and one of the three is built. The
+retention sweep from #59 removes records the retention rule allows and never
+touches an account. Revocation in
 #54 does not delete anything, and that is deliberate, because the record of a
 revocation is what an operator needs after a restore quietly undoes it, which
 is written up in `docs/disaster-cases.md`. Uninstall in #91 removes the

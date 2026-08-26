@@ -89,8 +89,12 @@ reads. It is not a type waiting for a caller: it is registered, and the hosted
 service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:46:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:53:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:48:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:56:        serviceCollection.AddHostedService<LoadOnStart>();
+
+Both numbers moved by two again, this time because the retention sweep from #59
+was registered and its namespace imported above. The registrations themselves are
+the same two lines and nothing this page says about them has changed.
 
 Both numbers moved again with this revision, by two and by six, and the sentence
 they support did not. Four registrations landed between them, the server-line

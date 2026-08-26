@@ -98,7 +98,8 @@ public sealed class InvitationOperations
     /// file may grow. An expired or spent record stays where it is, which
     /// docs/limits.md holds as its own entry, and both the file and the lookup
     /// that walks every record on a presented code count those too. Removing
-    /// them is retention, which is #59 and does not exist.
+    /// them is retention, which is <see cref="Sweep"/> under #59 and runs on a
+    /// schedule rather than at a ceiling.
     /// </para>
     /// <para>
     /// <b>Not measured.</b> Nobody has counted how many invitations a real
