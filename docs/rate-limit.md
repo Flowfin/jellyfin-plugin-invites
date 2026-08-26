@@ -256,13 +256,40 @@ Whether a throttled attempt appends a trail entry at all.
 `docs/attempt-outcomes.md` carries both directions and what each costs, and it
 is one answer for the two pages rather than one each.
 
-## What is not claimed
+## What is written now, and what of this page it holds
 
-No limiter has been written, so nothing here has been measured against one. This
-is a decision about a component that does not exist, and it is enforced by
-nothing. No check reads this page, and an implementation that persisted the
-counter to disk, or that counted to a different pair of numbers, would pass every
-workflow in this repository.
+This paragraph said no limiter had been written, that nothing enforced any of
+this, and that an implementation counting to a different pair of numbers would
+pass every workflow in this repository. `AttemptLimiter` landed under #31 and two
+of those three have moved.
+
+    git grep -n 'public const int PerAddressCeiling\|public const int GlobalCeiling' -- Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:67:    public const int PerAddressCeiling = 20;
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:72:    public const int GlobalCeiling = 10;
+
+Something reads this page as well. `AttemptLimiterTests` matches the sentence
+under `## The two numbers` above, resolves the words in it, and compares them
+against those two constants, so a number moved in the source without being moved
+here turns the suite red. Its bound is stated on itself and is the part to read
+before that is trusted: it reads one sentence matched by its shape, and nothing
+judges whether the argument around the sentence still supports the number.
+
+The lifetime is held too, by there being nothing durable to hold: the type takes
+the clock and nothing else, and a test reads its own members back to say so. A
+registration handing out a limiter per request would give every attempt an empty
+counter while passing every assertion about one instance, so the registration's
+lifetime is asserted separately.
+
+**Nothing calls it.** An attempt is a presented code being judged and no route
+judges one, so the limiter counts nothing on a running server today. That is #74,
+and until it lands this page describes a component that is built and unreached.
+
+## What is still not claimed
+
+Nothing here has been measured against a running server, and no rate has been
+observed. The byte-identity requirement is not held by anything: what a refused
+attempt looks like is `docs/refusal-response.md`, and there is no ordinary
+refusal for a throttled one to be compared against yet.
 
 The arithmetic quoted above is re-run from `docs/code-entropy.md` and is the same
 model, with the same inputs and the same two assumptions it names about an
