@@ -299,6 +299,46 @@ comparison says so rather than because anything marked them.
 Upgrading the server within its line, which is the ordinary case, changes none of
 this and needs nothing from you.
 
+## Copying the server to another machine
+
+Copying a data directory onto a second machine copies the plugin's store and the
+key its codes are stored under. That is the ordinary way to move house, to build
+a staging server, or to try an upgrade without risk, and none of those intentions
+changes what the copy takes.
+
+**The plugin does not detect it.** A copied data directory is indistinguishable
+from the one it was copied from, from inside. Nothing on the plugin's page will
+tell you a second machine exists, and there is no state anywhere that says one
+did.
+
+**What the copy took is real today.** Both machines now hold the same records and
+the same key. Nothing can be redeemed on either of them, because redemption does
+not run at all yet and the step at the top of this page says so, but the key is
+copied now and the invitations are duplicated now. On the day redemption runs, an
+invitation spent on one machine is still worth an account on the other.
+
+**Decide which machine keeps the identity, then rotate the key on it.** The
+control is under "The key the codes are stored under" on the plugin page, and the
+route behind it is `POST /Invites/HashSecret/Rotate` in
+[docs/api.md](api.md). It reads the count of what rotating would invalidate and
+puts that number in front of you before anything is written.
+
+**Rotating costs every invitation you have already sent.** Every stored
+invitation is a hash computed under the old key, so no invitation minted before
+the rotation can be redeemed again, the ones nobody has touched included. That is
+what makes rotation the answer here rather than something to press to tidy up:
+the copy took the key, and the only way to make a copied key worthless is to stop
+using it. Re-mint what you still want outstanding afterwards, which means telling
+those people a new code.
+
+Rotating touches no account and removes no record. It stops future redemptions of
+old codes and says nothing about accounts already created, and the table keeps
+every row it had.
+
+Deleting the second machine afterwards does not put things back. The key left the
+first machine at the moment the directory was copied, and where it went after
+that is not something the first machine can see. Rotate anyway.
+
 ## Disabling the plugin
 
 Disabling is not the same question as upgrading, and the answer is settled in one
