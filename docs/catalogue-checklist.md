@@ -334,12 +334,15 @@ Passes, and both say what the plugin does today rather than what it is planned
 to do:
 
     git grep -n '^overview:' -- build.yaml
-    build.yaml:8:overview: "Invitation links that let somebody set up their own account. Under development, nothing of it works yet."
+    build.yaml:8:overview: "Invitation links that let somebody set up their own account. Under development: an operator can mint and revoke a link, and no link can be redeemed yet."
 
-The description is two paragraphs under `description:` at line 9 and the second
-of them says that nothing is built yet and that the page the plugin installs has
-nothing on it to set. A catalogue entry that claimed working invitations would
-be the one field on this list a reader acts on before installing.
+The description is two paragraphs under `description:` at line 9. The second
+names the half an operator drives, which runs, and then says that no link can be
+redeemed and no account is created, so an invitation minted today cannot be spent
+by anybody. A catalogue entry that claimed working invitations would be the one
+field on this list a reader acts on before installing, and one that claimed
+nothing works at all would send an operator looking for a page that is already
+there.
 
 ### The owner names whoever publishes it
 

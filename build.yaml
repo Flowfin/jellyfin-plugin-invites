@@ -5,19 +5,21 @@ imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-invites/mas
 version: "0.1.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Invitation links that let somebody set up their own account. Under development, nothing of it works yet."
+overview: "Invitation links that let somebody set up their own account. Under development: an operator can mint and revoke a link, and no link can be redeemed yet."
 description: >
   An operator invites somebody with a link, and the person sets up their own account without the operator creating it by hand or handing out a password.
 
-  None of this is built yet. What installs today adds one page to the server dashboard, and there is nothing on that page to set.
+  The half an operator drives runs and the half an invited person drives does not. What installs today adds one page to the server dashboard, and on it an operator sets the public address, mints an invitation, reads the outstanding ones, revokes one and rotates the key the codes are stored under. No link can be redeemed and no account is created by this plugin, so an invitation minted today cannot be spent by anybody.
 category: "Administration"
 owner: "Flowfin"
 artifacts:
 - "Jellyfin.Plugin.Invites.dll"
 changelog: |
-  Nothing an operator can use yet. This version adds one page to the server
-  dashboard and there is nothing on that page to set. No invitation can be minted,
-  no link can be redeemed, and no account is created by this plugin.
+  The first published version. It adds one page to the server dashboard, and on
+  it an operator sets the public address, mints an invitation, reads the
+  outstanding ones, revokes one and rotates the key the codes are stored under.
+  No link can be redeemed and no account is created by this plugin, so an
+  invitation minted from this version cannot be spent by anybody.
 
   Nothing changes about what an invitation can create, because an invitation
   cannot create anything.
