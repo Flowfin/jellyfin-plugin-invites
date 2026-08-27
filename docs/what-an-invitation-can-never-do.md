@@ -223,9 +223,37 @@ and `RedemptionFuzzTests` asserts over generated input that nothing reaches
 account creation without passing every gate, against what the harness built each
 record to be rather than against the members the routine read.
 
-Not refused, at the route. There is no redemption route, no form and no field
-list, so what a stranger may send is undecided rather than bounded. That list is
-#75, and it is the half of this line that a page a browser posts to will need.
+Not refused, at the route, and the reason has narrowed since this paragraph was
+first written. It said there is no redemption route, no form and no field list.
+All three exist. The route serves a page, the page carries a form, and the form
+asks three named things:
+
+    git grep -nE '<form|name="(username|password|confirmation)"' -- Jellyfin.Plugin.Invites/Setup/setupPage.html
+    Jellyfin.Plugin.Invites/Setup/setupPage.html:74:            <form method="post">
+    Jellyfin.Plugin.Invites/Setup/setupPage.html:78:                    name="username"
+    Jellyfin.Plugin.Invites/Setup/setupPage.html:96:                    name="password"
+    Jellyfin.Plugin.Invites/Setup/setupPage.html:105:                    name="confirmation"
+
+and the list is held rather than written down: `SetupPageTests.TheFormAsksForThreeThingsAndNoFourth`
+counts the questions, `SetupFormInventoryTests.EveryFieldOnTheFormHasARowInThePersonalDataInventory`
+refuses a field nobody placed in `docs/personal-data.md`, and
+`SetupFormInventoryTests.TheThreeQuestionsTheRefusalListNamesAreTheOnesRead`
+holds those three against `docs/setup-never-asks.md`. A fourth field added to the
+form reddens all three.
+
+What is absent is the post that receives them:
+
+    git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+
+So this half of the line cannot be broken today, and for the weakest of reasons:
+nothing reads a submitted field because nothing receives one. The form posts back
+to an address with no post action behind it, which
+`SetupPageTests.TheFormPostsBackToWhereItCameFrom` holds and which is worth
+reading as the state it is rather than as a working flow. What the field list
+does NOT bound is what a post handler will read - a handler binding a request
+body to a model wider than the form is exactly this line broken, and no
+assertion above sees it. That is #75.
 
 ### An invitation can never create more than one account per use
 
@@ -249,8 +277,8 @@ sections:
 | Never grant beyond the template | The account the template was applied to | #69, #103 |
 | Never be recovered, for a backup | A check somebody makes by hand, and a register to record it in | #100 |
 | Never be recovered, for an error message | The refusal response | #77 |
-| Never be extended by what is sent, at the route | The route, and the list of fields a form may carry | #75, #82 |
-| Never create more than one account per use | Account creation, the count, and the lock around both | #52, #53, #40 |
+| Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
+| Never create more than one account per use | Account creation, and the redemption path that spends a use under the lock. The count itself is authoritative already | #40, #53 |
 
 Four of the seven lines are undefended in whole or in part, and that is the
 state of the plugin rather than a gap in this page. The rule the page is for is
