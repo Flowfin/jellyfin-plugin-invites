@@ -52,6 +52,14 @@ SIZE_NOTE_AT=400
 # does not matter: it moves to whoever picks the change up.
 INSIDE_ASSOCIATIONS="OWNER MEMBER"
 
+# A closing keyword standing next to a hash reference, in a sentence that denies
+# it. The platform reads the keyword and the reference and does not read the
+# denial, so a body written to say a change leaves an issue OPEN is the thing
+# that closes it. #338 is where the mechanism was measured. The window is short
+# and stops at a full stop or at a second hash, so the denial and the reference
+# have to be in one clause rather than merely on one line.
+DENIED_CLOSING='(^|[^[:alnum:]])(not|never|nor|neither|if|whether|unless|n[^[:alnum:]]t)[^.#]{0,59}[^[:alnum:].#](close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+'
+
 fail=0
 fired=""
 
@@ -119,6 +127,33 @@ judge() {
     echo "ok    commits-name-an-issue"
   fi
 
+  # --- a disclaimed closing keyword still closes ---------------------------
+  # The failure this refuses is not a slip of the pen. It is the sentence a
+  # careful body carries on purpose: "This does not close #28", written to tell
+  # a reader which clause is unmet. The platform closes #28 on it, as
+  # COMPLETED, with no commit behind the close, and somebody reopens it by hand
+  # afterwards. Measured over every merged pull request on this repository,
+  # twelve bodies carried such a sentence and every one of the twelve closed the
+  # issue it was denying.
+  #
+  # The repair is one edit and it is in the message: write the number without a
+  # hash. "It does not close issue 28" says the same thing to a reader and
+  # nothing at all to the platform.
+  #
+  # This leg refuses for every author. The others above are advisory outside
+  # this repository because they enforce a local convention a stranger cannot
+  # know; this one is a platform behaviour that reaches everybody equally, and
+  # an outside contributor whose body silently closes an issue is the same
+  # defect with nobody watching for it.
+  local denied
+  denied=$(printf '%s' "$body" | grep -inE "$DENIED_CLOSING" || true)
+  if [ -n "$denied" ]; then
+    fire refuse closing-keyword-is-deliberate \
+      "this body denies a closing keyword standing next to a hash reference. The platform reads the keyword and not the denial, so merging this closes that issue as completed with its Done-when unmet. Write the number without a hash, as \"does not close issue N\": $(printf '%s' "$denied" | tr '\n' '|')"
+  else
+    echo "ok    closing-keyword-is-deliberate"
+  fi
+
   # --- the change is small enough to read ----------------------------------
   local total
   total=$(printf '%s' "$files" | sed '/^$/d' | awk '{s+=$1} END {print s+0}')
@@ -165,7 +200,7 @@ fired_ids() {
 }
 
 cmd_selftest() {
-  local legs="body-names-an-issue commits-name-an-issue change-is-readable tests-follow-the-plugin"
+  local legs="body-names-an-issue commits-name-an-issue closing-keyword-is-deliberate change-is-readable tests-follow-the-plugin"
   local selftest_fail=0 leg got
 
   got=$(fired_ids "$FIXTURES/clean")
