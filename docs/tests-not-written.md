@@ -239,14 +239,25 @@ an assignment, so the replacement is not a weaker version of the refused test.
 It is a stronger one, because a sleep can only test the far side of a boundary
 and an injected clock can test the instant itself.
 
-Status: the seam exists and one of the four behaviours is driven by it. #41 is
-closed, `IClock` and `SystemClock` are in the tree, and
+Status: the seam exists and three of the four behaviours are driven by it. #41
+is closed, `IClock` and `SystemClock` are in the tree, and
 `TheExpiryBoundaryIsExclusive` in `RedemptionDecisionTests` asserts the expiry
 one tick before the boundary, at it, and one tick after, without sleeping.
 `ClockJumpTests` steps the clock backwards across an expiry and forwards past
-several at once. #104 is open because the other three clock-driven behaviours,
-the rate-limit window, the retention sweep and the optional account expiry, are
-not in the tree to be driven.
+several at once.
+
+The rate-limit window and the retention sweep arrived after this line was last
+read against the tree, and both are driven by the seam rather than by a wait.
+`ClockBoundaryTests` holds them. `ThePerAddressWindowTurnsAtTheBoundary` and
+`TheGlobalWindowTurnsAtTheBoundary` sit on the two limiter windows,
+`TheRetentionBoundaryIsTheDirectionThisPageStates` sits on the retention
+boundary and takes the direction off the page that decides it rather than off
+the routine, and the same class carries a backwards step and a jump past
+several boundaries for each of the two.
+
+#104 is open on the fourth behaviour rather than on three. There is no account
+expiry in this plugin, optional or otherwise, and whether one is built at all
+is #68.
 
 ### A test that this plugin works beside every supported sibling
 
@@ -299,10 +310,11 @@ has been recorded. The real-server row has its ABI floor build, its
 packaging job and two jobs that install the packaged artefact into a published
 server, and not its manual install. The reverse-proxy row has both. The mail row has nothing to replace and
 says so. The dashboard row has all three for both pages. The sleeping row has
-the seam and the expiry boundary cases, and not the three behaviours that do not
-exist. The sibling row has its replacement, and that replacement is deliberately
-smaller than the test it stands for: it says nothing about a collision and
-everything about there being nothing to collide with.
+the seam and the boundary cases for three of its four behaviours, and not the
+fourth, which does not exist. The sibling row has its replacement, and that
+replacement is deliberately smaller than the test it stands for: it says
+nothing about a collision and everything about there being nothing to collide
+with.
 
 Two rows name the setup page and they are in opposite states, which is the pair
 a reader is most likely to collapse. The browser row is about whether the page
