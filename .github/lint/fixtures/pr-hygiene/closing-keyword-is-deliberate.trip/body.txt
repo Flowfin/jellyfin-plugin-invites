@@ -1,0 +1,4 @@
+Refs #17. The redemption decision moves into one routine.
+
+This does not close #17. Its Done-when asks for a route that answers a
+redemption, and nothing in this tree serves one.
