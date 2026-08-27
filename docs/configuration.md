@@ -92,14 +92,76 @@ that answer, which is what #87 asks for. It is a table every setting has to be
 in, so a setting arriving without a decided fresh-install value reds the suite
 rather than shipping whatever the default happened to be.
 
+## The ceilings
+
+**None of these is a setting, and that is the first thing to know about them.**
+They are constants in the source, so there is nothing here for an operator to
+type and nothing on this page's table to look them up in. They are written down
+here anyway, because an operator who meets one meets it as a refused request from
+`POST /Invites` with a number in it, and the configuration reference is where
+somebody goes to find out where a number came from.
+
+Three numbers act at minting today, and they come from two issues rather than
+one. Two of them are #33's ceilings; the validity maximum is #51's and is a
+ceiling in the same sense, so it belongs beside them rather than in a section of
+its own:
+
+    git grep -n 'public const int UsesCeiling' -- Jellyfin.Plugin.Invites/Invitations/InvitationMint.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationMint.cs:71:    public const int UsesCeiling = 10;
+
+    git grep -n 'public const int LiveCeiling\|public const int MaximumValidityDays' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:66:    public const int MaximumValidityDays = 90;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:113:    public const int LiveCeiling = 500;
+
+At most ten accounts on one invitation, at most ninety days of validity, and at
+most five hundred live invitations in the store at once. The reasoning for each
+number is on the constant that carries it rather than restated here, which is
+where it stays true when the number moves.
+
+The default validity is a fourth number and is not a ceiling. Seven days, and it
+is what a mint that names no validity gets:
+
+    git grep -n 'public static TimeSpan DefaultValidity' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:152:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
+
+**Nothing is clamped.** A request outside any of them is refused with the limit
+and the value in the message, and nothing is written. A use count or a validity
+outside its range is a bad request; the live ceiling is a conflict, because what
+the caller sent was acceptable and the store's state was not, so the repair is
+revoking an invitation rather than editing the request.
+
+**What "live" counts is not what the file holds.** An expired, spent or revoked
+record is not live, does not count against five hundred, and stays in the file.
+None of the numbers above bounds how large the store grows; retention does, which
+is the scheduled sweep rather than a ceiling.
+
+**The third of the three ceilings #33 asks for does not exist.** How many
+accounts the plugin may create in a given period is the one that still holds when
+the other two are set badly, and nothing in the plugin creates an account:
+
+    git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    exit=1
+
+So five hundred live invitations at ten uses each is what the standing set can
+authorise with no further operator action, and no number bounds what arrives from
+it in an hour.
+
+**What is owed here and is not written.** #113 asks that this section say the
+ceilings are enforced when the configuration loads and that an out-of-range value
+refuses the load rather than being clamped. Neither half can be written truthfully
+today: there is no ceiling on the configuration type, so there is no load-time
+comparison to describe. That arrives with #86, and when it does, a configured
+value has to be bounded by the constant rather than replace it - a setting that
+can be raised without limit is not a ceiling. The paragraph above says what is
+enforced instead, at minting, which is a smaller claim than the one this section
+will eventually carry.
+
 ## What is not in this file yet
 
-The ceilings, because a reader needs to know that they are enforced when the
-configuration loads and that an out-of-range value refuses the load rather than
-being clamped quietly. They arrive with #33, which decides the three numbers and
-the reasoning for each. Nothing about them is written here, because the settings
-do not exist and a document describing a setting the code does not have is the
-drift this file is built to refuse in the other direction.
+The ceilings as SETTINGS, which is the half the section above cannot write. What
+this page holds for them today is where the numbers are and what meeting one
+looks like; what it does not hold is a row, because a row is a promise that an
+operator can change something and none of them can.
 
 The check refuses a setting with no row. It does not refuse a setting with no
 section, because which settings need more than a row is a judgement about what a
