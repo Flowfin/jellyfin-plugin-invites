@@ -50,9 +50,11 @@ changelog can say it, and no such change is planned.
 
 ## 0.1.0.0
 
-Nothing an operator can use yet. This version adds one page to the server
-dashboard and there is nothing on that page to set. No invitation can be minted,
-no link can be redeemed, and no account is created by this plugin.
+The first published version. It adds one page to the server dashboard, and on
+it an operator sets the public address, mints an invitation, reads the
+outstanding ones, revokes one and rotates the key the codes are stored under.
+No link can be redeemed and no account is created by this plugin, so an
+invitation minted from this version cannot be spent by anybody.
 
 Nothing changes about what an invitation can create, because an invitation
 cannot create anything.
