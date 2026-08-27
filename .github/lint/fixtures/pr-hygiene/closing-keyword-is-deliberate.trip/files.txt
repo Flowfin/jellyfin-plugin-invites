@@ -1,0 +1,2 @@
+40 Jellyfin.Plugin.Template/Redemption.cs
+30 Jellyfin.Plugin.Template.Tests/RedemptionTests.cs
