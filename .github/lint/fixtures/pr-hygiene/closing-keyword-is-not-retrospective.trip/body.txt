@@ -1,0 +1,4 @@
+Refs #17. The redemption decision moves into one routine.
+
+The mainline commit that closed #21 is a different change and is named here only
+so a reader can find it.
