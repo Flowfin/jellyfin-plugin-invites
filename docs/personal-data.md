@@ -309,21 +309,23 @@ Revoked and revoked at are one stored member, `RevokedAt`, and `IsRevoked`
 derived from it, so no record can say it is revoked and fail to say when.
 
 The clause asking that a documentation page carry the same inventory has no
-page to land in. Every issue in M11 was read for one and none of the seven
-names an inventory or personal data as its content:
+page to land in. Every issue in M11 is read for one, and the membership is
+derived rather than typed out, because the milestone gains issues and a list of
+numbers here would go on answering for the set it was written against:
 
 ```
-$ for n in 110 111 112 113 114 115 116; do
-    gh api repos/iderex/jellyfin-plugin-invites/issues/$n --jq .body \
-      | grep -ciE 'personal data|inventory'
-  done
-0
-0
-0
-0
-0
-0
-0
+$ gh issue list --repo Flowfin/jellyfin-plugin-invites --milestone 'M11 Documentation' \
+    --state all --limit 50 --json number,body \
+    --jq '.[] | "\(.number)\t\(if (.body|test("personal data|inventory";"i")) then "names it" else "-" end)"' | sort -n
+109	-
+110	-
+111	-
+112	-
+113	-
+114	-
+115	-
+116	-
+282	-
 ```
 
 So the page that would carry this is not owned by anything open. That is a gap
