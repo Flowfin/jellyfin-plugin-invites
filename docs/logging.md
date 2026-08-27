@@ -6,16 +6,18 @@ set up once, into a backup, and to whoever is helping with an unrelated problem
 that day. Whatever this plugin writes there is disclosed to all of them, so the
 never list is decided before there is a log call to argue with.
 
-One thing in this plugin writes a log line today, and it is the load the server
-makes when it starts: what the store claims about the accounts it created,
+Two routines in this plugin write log lines today. The load the server makes
+when it starts writes what the store claims about the accounts it created,
 against the accounts the server has, plus the refusal when another process
-already holds the store directory, plus the one setting that load reads. Those
-lines carry invitation identifiers and account identifiers and nothing else out
-of a record. The setting is named and its value is not, which is this document's
-rule rather than a courtesy: a value may be written only where it is a row in
-the inventory, and a server setting is not one. Everything else below is a
-constraint on code that #43 and the routes in M8 have yet to write, and the one
-greppable half of it is in `.github/lint/invariants.sh`.
+already holds the store directory, plus the one setting that load reads. The
+retention sweep writes whether it ran at all, and how many records it removed
+and which. Those lines carry invitation identifiers, account identifiers and a
+count, and nothing else out of a record. The setting is named and its value is
+not, which is this document's rule rather than a courtesy: a value may be
+written only where it is a row in the inventory, and a server setting is not
+one. Everything else below is a constraint on code that #43 and the routes in
+M8 have yet to write, and the one greppable half of it is in
+`.github/lint/invariants.sh`.
 
 ## The never list
 
@@ -104,11 +106,17 @@ exempted or switched off on that rule alone and the four spellings survive it.
 The cost the objection named was the cost of putting all seven behind one
 switch, and there is no longer one switch.
 
-The measurement is worth having beside it. There are nine log calls in the
-plugin today, all in the routine that reads the store when the server starts:
+The measurement is worth having beside it, and it is a command rather than a
+number. The log calls this plugin ships are in the two routines named at the
+top of this page:
 
     $ git grep -cPi '\bLog(Information|Warning|Error|Debug|Trace|Critical)\s*\(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Startup/LoadOnStart.cs:9
+
+The output is not written here. It was, as nine calls in one file, and by the
+time the command was next run a second routine had arrived and the first had
+grown. Nothing reads a count in a document, and what this paragraph is for is
+which routines log at all rather than how many lines they hold, which the
+command says better than a number somebody has to keep true.
 
 The second rule's pattern fires on none of them, and on nothing else the plugin
 ships:
@@ -125,9 +133,10 @@ else, and `check` drops that directory:
 
 So a green `Invariant lint` says none of seven spellings appear, which is a
 larger claim than it was and still a much smaller one than the never list
-holding. The population it has been measured over is nine calls in one file,
-and the log calls the redemption path has not written yet are where a status
-code and an invitation code sit closest together.
+holding. The population it has been measured over is what that command prints,
+which is two routines that report on the store rather than on a redemption, and
+the log calls the redemption path has not written yet are where a status code
+and an invitation code sit closest together.
 
 ## What this document does not settle
 
