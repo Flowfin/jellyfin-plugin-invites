@@ -1,5 +1,8 @@
 Closes #17. The redemption decision moves into one routine.
 
 It does not close issue 21, whose Done-when asks for a route that answers a
-redemption. The number there is written without a hash on purpose: the platform
-reads a hash reference beside a closing word and does not read the negation.
+redemption. The mainline commit that closed issue 23 is a different change.
+
+Both numbers there are written without a hash on purpose: the platform reads a
+hash reference beside a closing word and reads neither the negation nor the
+tense in front of it.

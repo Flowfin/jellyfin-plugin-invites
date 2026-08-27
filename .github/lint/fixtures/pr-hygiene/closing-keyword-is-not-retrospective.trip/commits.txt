@@ -1,0 +1,2 @@
+Put the redemption decision in one routine. Closes #17.
+Cover the new routine. Refs #17.

@@ -60,6 +60,15 @@ INSIDE_ASSOCIATIONS="OWNER MEMBER"
 # have to be in one clause rather than merely on one line.
 DENIED_CLOSING='(^|[^[:alnum:]])(not|never|nor|neither|if|whether|unless|n[^[:alnum:]]t)[^.#]{0,59}[^[:alnum:].#](close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+'
 
+# The same failure in the other tense. A body cannot DECLARE that a merge closed
+# an issue: the merge has not happened when the body is read. So a past-tense
+# closing keyword beside a hash reference is always a retrospective mention of
+# some other change, and it always closes the issue it mentions. Two bodies on
+# this repository carried one and both closed an issue nobody was deciding
+# about. A declaration standing at the start of its own line is left alone,
+# because "Fixed #12" written there is somebody saying what their change does.
+RETROSPECTIVE_CLOSING='^.*[^[:space:]].*[^[:alnum:].#](closed|fixed|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+'
+
 fail=0
 fired=""
 
@@ -154,6 +163,20 @@ judge() {
     echo "ok    closing-keyword-is-deliberate"
   fi
 
+  # --- a retrospective closing keyword also closes --------------------------
+  # The same failure in the other tense, and it is a separate leg rather than a
+  # second arm on the one above, because the selftest compares SETS of leg ids:
+  # two shapes firing one id are indistinguishable to it, and the second could
+  # be lost without anything going red.
+  local retrospective
+  retrospective=$(printf '%s' "$body" | grep -inE "$RETROSPECTIVE_CLOSING" || true)
+  if [ -n "$retrospective" ]; then
+    fire refuse closing-keyword-is-not-retrospective \
+      "this body mentions a close that already happened, with a closing keyword beside a hash reference. The platform does not read the tense, so merging this closes that issue too. Write the number without a hash, as \"the commit that closed issue N\": $(printf '%s' "$retrospective" | tr '\n' '|')"
+  else
+    echo "ok    closing-keyword-is-not-retrospective"
+  fi
+
   # --- the change is small enough to read ----------------------------------
   local total
   total=$(printf '%s' "$files" | sed '/^$/d' | awk '{s+=$1} END {print s+0}')
@@ -200,7 +223,7 @@ fired_ids() {
 }
 
 cmd_selftest() {
-  local legs="body-names-an-issue commits-name-an-issue closing-keyword-is-deliberate change-is-readable tests-follow-the-plugin"
+  local legs="body-names-an-issue commits-name-an-issue closing-keyword-is-deliberate closing-keyword-is-not-retrospective change-is-readable tests-follow-the-plugin"
   local selftest_fail=0 leg got
 
   got=$(fired_ids "$FIXTURES/clean")
