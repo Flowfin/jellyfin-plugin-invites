@@ -49,11 +49,41 @@ for anything but the rate limit.
 
 Each is an upper bound rather than a likely value, and each names who owns it.
 
-`N`, the live invitations on a busy server, taken as `10^4`. This is an
-assumption until #33 lands, which is the issue that bounds what one operator
-action can create and what the store can grow into. If that issue sets a ceiling
-lower than ten thousand, the requirement below falls; if it allows more, the
-requirement rises by a bit for every doubling.
+`N`, the live invitations on a busy server, taken as `10^4`. #33 is the issue
+that bounds what one operator action can create and what the store can grow
+into, it is open, and this input is therefore not read off a decided ceiling.
+
+It is not unbounded in the tree either, which is worth knowing before anybody
+argues about the number. Minting refuses at five hundred live invitations, and
+the refusal is a branch rather than a comment:
+
+    $ git grep -n 'public const int LiveCeiling = \|if (live >= LiveCeiling)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:113:    public const int LiveCeiling = 500;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:247:            if (live >= LiveCeiling)
+
+The input stays at ten thousand rather than moving to five hundred, and that is
+a decision rather than an oversight. The requirement on this page is what a
+later ceiling gets checked against, so an input read out of the constant it is
+meant to bound would move with that constant and check nothing. What the
+constant buys is headroom, and how much is derived rather than asserted:
+
+    $ awk 'BEGIN{ l2=log(2); A1=10000*315360000; A2=10*31536000;
+        printf "required bits at N=10^4, unthrottled = %.2f\n", (log(A1)+log(10000))/l2 + 32;
+        printf "required bits at N=500,  unthrottled = %.2f\n", (log(A1)+log(500))/l2 + 32;
+        printf "required bits at N=10^4, throttled   = %.2f\n", (log(A2)+log(10000))/l2 + 32;
+        printf "required bits at N=500,  throttled   = %.2f\n", (log(A2)+log(500))/l2 + 32; }'
+    required bits at N=10^4, unthrottled = 86.81
+    required bits at N=500,  unthrottled = 82.49
+    required bits at N=10^4, throttled   = 73.52
+    required bits at N=500,  throttled   = 69.20
+
+Four bits and a third, which is `log2(20)` and is what a factor of twenty costs
+when every input enters as a logarithm. The number below clears every row
+above, so nothing on this page moves for it.
+
+If #33 sets a ceiling above ten thousand, the requirement rises by a bit for
+every doubling and this input moves with it. If it confirms a ceiling below,
+the requirement falls and the headroom above is what it falls by.
 
 `A`, the attempts, in two scenarios, because the answer has to survive the rate
 limiter being absent as well as present.
