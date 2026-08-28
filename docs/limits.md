@@ -514,15 +514,68 @@ carries a single member and it reads.
     Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
 
 That was an absence rather than a guard until #91 turned it into one.
-`AccountsAreNeverWrittenTests` refuses a member on that interface that takes an
-argument or hands nothing back, refuses a name the seam reaches by reflection
-that is not a read on the server's own interface, and refuses a second type in
-the plugin that can be handed the user manager at all. The middle one is the
-reason the file exists: the seam binds late, so a write hidden behind a
-looked-up name is invisible to the compiler and to the invariant lint, which
-reads source text.
+`AccountsAreNeverWrittenTests` carries three assertions:
 
-The entry is still not counted among the six. What is refused is the
-capability, and what the entry promises is an uninstall that leaves the accounts
-where they are. Exercising that needs a seam that can create an account so there
-is something to leave behind, which is #103, and nothing here stands in for it.
+    git grep -c 'public void' -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:3
+
+This paragraph named all three by what they refuse and stopped there, which is
+the thing the head of this section forbids: a test read by its name and decided
+to look close enough. The three runs below are that repaired. Each fault was
+applied alone, built, run, and put back with a rebuild, at the commit this
+change lands on.
+
+The first is a member on the seam that takes a value. It is the shape the
+cleanup assistant this entry's own last paragraph describes would arrive in, and
+it costs three files rather than one, because the interface, the binder and the
+suite's stand-in all have to carry it before anything compiles:
+
+    $ a  void Remove(Guid account)  added to IServerAccounts, to ServerAccounts
+      and to StubServerAccounts in LoadOnStartTests.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      AccountsAreNeverWrittenTests.TheSeamOverTheServersAccountsDeclaresNothingThatWrites [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 575, übersprungen: 8, gesamt: 584
+
+The second is the one the file says is the reason it exists, and it is the
+cheapest of the three to write: the seam binds late, so the member it reaches is
+a string, and a write hidden behind a looked-up name is invisible to the
+compiler and to the invariant lint, which reads source text. One constant moves
+and the plugin deletes accounts with nothing in the source saying so:
+
+    $ sed -i '47s/"GetUsersIds"/"DeleteUserAsync"/' Jellyfin.Plugin.Invites/Accounts/ServerAccounts.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      ServerAccountsTests.TheRefusalNamesBothMembers [FAIL]
+      AccountsAreNeverWrittenTests.EveryNameTheSeamLooksUpOnTheServerIsARead [FAIL]
+      ServerAccountsTests.TheAccountsAreReadWhenTheServerAnswersWithAMethod [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 573, übersprungen: 8, gesamt: 584
+
+Three rather than one. The other two are `ServerAccountsTests` asserting what
+the binder looks for, and they redden because the name it looks for is what
+moved; they are not a second reading of this entry.
+
+The third is a second type in the plugin that can be handed the server's user
+manager. It touches neither the interface nor the binder, so the first two
+assertions stay green and only the third sees it, which is what that assertion
+is for:
+
+    $ a  CleanupAssistant  added under Jellyfin.Plugin.Invites/Accounts/, taking
+      an IUserManager in its constructor and doing nothing with it
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      AccountsAreNeverWrittenTests.OnlyTheReadSeamCanBeHandedTheServersUserManager [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 575, übersprungen: 8, gesamt: 584
+
+Every fault was put back and the suite returns to where it started:
+
+    $ git status --porcelain
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+    Bestanden!   : Fehler: 0, erfolgreich: 576, übersprungen: 8, gesamt: 584
+
+No fault is in the tree.
+
+The entry is still not counted among the six, and the three runs above do not
+move it. What they prove is that the capability is refused rather than merely
+absent. What the entry promises is an uninstall that leaves the accounts where
+they are, and exercising that needs a seam that can create an account so there
+is something to leave behind, which is #103. Nothing here stands in for it, and
+a reader who takes a proven guard for the entry being held is making the
+substitution this paragraph exists to refuse.
