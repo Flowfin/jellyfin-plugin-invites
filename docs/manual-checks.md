@@ -30,6 +30,15 @@ The `Notes` cell says which it was. A run that could only be made against a
 server carrying the web client is still worth recording, and it says so rather
 than being filed as the check the clause asks for.
 
+Half of that condition is executed now and the half left is the one a person is
+here for. `.github/workflows/e2e-no-web-client.yaml` starts a published server
+with the client turned off, confirms it is gone before asking for anything else,
+and compares the served page against the tracked file byte for byte. So whether
+the page ARRIVES on such a server is answered on every pull request, and what
+this run is still for is whether a browser renders what arrives. A run that
+finds the page missing or altered would be finding something that job already
+refuses; a run that finds it unreadable is finding what nothing else can.
+
 This covers what the route-level tests in #107 cannot see. Anything the route
 tests do cover is not repeated here, because a manual step that duplicates an
 automated one is a step people learn to skip.

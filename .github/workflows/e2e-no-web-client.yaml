@@ -1,0 +1,171 @@
+# The condition #74's answer was chosen for, asked of a server instead of
+# assumed.
+#
+# #74 picked an embedded page over a redirect into the web client, and the first
+# reason it gives is that the flow has to work when the client is not installed.
+# Everything that has held that so far reads this repository: the suite asserts
+# the bytes the route returns, and `e2e-authorization.yaml` asks a real server
+# for the page but asks a server that carries the client, which is a different
+# question. `docs/manual-checks.md` says the same thing in its own words - a run
+# against a server carrying the client cannot be read as the clause.
+#
+# So this job starts the same published image with the client turned off and
+# asks for the page there.
+#
+# THE ABSENCE IS ASSERTED BEFORE THE PAGE IS. A server that ignored the flag
+# would serve the page for a reason this job is not about, and the run would read
+# as having answered the clause. So the client is confirmed gone first, and the
+# job fails on a server that still has it rather than reporting a green mark for
+# the wrong server.
+#
+# WHAT IT DOES NOT ANSWER, and this is the half that keeps the manual check. It
+# compares bytes. Whether a browser RENDERS those bytes correctly is not a
+# question curl can be asked, and the headless rule refuses the stack that could
+# be. That half stays with the recorded manual check, and the row on that page
+# says so.
+#
+# The comparison is against the tracked page rather than against a marker
+# somebody wrote into this file. The route serves the embedded resource verbatim,
+# so any string this file carried would be a second copy of the page that could
+# drift from it, and `cmp` cannot.
+name: '🚫 Setup Page Without The Web Client'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  no-web-client:
+    name: The setup page is served whole with no web client installed
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    env:
+      # The same digest the other server jobs pin, for the same reason: a tag is
+      # a name somebody else can move, and a server that changes underneath is
+      # one whose green runs mean less each time. This is
+      # jellyfin/jellyfin:10.11.11, the shipping version of the one server line
+      # build.yaml names in targetAbi.
+      JELLYFIN_IMAGE: 'jellyfin/jellyfin@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db'
+      JELLYFIN_URL: 'http://127.0.0.1:8096'
+      SETUP_PAGE: 'Jellyfin.Plugin.Invites/Setup/setupPage.html'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the committed lock file
+        run: |
+          set -euo pipefail
+          dotnet restore --locked-mode
+
+      - name: Build the plugin package
+        id: jprm
+        # The packaged plugin rather than a loose build output, so what the
+        # server loads is the shape a release would put in front of an operator.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: Install the package into a server data directory
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::The packaging step produced no archive at ${ARTIFACT}, so there is nothing to install and this job would be asking a server with no plugin."
+            exit 1
+          fi
+          mkdir -p "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          unzip -o "${ARTIFACT}" -d "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          ls -l "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+
+      - name: Start the server with no web client
+        # The flag is the server's own, passed to the entrypoint. Whether it took
+        # effect is not trusted from the fact that the container started; the
+        # step after the wait asks the server.
+        run: |
+          set -euo pipefail
+          docker pull "${JELLYFIN_IMAGE}"
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/config:/config" \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
+            "${JELLYFIN_IMAGE}" --nowebclient
+
+      - name: Wait for the server to finish starting
+        # Two conditions rather than one, for the reason the other server jobs
+        # give: the public information route answers while migrations are still
+        # running and everything else answers 503 until they finish, so a wait
+        # that stopped at the first 200 would hand the steps below a server that
+        # refuses every address for a reason this job is not about.
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and /redeem/{code} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not finish starting within three minutes, so nothing below could be asked of it."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: The web client is not there
+        # First, and it is the whole of what makes the step after it mean
+        # anything. A server that ignored the flag would serve the page for a
+        # reason this job is not about, and the run would read as having answered
+        # #74's clause against a server that never met its condition.
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/web/index.html" || true)"
+          if [ "${code}" = "200" ]; then
+            echo "::error::GET /web/index.html answered 200, so this server carries the web client and the flag did not take. Nothing below it would be answering the clause it claims to."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "GET /web/index.html answered ${code}, so there is no web client on this server."
+
+      - name: The setup page is served, whole
+        # Byte for byte against the tracked page, because the route serves the
+        # embedded resource verbatim and a marker written into this file would be
+        # a second copy that could drift from it.
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o served.html -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+          if [ "${code}" != "200" ]; then
+            echo "::error::GET /redeem/{code} answered ${code} rather than 200 on a server with no web client. That is the condition #74 chose an embedded page for, so this is the clause failing rather than a detail."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          if ! cmp -s served.html "${SETUP_PAGE}"; then
+            echo "::error::The bytes served differ from ${SETUP_PAGE}. The route serves the embedded resource verbatim, so a difference here is the page arriving altered rather than a formatting question."
+            diff <(head -c 2000 "${SETUP_PAGE}") <(head -c 2000 served.html) || true
+            exit 1
+          fi
+          echo "GET /redeem/{code} answered 200 with exactly the bytes of ${SETUP_PAGE} ($(wc -c < served.html) of them), on a server with no web client."
