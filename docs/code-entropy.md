@@ -17,9 +17,10 @@ carries the number below as a length and an alphabet rather than as a comment:
     Jellyfin.Plugin.Invites/Codes/InvitationCode.cs:77:        RandomNumberGenerator.Fill(draws);
 
 Twenty-six independent uniform draws over thirty-two characters is 130 bits,
-which clears the requirement below with two bits to spare. What the page still
-does not do is enforce anything, and the last section says exactly how far the
-suite reaches instead.
+which clears the requirement below with two bits to spare. The suite reads this
+page rather than a reader having to: the links between an input below and that
+constant are held by `CodeEntropyPageTests`, and the last two sections say
+exactly how far that reaches and where it stops.
 
 ## The model
 
@@ -183,34 +184,67 @@ about, and both matter to the same attacker: the arithmetic above is the cost of
 one blind guess, and an oracle that says which guess was close turns guessing
 into something else entirely.
 
+## What reads this page
+
+Three links stand between an input above and a constant in the source. The
+figures pasted under the arithmetic have to be the ones the inputs produce, the
+requirement stated in words has to clear those figures, and the bits a minted
+code carries have to clear that requirement. `CodeEntropyPageTests` holds all
+three, and each was proven by breaking it on its own.
+
+This section used to say that nothing reads this page, and that raising the
+requirement here while leaving the constants where they are passes every route.
+Raising the stated number from 128 to 131 reds one test and nothing else:
+
+    $ dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release --no-build
+    Jellyfin.Plugin.Invites.Tests.CodeEntropyPageTests.TheCodeThisPluginMintsClearsTheRequirementTheEntropyPageStates [FAIL]
+
+With that same edit in place and that leg's condition neutralised the whole
+suite is green, so nothing else in this tree refuses the direction and the leg
+is the whole of what the sentence above rests on.
+
+Raising an input instead, and re-running the block so the pastes agree, reds
+`TheRequirementTheEntropyPageStatesClearsItsOwnArithmetic` alone. Editing a
+pasted figure without touching the inputs reds
+`TheFiguresTheEntropyPagePastesAreTheOnesItsInputsProduce` alone. Renaming an
+input so the patterns stop matching reds
+`TheScanFindsTheInputsTheEntropyPageDeclares`, which is there so that a page
+which has stopped being read is not mistaken for one that agrees.
+
+What is read is numerals in prose. An input moved into a sentence written some
+other way stops being read, which is what the scan leg reds on rather than
+passes over, and whether the model above is the right model is a judgement no
+reading of this tree makes.
+
 ## What is not claimed
 
-Nothing reads this page. No check derives the requirement from the arithmetic
-above, so raising the requirement here and leaving the constants where they are
-passes every route, and that direction is the one nothing covers.
+The bits a code carries are computed from the length and from the number of
+distinct characters a run of mints produces, so what is held is the alphabet's
+size and not the draw's uniformity. A mint reaching every character but reaching
+some of them far more often than others would carry less than the figure above
+and is invisible here. That the draw is uniform rests on the source and on a
+mask over a byte, and no test asserts it.
 
-The other direction is covered, and it is worth saying how far rather than
-leaving it as "there are tests". `AMintedCodeIsTwentySixCharactersFromTheAlphabet`
-asserts the length against the literal twenty-six and every character of a
-minted code against the alphabet, and `EveryCharacterOfTheAlphabetIsMinted`
-asserts the draw reaches all thirty-two. The second is the one that catches the
-near-miss, because the mask that turns a byte into a position is one character
-away from halving the alphabet without touching the length, the shape or
-anything else on this page. Measured by making that one-character change and
-running the suite:
+The near-miss that mask is one character from is halving the alphabet, which
+costs a bit a character without touching the length, the shape or anything else
+on this page. Measured by making that one-character change and running the
+suite:
 
-    $ dotnet test --configuration Release --nologo
+    $ dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release --no-build
+    Jellyfin.Plugin.Invites.Tests.CodeEntropyPageTests.TheCodeThisPluginMintsClearsTheRequirementTheEntropyPageStates [FAIL]
     Jellyfin.Plugin.Invites.Tests.InvitationCodeTests.EveryCharacterOfTheAlphabetIsMinted [FAIL]
 
-The totals that used to sit under that line are gone rather than corrected. They
-read 342 passed of 351 and the suite is larger every week, so a reader re-running
-this got different numbers and no way to tell whether the finding had moved with
-them. What the sentence rests on is which test reds, and the line above is that.
+The totals that used to sit under a line like that are gone rather than
+corrected. They read 342 passed of 351 and the suite is larger every week, so a
+reader re-running this got different numbers and no way to tell whether the
+finding had moved with them. What the sentence rests on is which tests red, and
+the lines above are that.
 
-One test, and it names the alphabet rather than the entropy, so what the suite
-holds is the two constants the number was encoded as. That the twenty-six draws
-are independent and uniform is a property of the source and of a mask over a
-byte, and no test asserts it.
+`AMintedCodeIsTwentySixCharactersFromTheAlphabet` asserts the length against the
+literal twenty-six and every character of a minted code against the alphabet,
+and `EveryCharacterOfTheAlphabetIsMinted` asserts the draw reaches all
+thirty-two. Those two hold the constants the number was encoded as. The three
+above hold the number.
 
 The greppable rule that exists nearby refuses a non-cryptographic source, which
 is a different failure again:
