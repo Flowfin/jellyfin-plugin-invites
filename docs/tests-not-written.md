@@ -23,9 +23,21 @@ written with its colon, as `Host:`, and a rule id keeps its hyphens.
 that is none of the three. A row whose replacement was renamed goes on reading
 as covered until somebody follows the name, and this page has gone stale twice
 already in what its rows say, both times found by a person re-reading rather
-than by anything going red. That leg holds the names. It holds nothing about
-what a status line claims, which is a different and larger absence, and #100 is
-where it stays open.
+than by anything going red. That leg holds the names.
+
+The part of a status line that names an issue and a state is held too.
+`.github/lint/tracker-claim.sh` reads every present-tense sentence in tracked
+markdown saying an issue is open or closed and refuses one the tracker
+disagrees with. It runs daily rather than on a pull request, because reading
+the tracker is a network call and because a sentence here goes stale when
+somebody closes an issue rather than when somebody edits this file, so the
+merge is not the moment the answer changes.
+
+What is still held by nobody is the rest of a status line. "Neither part
+exists", and whether the replacement a row names covers the risk the row
+claims, are judgements about the tree and about meaning; both of the two rows
+that went stale were stale in sentences of that kind as well as in what they
+called things. #100 is where that stays open.
 
 ## The rule these are refused by
 

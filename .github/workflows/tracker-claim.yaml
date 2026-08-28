@@ -1,0 +1,99 @@
+# A document saying an issue is open or closed, held to the tracker.
+#
+# `docs/tests-not-written.md` carries a status line per row saying where that
+# row's replacement stands, and two of those rows went stale in exactly that
+# sentence: the row went on reading as covered after what it said had stopped
+# being true. The leg that landed under #100 reads the NAMES a page writes and
+# would have caught neither. This decides the part of a status line a machine
+# can: whether the issue it names is in the state it says.
+#
+# WHY THIS IS ON A SCHEDULE RATHER THAN ON A PULL REQUEST, which is the design
+# and not a filing choice. The tracker is a network call, and a failed call and a
+# page full of wrong claims arrive at the comparison as the same missing entries.
+# On a merge route that makes a timeout indistinguishable from a defect and
+# teaches a reader to re-run a red gate rather than read it. And a claim here
+# goes stale when somebody closes an issue rather than when somebody edits a
+# file, so a merge is not the moment the answer changes. The price is stated
+# rather than hidden: a claim that goes stale on a Tuesday is unanswered until
+# the next run.
+#
+# The two fetches are steps of their own for the same reason. If either call
+# fails, that step fails with the call in front of it and the comparison never
+# runs, so a red mark here is never ambiguous between the two causes.
+#
+# This is not in the branch ruleset's required set and must not be: it does not
+# run on a pull request, so requiring it would block every merge on a check that
+# never reports. Raising that set is #24.
+#
+# The context this reports is `Every claim about an issue's state still holds`,
+# which is the name to put in a ruleset rather than the workflow's display name.
+name: '🏷️ Tracker Claims'
+
+on:
+  schedule:
+    # Daily, early. Unlike the parity ledger's target half, what this reads moves
+    # whenever anybody closes an issue on this board, which is several times on a
+    # working night, so a weekly run would leave a wrong sentence standing for
+    # most of a week.
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+# Read-only. The check reads tracked markdown and a listing, and writes nothing.
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: '${{ github.workflow }}'
+  cancel-in-progress: false
+
+jobs:
+  claims:
+    name: Every claim about an issue's state still holds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. Every claim in
+        # the tree agrees today, so the step below cannot fire against it, and a
+        # pattern that had stopped matching would go green forever while the
+        # pages it holds drifted underneath it.
+        run: bash .github/lint/tracker-claim.sh selftest
+
+      - name: Read the tracker
+        # Issues and pull requests both, so a number that exists is never refused
+        # for the wrong reason. A merged pull request comes back as MERGED and the
+        # check reads that as closed, which is what a page saying so means.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          rc=0
+          gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 1000 \
+            --json number,state --jq '.[] | "\(.number)\t\(.state)"' > states.txt || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Reading the issue list failed (exit $rc). This is the network rather than the documents, and nothing below has run. Re-run the job."
+            exit 1
+          fi
+          rc=0
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 1000 \
+            --json number,state --jq '.[] | "\(.number)\t\(.state)"' >> states.txt || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Reading the pull-request list failed (exit $rc). This is the network rather than the documents, and nothing below has run. Re-run the job."
+            exit 1
+          fi
+          if [ ! -s states.txt ]; then
+            echo "::error::The tracker read as empty. A board holding nothing and a call that answered with nothing are the same bytes here, so this refuses rather than comparing against an empty side."
+            exit 1
+          fi
+          echo "Read $(grep -c . states.txt) issue and pull-request state(s)."
+
+      - name: Every claim agrees with the tracker
+        run: bash .github/lint/tracker-claim.sh check states.txt .
