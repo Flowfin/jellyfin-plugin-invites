@@ -14,6 +14,19 @@ what covers the same risk instead. Where the replacement does not exist yet, the
 row says so and names the issue that builds it, because a replacement written
 in the future tense covers nothing today.
 
+Every backticked name below whose whole content is one word beginning with a
+capital is a test in `Jellyfin.Plugin.Invites.Tests`, a type in the plugin, or a
+member of one. Nothing else is written that way, which is why an HTTP header is
+written with its colon, as `Host:`, and a rule id keeps its hyphens.
+
+`RefusalListTests.EveryNameTheRefusalListWritesResolves` refuses a name here
+that is none of the three. A row whose replacement was renamed goes on reading
+as covered until somebody follows the name, and this page has gone stale twice
+already in what its rows say, both times found by a person re-reading rather
+than by anything going red. That leg holds the names. It holds nothing about
+what a status line claims, which is a different and larger absence, and #100 is
+where it stays open.
+
 ## The rule these are refused by
 
 The headless rule is in `CONTRIBUTING.md` and it is executed rather than
@@ -103,7 +116,7 @@ and a network to make the request through the proxy.
 
 Replaced by unit tests of link construction against forged headers, which is
 #50. The risk being covered is that a minting request carrying an attacker's
-`Host` header produces a link pointing at the attacker's server. That is
+`Host:` header produces a link pointing at the attacker's server. That is
 decidable from the header alone and needs no proxy: the test builds a request
 with a forged host and asserts the configured base address comes out.
 
@@ -131,7 +144,7 @@ value asserted is one the code produced from a request rather than one produced
 beside a request. It was seen to fail, by building the link against a different
 address and by returning none at all.
 
-Its bound is one spelling. The forgery is set through the `Host` header,
+Its bound is one spelling. The forgery is set through the `Host:` header,
 because the greppable rules refuse the request object own host member and the
 forwarded header names as text anywhere in this tree and take no exemption for a
 test. Those spellings are covered by the rules instead, and more widely: no file
