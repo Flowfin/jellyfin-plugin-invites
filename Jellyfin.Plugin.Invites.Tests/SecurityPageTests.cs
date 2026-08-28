@@ -62,11 +62,15 @@ public class SecurityPageTests
     /// </summary>
     /// <remarks>
     /// The whole content of the backticks has to be one identifier, so a path,
-    /// a dotted name and a shell fragment are not in the population. What is
-    /// left is what the page's own convention paragraph is about.
+    /// a dotted name, a hyphenated rule id and a shell fragment are not in the
+    /// population. It has to begin with a capital as well, which is what keeps
+    /// an ordinary lowercase word in backticks - a branch name, a setting, a
+    /// literal - out of a population this leg would otherwise refuse for not
+    /// being a C# name. No such word is on the page today; the restriction is
+    /// for the one somebody writes next year.
     /// </remarks>
     private static readonly Regex _written = new(
-        @"`([A-Za-z][A-Za-z0-9_]*)`",
+        @"`([A-Z][A-Za-z0-9_]*)`",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
