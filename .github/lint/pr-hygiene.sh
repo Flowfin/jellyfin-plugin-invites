@@ -69,6 +69,28 @@ DENIED_CLOSING='(^|[^[:alnum:]])(not|never|nor|neither|if|whether|unless|n[^[:al
 # because "Fixed #12" written there is somebody saying what their change does.
 RETROSPECTIVE_CLOSING='^.*[^[:space:]].*[^[:alnum:].#](closed|fixed|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+'
 
+# A close that nobody weighed. The two legs above refuse a close somebody did not
+# mean; this refuses one nobody said anything about. #338 measured twelve issues
+# closed as completed with their Done-when unmet, and the branch name was
+# innocent in all twelve: what closed them was a keyword in a body, read by the
+# platform and by nobody else. A machine cannot judge whether a Done-when is met -
+# that is a reading - but it can make the close a deliberate act instead of a
+# reflex, by asking for the sentence that says why. That decision is recorded on
+# #338 and this is it.
+#
+# So a body that would close an issue carries a line declaring it and saying
+# something after the reference, and a body that only refers to an issue writes
+# "Part of #N" or "Refs #N" and closes nothing. The price of a close is one
+# honest sentence.
+CLOSING_REFERENCE='(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+'
+CLOSING_DECLARATION='^[[:space:]]*(Close|Closes|Closing|Fix|Fixes|Fixing|Resolve|Resolves|Resolving)[[:space:]]*:?[[:space:]]*#[0-9]+'
+
+# How much has to follow the reference on the declaring line. It counts
+# characters and cannot judge whether they say anything, which is the review's
+# job; what it buys is that "Closes #17." on its own is not a reason and does not
+# pass for one.
+REASON_AFTER_THE_REFERENCE=20
+
 fail=0
 fired=""
 
@@ -177,6 +199,37 @@ judge() {
     echo "ok    closing-keyword-is-not-retrospective"
   fi
 
+  # --- a close is declared and given a reason -------------------------------
+  # Every number this body would close, against the numbers a line declares with
+  # something after the reference. The two legs above own the denied and the
+  # retrospective shapes, so a number either of them has already named is left to
+  # them rather than reported twice: their patterns end at the reference, so the
+  # last hash of each match is the number they are about, and this leg and they
+  # cannot disagree about which one that is.
+  local closes declared spoken_for undeclared
+  closes=$(printf '%s' "$body" | grep -oiE "$CLOSING_REFERENCE" \
+    | grep -oE '#[0-9]+$' | tr -d '#' | sort -u)
+  spoken_for=$( { printf '%s' "$body" | grep -oiE "$DENIED_CLOSING" || true
+                  printf '%s' "$body" | grep -oiE "$RETROSPECTIVE_CLOSING" || true
+                } | grep -oE '#[0-9]+$' | tr -d '#' | sort -u )
+  declared=$(printf '%s' "$body" | awk -v min="$REASON_AFTER_THE_REFERENCE" -v pat="$CLOSING_DECLARATION" '
+    $0 ~ pat {
+      if (match($0, /#[0-9]+/)) {
+        number = substr($0, RSTART + 1, RLENGTH - 1)
+        rest = substr($0, RSTART + RLENGTH)
+        if (length(rest) >= min) { print number }
+      }
+    }' | sort -u)
+  undeclared=$(comm -23 \
+    <(comm -23 <(printf '%s\n' "$closes" | sed '/^$/d') <(printf '%s\n' "$spoken_for" | sed '/^$/d')) \
+    <(printf '%s\n' "$declared" | sed '/^$/d'))
+  if [ -n "$undeclared" ]; then
+    fire "$tier" closing-keyword-is-declared \
+      "this body closes an issue and says nothing about it: $(printf '%s' "$undeclared" | tr '\n' '|'). The platform reads the keyword and closes the issue as completed whether or not anybody weighed its Done-when, which happened twelve times here before #338 measured it. Write the close on its own line and say why, as \"Closes #N because ...\", or refer to the issue without a closing word, as \"Part of #N\"."
+  else
+    echo "ok    closing-keyword-is-declared"
+  fi
+
   # --- the change is small enough to read ----------------------------------
   local total
   total=$(printf '%s' "$files" | sed '/^$/d' | awk '{s+=$1} END {print s+0}')
@@ -223,7 +276,7 @@ fired_ids() {
 }
 
 cmd_selftest() {
-  local legs="body-names-an-issue commits-name-an-issue closing-keyword-is-deliberate closing-keyword-is-not-retrospective change-is-readable tests-follow-the-plugin"
+  local legs="body-names-an-issue commits-name-an-issue closing-keyword-is-deliberate closing-keyword-is-not-retrospective closing-keyword-is-declared change-is-readable tests-follow-the-plugin"
   local selftest_fail=0 leg got
 
   got=$(fired_ids "$FIXTURES/clean")
