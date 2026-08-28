@@ -71,12 +71,27 @@ are stated no more strongly than what can be run, so each one names the tests
 that hold it, and a property nothing holds yet says so in the same place rather
 than being left out where its absence reads as silence.
 
-A name in `PascalCase` below is a test in `Jellyfin.Plugin.Invites.Tests`,
-reached by:
+Every backticked name below is either a test in `Jellyfin.Plugin.Invites.Tests`
+or a type in the plugin. Which of the two a name is, is decided by the assembly
+it is in rather than by how it is written. The tests are reached by:
 
 ```
 dotnet test --configuration Release
 ```
+
+That sentence said a name written this way is a test, and three names on this
+page have never been one. `AttemptLimiter`, `HashSecret` and
+`InvitationCodeHash` are plugin types, so a reader who took the sentence at its
+word went looking for three tests that do not exist.
+
+Both halves are resolved rather than promised.
+`SecurityPageTests.EveryNameThisPageWritesResolves` refuses a backticked name
+that is neither a test this assembly runs nor a type either assembly declares,
+which is what stops a rename leaving a name here that reads as evidence and
+cannot be followed. `SecurityPageTests.EveryTestTheSecurityPageNamesExists` was
+already doing that for the names written as a class, a dot and a method, and it
+reads only those: after the first mention of a class this page drops it, so it
+saw twenty-seven names and the fourteen written bare were read by nothing.
 
 Nothing in this repository redeems an invitation or creates an account yet, so
 several of these are held at the routine that decides and not on any path a

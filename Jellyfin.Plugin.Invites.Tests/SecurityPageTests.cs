@@ -58,6 +58,37 @@ public class SecurityPageTests
         TimeSpan.FromSeconds(5));
 
     /// <summary>
+    /// A backticked name standing on its own, with no class in front of it.
+    /// </summary>
+    /// <remarks>
+    /// The whole content of the backticks has to be one identifier, so a path,
+    /// a dotted name, a hyphenated rule id and a shell fragment are not in the
+    /// population. It has to begin with a capital as well, which is what keeps
+    /// an ordinary lowercase word in backticks - a branch name, a setting, a
+    /// literal - out of a population this leg would otherwise refuse for not
+    /// being a C# name. No such word is on the page today; the restriction is
+    /// for the one somebody writes next year.
+    /// </remarks>
+    private static readonly Regex _written = new(
+        @"`([A-Z][A-Za-z0-9_]*)`",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// A fenced code block, which is a transcript rather than prose.
+    /// </summary>
+    /// <remarks>
+    /// A pasted command is not the page claiming anything about a name, so the
+    /// blocks come out before the names are read. Nothing in the page carries a
+    /// backtick inside a fence today; taking them out anyway is what keeps a
+    /// future paste from being read as a claim.
+    /// </remarks>
+    private static readonly Regex _fenced = new(
+        "^```.*?^```",
+        RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
     /// Every test the security page names resolves to a test this assembly runs.
     /// </summary>
     [Fact]
@@ -81,6 +112,87 @@ public class SecurityPageTests
             + string.Join(", ", unresolved)
             + ", which this assembly does not run. A property whose evidence cannot be followed reads as evidence and is not. Either the test was renamed and the page has to follow it, or the property has lost the test that held it and the sentence has to say so.");
     }
+
+    /// <summary>
+    /// Every backticked name the page writes resolves to a test or to a type.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The leg above reads a name written as <c>SomethingTests.Method</c>. This
+    /// page names a class once and then drops it, so most of the names it uses
+    /// as evidence are a bare method name and that leg never saw them: twenty
+    /// seven qualified against fourteen bare, on the day this arrived. A rename
+    /// of any of the fourteen left the old spelling standing here, reading as
+    /// evidence, with the suite green - which is the failure the leg above
+    /// exists against, on two thirds of its subject.
+    /// </para>
+    /// <para>
+    /// <b>What is refused.</b> A backticked name whose whole content is one
+    /// identifier and which resolves to neither a test method this assembly
+    /// runs nor a type either assembly declares. The page's convention
+    /// paragraph says a name here is one of those two, so a name that is
+    /// neither is either a rename this page has not followed or a word that
+    /// should not have been in backticks.
+    /// </para>
+    /// <para>
+    /// <b>Its bounds.</b> A bare name carries no class, so this resolves the
+    /// method anywhere in the assembly and cannot say the sentence names the
+    /// right class; the qualified leg is what holds that, for the names that
+    /// carry one. And it resolves names rather than judging them: whether the
+    /// test holds the property beside it is a reading a person makes.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryNameThisPageWritesResolves()
+    {
+        var page = _fenced.Replace(SecurityPage(), string.Empty);
+
+        var written = _written
+            .Matches(page)
+            .Select(match => match.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.NotEmpty(written);
+
+        var tests = typeof(SecurityPageTests).Assembly;
+        var plugin = typeof(Invites.Plugin).Assembly;
+
+        var unresolved = written
+            .Where(name => !IsATest(tests, name) && !IsAType(tests, name) && !IsAType(plugin, name))
+            .ToArray();
+
+        Assert.True(
+            unresolved.Length == 0,
+            "SECURITY.md writes "
+            + string.Join(", ", unresolved)
+            + " in backticks, and neither assembly holds a test or a type of that name. This page says every backticked name is one of the two, so a name that is neither reads as evidence and cannot be followed. Either the thing was renamed and the page has to follow it, or the word does not belong in backticks.");
+    }
+
+    /// <summary>
+    /// Whether a bare name is a test method this assembly runs.
+    /// </summary>
+    /// <param name="assembly">The test assembly.</param>
+    /// <param name="method">The name the page writes.</param>
+    /// <returns>True when some test class declares it as a fact or a theory.</returns>
+    private static bool IsATest(Assembly assembly, string method) =>
+        assembly
+            .GetTypes()
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(candidate => string.Equals(candidate.Name, method, StringComparison.Ordinal))
+            .Any(candidate =>
+                candidate.GetCustomAttribute<FactAttribute>() is not null
+                || candidate.GetCustomAttribute<TheoryAttribute>() is not null);
+
+    /// <summary>
+    /// Whether a bare name is a type an assembly declares.
+    /// </summary>
+    /// <param name="assembly">The assembly to look in.</param>
+    /// <param name="name">The name the page writes.</param>
+    /// <returns>True when a type of that name is declared there.</returns>
+    private static bool IsAType(Assembly assembly, string name) =>
+        assembly.GetTypes().Any(type => string.Equals(type.Name, name, StringComparison.Ordinal));
 
     /// <summary>
     /// Whether a name resolves to a public method the runner executes.
