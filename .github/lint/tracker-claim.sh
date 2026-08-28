@@ -92,6 +92,22 @@ claims_in() {
   ' "$file"
 }
 
+# The markdown this check reads, out of git rather than off the disk, so an
+# untracked file somebody is drafting is not judged.
+#
+# THE FIXTURE DIRECTORY IS EXCLUDED AND THAT IS NOT TIDINESS. Its pages carry
+# claims that are deliberately wrong - that is what makes them proof - so a scan
+# over the whole tree refuses the tree for holding the evidence that the check
+# works. The first scheduled run of this check found it, on the mainline, after a
+# local run had passed: `git ls-files` reads the index, the fixtures were not yet
+# in it when that run was made, and the same command answered differently once
+# they were. Reading a working state and reporting it as the tree is exactly the
+# defect the rule about commands exists for.
+tracked_markdown() {
+  local root="$1"
+  git -C "$root" ls-files '*.md' ':!.github/lint/fixtures/'
+}
+
 # The state the listing gives one number, or the empty string when it names none.
 # MERGED is read as CLOSED: a merged pull request is closed, and a document
 # saying so is right rather than wrong about a distinction it does not draw.
@@ -163,7 +179,7 @@ cmd_check() {
     while IFS= read -r hit; do
       [ -n "$hit" ] && claims="${claims}${rel}"$'\t'"${hit}"$'\n'
     done < <(claims_in "$file")
-  done < <(git -C "$root" ls-files '*.md')
+  done < <(tracked_markdown "$root")
 
   judge "$(printf '%s' "$claims")" "$states_file" "tree"
 }
@@ -247,6 +263,24 @@ cmd_selftest() {
         ;;
     esac
   done
+
+  # What the tree scan reads, in both directions. Excluding the fixtures is what
+  # the first scheduled run of this check had to be repaired for, and excluding
+  # too much would be the same silence as a pattern that stopped matching, so
+  # neither half is left to be trusted.
+  local scanned
+  scanned=$(tracked_markdown .)
+  if printf '%s\n' "$scanned" | grep -q '^\.github/lint/fixtures/'; then
+    echo "::error::scan-excludes-its-own-fixtures: the scan reads the fixture directory. Those pages carry claims that are deliberately wrong, so a run over them refuses the tree for holding the proof that this check works."
+    printf '%s\n' "$scanned" | grep '^\.github/lint/fixtures/' | sed 's/^/  /'
+    fail=1
+  elif ! printf '%s\n' "$scanned" | grep -qx 'docs/tests-not-written.md'; then
+    echo "::error::scan-excludes-its-own-fixtures: the scan does not read docs/tests-not-written.md, which is the page this check exists for. An exclusion that reaches too far leaves the same silence as a pattern that stopped matching."
+    fail=1
+  else
+    echo "bites scan-excludes-its-own-fixtures: $(printf '%s\n' "$scanned" | grep -c .) tracked page(s) read, none of them a fixture"
+  fi
+
   return $fail
 }
 
