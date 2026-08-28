@@ -12,14 +12,24 @@ apart, and this trail is the only place where they are told apart. That makes th
 set a requirement of the refusals rather than a convenience for the view that
 renders them.
 
-Nothing here is enforced. There is no redemption path to produce an outcome and
-no trail to append to. The command this rested on asked whether the tree has any
-route at all, and it stopped answering the question once the administrator routes
-and the setup page landed, so it is corrected rather than dropped. What holds the
-claim up is that the routine deciding a redemption has no caller:
+There is no redemption path to produce an outcome and no trail to append to. The
+command this rested on asked whether the tree has any route at all, and it
+stopped answering the question once the administrator routes and the setup page
+landed, so it is corrected rather than dropped. What holds the claim up is that
+the routine deciding a redemption has no caller:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
+
+THIS PARAGRAPH SAID NOTHING HERE IS ENFORCED AND ONE PART OF IT NOW IS. Four of
+the nine names below are members of the type the decision routine returns, and
+`AttemptOutcomeSetTests.EveryVerdictTheDecisionReachesHasARowOnThisPage` reads
+the table on this page and requires each of the four to have a row spelled the
+same way. A refusal added to that type without a row added here is refused
+rather than noticed, which is the failure the paragraph under the table
+describes. What is still held by nothing is the rest: `Accepted`, the four
+refusals no type carries yet, the bound, the drop entry, and the
+one-entry-per-attempt property, none of which has an implementation to judge.
 
 `docs/personal-data.md` already names this set as what the outcome field holds,
 so the set is written here rather than left as a reference to a list nobody had
@@ -75,6 +85,14 @@ What no issue has built is the caller that turns one of those into an entry, and
 that is the post on the redemption route, #74. So the column names it on the
 five rows a decision reaches, and #51, #54 and #55 stay beside it because each
 of those still owns the rule its row is about.
+
+`Accepted` and `Honoured` are not two spellings of one state, and moving the
+column does not make them one. The decision's `Honoured` says the invitation may
+produce an account; this page's `Accepted` says one was created. A redemption
+that was honoured and then failed to create an account is the difference between
+them, and it is a state the trail has to be able to record. That is why the
+assertion above requires a row for the four refusals the decision reaches and
+not for the fifth member.
 
 ## What the set is not
 
