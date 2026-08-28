@@ -84,10 +84,20 @@ a result.
 Nothing enforces any of this, and the sentence is stronger than it sounds. No job
 reads `docs/manual-checks.md`:
 
-    $ git grep -n 'manual-checks' -- .github/ ; echo "exit=$?"
+    $ git grep -n 'manual-checks' -- .github/ | grep -vE ':[0-9]+:[[:space:]]*#' ; echo "exit=$?"
     exit=1
 
-so no gate compares it against the tag, and a `-stable` tag pushed with that file
+THE COMMAND CHANGED AND THE CLAIM DID NOT. It was a bare `git grep` over
+`.github/`, and it stopped being a probe for this sentence the moment a workflow
+mentioned the page in a comment: `e2e-no-web-client.yaml` names it to say which
+half of that check it takes over, reads nothing, and made the paste exit 0. The
+claim was still true and the command had stopped testing it, which is the shape
+this repository has already been caught by twice. The filter drops a comment line
+in both the YAML and the shell under it, so a job that actually read the file
+would still be found. It was the pasted-status check that found this, on the
+change that caused it.
+
+So no gate compares that file against the tag, and a `-stable` tag pushed with it
 untouched publishes exactly as if both checks had been run and passed. This
 section is the whole control. No issue holds a mechanism for it today, which is
 said here rather than left to be discovered by somebody looking for the check
