@@ -514,10 +514,11 @@ carries a single member and it reads.
     Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
 
 That was an absence rather than a guard until #91 turned it into one.
-`AccountsAreNeverWrittenTests` carries three assertions:
-
-    git grep -c 'public void' -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:3
+`AccountsAreNeverWrittenTests` carries three assertions, and they are named
+below by the names this page's own guard resolves rather than by description:
+`AccountsAreNeverWrittenTests.TheSeamOverTheServersAccountsDeclaresNothingThatWrites`,
+`AccountsAreNeverWrittenTests.EveryNameTheSeamLooksUpOnTheServerIsARead` and
+`AccountsAreNeverWrittenTests.OnlyTheReadSeamCanBeHandedTheServersUserManager`.
 
 This paragraph named all three by what they refuse and stopped there, which is
 the thing the head of this section forbids: a test read by its name and decided
@@ -531,7 +532,7 @@ it costs three files rather than one, because the interface, the binder and the
 suite's stand-in all have to carry it before anything compiles:
 
     $ a  void Remove(Guid account)  added to IServerAccounts, to ServerAccounts
-      and to StubServerAccounts in LoadOnStartTests.cs
+      and to the suite's stand-in for the server's account list
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
       AccountsAreNeverWrittenTests.TheSeamOverTheServersAccountsDeclaresNothingThatWrites [FAIL]
     Fehler!      : Fehler: 1, erfolgreich: 575, übersprungen: 8, gesamt: 584
