@@ -6,7 +6,10 @@ set up once, into a backup, and to whoever is helping with an unrelated problem
 that day. Whatever this plugin writes there is disclosed to all of them, so the
 never list is decided before there is a log call to argue with.
 
-Two routines in this plugin write log lines today. The load the server makes
+The routines in this plugin that write log lines today are `LoadOnStart` and
+`RetentionSweep`. That sentence is held against the tree in both directions by
+`LoggingPageTests`, because this page is the map an audit of the never list is
+run off and it has already been wrong about it once. The load the server makes
 when it starts writes what the store claims about the accounts it created,
 against the accounts the server has, plus the refusal when another process
 already holds the store directory, plus the one setting that load reads. The
@@ -140,9 +143,11 @@ and an invitation code sit closest together.
 
 ## What this document does not settle
 
-Nothing enforces the list beyond the two rules above. No check reads this file,
-no check counts log calls, and a line written against every rule here would
-reach the mainline if it avoided seven words.
+Nothing enforces the list beyond the two rules above. What reads this file is
+`LoggingPageTests`, and it holds which routines log rather than what they write:
+a line written against every rule here still reaches the mainline if it avoids
+seven words and stands in a routine this page names. No check counts log calls,
+which is deliberate and is argued under the command above.
 
 It also does not decide the log level of anything, or whether the trail and the
 log are the same write. Both belong with #43, which builds the trail, and both
