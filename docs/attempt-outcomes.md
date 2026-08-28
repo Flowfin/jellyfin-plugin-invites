@@ -27,17 +27,17 @@ made.
 
 ## The set
 
-| Outcome                | What it means                                                                                                     | Produced by   |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------- |
-| `Accepted`             | The code was honoured and an account was created.                                                                 | #56           |
-| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #56           |
-| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #56      |
-| `Spent`                | The record was found and had no uses left.                                                                        | #52, #55, #56 |
-| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #56      |
-| `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31           |
-| `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33           |
-| `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78           |
-| `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #75, #76      |
+| Outcome                | What it means                                                                                                     | Produced by |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
+| `Accepted`             | The code was honoured and an account was created.                                                                 | #74         |
+| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #74         |
+| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #74    |
+| `Spent`                | The record was found and had no uses left.                                                                        | #55, #74    |
+| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #74    |
+| `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31         |
+| `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33         |
+| `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78         |
+| `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #75, #76    |
 
 The last four are the reason this is written down now. Each is introduced by a
 different issue, and an issue that adds a refusal without adding its member here
@@ -47,6 +47,34 @@ quietly rather than loudly. Adding a refusal means adding a member.
 The names are the shape rather than the spelling. Whichever type carries them,
 the set is closed and the field is never free text, which is what lets the
 personal-data inventory say what the field holds without knowing what happened.
+
+## The column pointed at finished work, and this is where it points now
+
+`Produced by` named #56 on five rows and #52 on one, and both are closed. A
+reader following the column to find where an outcome lands arrived at work that
+was done, which is this page's own subject happening on this page. The tracker
+is not a thing this tree can re-run, so the reading is quoted rather than
+checked by anything here:
+
+    gh issue view 56 --repo Flowfin/jellyfin-plugin-invites --json state --jq .state
+    CLOSED
+    gh issue view 52 --repo Flowfin/jellyfin-plugin-invites --json state --jq .state
+    CLOSED
+
+What #56 built is in the tree and is not what the column was about. It put the
+whole redemption decision in one routine, and that routine reaches five states:
+
+    git grep -nE '^    (NoSuchInvitation|Revoked|Expired|Spent|Honoured)' -- Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:32:    NoSuchInvitation = 0,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:37:    Revoked = 1,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:42:    Expired = 2,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:47:    Spent = 3,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:52:    Honoured = 4,
+
+What no issue has built is the caller that turns one of those into an entry, and
+that is the post on the redemption route, #74. So the column names it on the
+five rows a decision reaches, and #51, #54 and #55 stay beside it because each
+of those still owns the rule its row is about.
 
 ## What the set is not
 

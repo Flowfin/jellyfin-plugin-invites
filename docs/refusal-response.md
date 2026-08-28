@@ -55,16 +55,23 @@ member.
 
 | Case | Owned by | Trail outcome |
 | --- | --- | --- |
-| The presented code matched no record | #56 | `NoSuchInvitation` |
-| The record's expiry had passed | #51, #56 | `Expired` |
-| The record had no uses left | #52, #55, #56 | `Spent` |
-| The operator had revoked the record | #54, #56 | `Revoked` |
+| The presented code matched no record | #74 | `NoSuchInvitation` |
+| The record's expiry had passed | #51, #74 | `Expired` |
+| The record had no uses left | #55, #74 | `Spent` |
+| The operator had revoked the record | #54, #74 | `Revoked` |
 | A rate limit or lockout refused the attempt | #31 | `RefusedByRateLimit` |
 | A ceiling on what the plugin may create refused it | #33 | `RefusedByCeiling` |
 
 The outcome names are the ones in
 [docs/attempt-outcomes.md](attempt-outcomes.md) rather than a second vocabulary
 for the same states.
+
+`Owned by` named #56 on four rows and #52 on one, and both are closed, so the
+column sent a reader after a case's owner to work that was done. What #56 built
+is the routine that tells the first four apart; what nothing has built is the
+route that serves the one response for all of them, and that is the post in #74.
+The rule issues stay beside it because each still owns what its row says
+happened.
 
 The last two are in the set for a reason worth keeping in front of whoever
 implements them, because both look like cases that deserve their own message. A
