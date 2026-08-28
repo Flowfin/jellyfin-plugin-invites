@@ -1,0 +1,95 @@
+# The half of the parity ledger that lives on another repository.
+#
+# docs/workflow-parity.md carries two directions. Its second table answers for
+# this tree and is decided on every push by `workflow-parity.yaml`. Its first
+# table answers for the gate on `iderex/jellyfin-plugin-sso`, and until this file
+# landed nothing decided it: the page carried a hand check somebody had to
+# remember to run, and `perf-baseline.yml` sat on that gate with no row here
+# until somebody ran it months later.
+#
+# WHY THIS IS A SEPARATE FILE ON A SEPARATE TRIGGER, which is the whole design
+# and not a filing choice. Reading that table means a network call. A failed call
+# and a wrong ledger arrive at the check as the same empty listing, so putting
+# this on a pull request would make a timeout indistinguishable from a defect and
+# would teach a reader to re-run a red gate rather than to read it. Here it costs
+# nothing a merge waits on, and the price is stated rather than hidden: a
+# workflow added on that gate on a Tuesday is unanswered until the next run.
+#
+# The fetch is a step of its own for the same reason. If the call fails, that
+# step fails with the call in front of it, and the comparison never runs, so a
+# red mark on this workflow is never ambiguous between the two causes.
+#
+# This is not in the branch ruleset's required set and must not be: it does not
+# run on a pull request, so requiring it would block every merge on a check that
+# never reports. Raising that set is #24.
+#
+# The context this reports is `The ledger accounts for the target gate`, which is
+# the name to put in a ruleset rather than the workflow's display name.
+name: '📒 Workflow Parity (target gate)'
+
+on:
+  schedule:
+    # Weekly, early on a Monday, an hour after the other scheduled job so two
+    # runners are not asked for at once. The subject is another repository's
+    # workflow directory, which changes on somebody else's cadence rather than on
+    # this repository's, so a nightly run would re-derive the same answer six
+    # times for nothing.
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+# Read-only. The check reads one tracked file and one listing, and writes
+# nothing. The listing is a public repository's contents, which needs a token to
+# ask and no permission of this repository's to read.
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}'
+  cancel-in-progress: false
+
+env:
+  TARGET_REPO: iderex/jellyfin-plugin-sso
+
+jobs:
+  parity:
+    name: The ledger accounts for the target gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. Both tables
+        # agree today, so the step below cannot fire against them, and a rule
+        # that had stopped finding a section at all would go green forever while
+        # the page it holds drifted underneath it.
+        run: bash .github/lint/workflow-parity.sh selftest
+
+      - name: Read the target gate's workflow directory
+        # A step of its own so that a failed call fails as a failed call. The
+        # comparison below refuses an empty listing, and an empty listing is what
+        # a timeout, a rename and a deleted directory all look like, so the
+        # network is asked here and judged here.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          rc=0
+          gh api "repos/${TARGET_REPO}/contents/.github/workflows" \
+            --jq '.[].name' > target-workflows.txt || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Reading ${TARGET_REPO}'s workflow directory failed (exit $rc). This is the network rather than the ledger, and nothing below has run. Re-run the job."
+            exit 1
+          fi
+          if [ ! -s target-workflows.txt ]; then
+            echo "::error::${TARGET_REPO}'s workflow directory read as empty. A repository with no workflows and a call that answered with nothing are the same bytes here, so this refuses rather than comparing against an empty side."
+            exit 1
+          fi
+          echo "Read $(grep -c . target-workflows.txt) workflow file name(s) from ${TARGET_REPO}."
+
+      - name: Every workflow on the target gate has a row and every row has a workflow
+        run: bash .github/lint/workflow-parity.sh check-target target-workflows.txt .
