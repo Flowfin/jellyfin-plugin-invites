@@ -1,0 +1,357 @@
+# The first clause of #47, put to a server rather than argued.
+#
+# That clause asks that disabling the plugin makes every redemption route
+# unreachable. Nothing in this repository can answer it. What happens to a route
+# a plugin registered at startup when the host marks that plugin disabled is
+# decided in the server's own assemblies, which this plugin does not reference
+# and should not start referencing to read one rule out of; the suite can assert
+# the bytes the action returns and never whether the server still routes to it.
+#
+# So this job installs the packaged plugin into an unmodified published server
+# image, completes the startup wizard for a credential, disables the plugin
+# through the server's own administrator route, and asks the public redemption
+# address what it answers.
+#
+# IT ASKS TWICE, BECAUSE THE CLAUSE HAS TWO READINGS AND AN OPERATOR MEETS BOTH.
+# One is the moment after the operator presses the button, with the server still
+# running and the assembly still loaded. The other is after a restart, which is
+# when a host that only records the decision acts on it. A job measuring one and
+# reporting it as the answer would be right about half of what an operator does.
+#
+# The plugin's public route is asserted to answer before anything is disabled,
+# for the reason the authorization job gives: a plugin that failed to load
+# answers 404 on every one of its addresses, so a 404 after a disable that was
+# never preceded by a 200 is the loudest possible way of measuring nothing.
+#
+# What this does NOT assert is anything about a redemption. The route serves a
+# page and there is no post behind it, so what is reachable or unreachable here
+# is an address rather than the act of redeeming.
+#
+# Nor does it measure a restore. #47's third clause asks that enabling the plugin
+# again put back what was there before, and on this server line there is nothing
+# to enable: after a restart with the plugin disabled the server's plugin list
+# does not carry it, so the enable route answers 404. That is recorded here as a
+# reading rather than worked around, because reaching into the data directory to
+# undo the disable would be this job inventing an operator action rather than
+# taking one the server offers.
+name: '🚫 Plugin Disabled'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  plugin-disabled:
+    name: Disabling the plugin is put to a server
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    env:
+      # The same digest the other four end-to-end jobs pin, and for the same
+      # reason: a tag is a name somebody else can move, and a server that changes
+      # underneath is one whose green runs mean less each time. This digest is
+      # jellyfin/jellyfin:10.11.11, the shipping version of the one server line
+      # build.yaml names in targetAbi.
+      JELLYFIN_IMAGE: 'jellyfin/jellyfin@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db'
+      JELLYFIN_URL: 'http://127.0.0.1:8096'
+      # This plugin's identifier, written out rather than read from build.yaml,
+      # for the reason the identity job gives at its own pair: what this job
+      # disables has to be THIS plugin, and reading the value from the tree under
+      # test would let a change that pointed it elsewhere pass by moving the
+      # expectation with it.
+      PLUGIN_ID: '7565756d-8964-49fd-a2c6-f2a878d5001a'
+      # An address the route matches and no invitation could ever be. Nothing in
+      # this job mints anything, so what is being asked is whether the address is
+      # routed at all, not what it says about a code.
+      REDEEM_PATH: '/redeem/ABCD-EFGH-JKLM'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the committed lock file
+        run: |
+          set -euo pipefail
+          dotnet restore --locked-mode
+
+      - name: Build the plugin package
+        id: jprm
+        # The packaged plugin rather than a loose build output, so what the server
+        # loads is the shape a release would put in front of an operator.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: Install it into a server data directory
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::No archive at ${ARTIFACT}, so this job would be disabling a plugin that was never installed."
+            exit 1
+          fi
+          mkdir -p "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          unzip -o "${ARTIFACT}" -d "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          ls -lR "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins"
+
+      - name: Start the server
+        run: |
+          set -euo pipefail
+          docker pull "${JELLYFIN_IMAGE}"
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/config:/config" \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
+            "${JELLYFIN_IMAGE}"
+
+      - name: Wait for the server to finish starting
+        # The public information route answers while the database migrations are
+        # still running and everything else answers 503 until they finish, so the
+        # wait ends on this plugin's own public route leaving 503 rather than on
+        # the first 200 anywhere. It ends on the route ANSWERING rather than on it
+        # answering 200, because the same wait runs after a disable, where 404 is
+        # one of the outcomes this job exists to measure.
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and ${REDEEM_PATH} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not finish starting within three minutes."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: The route answers before anything is disabled
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}")"
+          if [ "${code}" != "200" ]; then
+            echo "::error::GET ${REDEEM_PATH} answered ${code} rather than 200 on a plugin nobody has disabled yet, so this job would be measuring a plugin that never loaded."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "GET ${REDEEM_PATH} answered 200, so the plugin is loaded and the disable has something to act on."
+
+      - name: Complete the startup wizard and take a token
+        # Disabling a plugin is an administrator route, so this is the cheapest
+        # credential that can reach it. The account exists only inside a container
+        # this job destroys, and the password is in the file for the same reason
+        # the address is: there is nothing here to keep.
+        run: |
+          set -euo pipefail
+          auth='MediaBrowser Client="plugin-disabled-job", Device="ci", DeviceId="plugin-disabled-job", Version="1"'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Configuration" \
+            -H 'Content-Type: application/json' \
+            -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
+          curl -fsS "${JELLYFIN_URL}/Startup/User" > /dev/null
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/User" \
+            -H 'Content-Type: application/json' \
+            -d '{"Name":"operator","Password":"plugin-disabled-job-throwaway"}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/RemoteAccess" \
+            -H 'Content-Type: application/json' \
+            -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Complete"
+          token="$(curl -fsS -X POST "${JELLYFIN_URL}/Users/AuthenticateByName" \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: ${auth}" \
+            -d '{"Username":"operator","Pw":"plugin-disabled-job-throwaway"}' \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessToken"])')"
+          if [ -z "${token}" ]; then
+            echo "::error::The wizard completed but no access token came back, so nothing here could disable the plugin."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "::add-mask::${token}"
+          echo "JELLYFIN_TOKEN=${token}" >> "$GITHUB_ENV"
+          echo "The wizard is complete and a token was issued."
+
+      - name: Read the version the server has this plugin under
+        # The disable route takes the version as well as the identifier, and the
+        # version is the one the server READ out of the installed archive rather
+        # than the one build.yaml declares. Those are the same string today, and a
+        # job that assumed it would be silently disabling nothing on the day a
+        # packaging step changed one of them, so the server is asked instead.
+        run: |
+          set -euo pipefail
+          curl -fsS "${JELLYFIN_URL}/Plugins" \
+            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > plugins.json
+          version="$(python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          wanted = os.environ["PLUGIN_ID"].replace("-", "").lower()
+          plugins = json.load(open("plugins.json", encoding="utf-8"))
+          for plugin in plugins:
+              print(
+                  "{0}  {1}  {2}  {3}".format(
+                      plugin.get("Id"),
+                      plugin.get("Version"),
+                      plugin.get("Status"),
+                      plugin.get("Name"),
+                  ),
+                  file=sys.stderr,
+              )
+
+          ours = [p for p in plugins if (p.get("Id") or "").replace("-", "").lower() == wanted]
+          if not ours:
+              print(
+                  "::error::The server's plugin list does not carry {0}, so there is nothing "
+                  "here to disable.".format(wanted),
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+          print(ours[0].get("Version") or "")
+          PY
+          )"
+          if [ -z "${version}" ]; then
+            echo "::error::The server lists this plugin with no version, so the disable route cannot be addressed."
+            exit 1
+          fi
+          echo "PLUGIN_VERSION=${version}" >> "$GITHUB_ENV"
+          echo "The server holds this plugin at version ${version}."
+
+      - name: Disable it through the server's own route
+        run: |
+          set -euo pipefail
+          status="$(curl -s -o disable.out -w '%{http_code}' -X POST \
+            "${JELLYFIN_URL}/Plugins/${PLUGIN_ID}/${PLUGIN_VERSION}/Disable" \
+            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"")"
+          cat disable.out || true
+          case "${status}" in
+            2*)
+              echo "The server accepted the disable with ${status}."
+              ;;
+            *)
+              echo "::error::POST /Plugins/{id}/{version}/Disable answered ${status}, so the plugin was never disabled and nothing below would be measuring a disabled plugin."
+              docker logs jellyfin || true
+              exit 1
+              ;;
+          esac
+
+      - name: What the route answers with the server still running
+        # The first of the two readings. The operator has pressed the button and
+        # has not restarted anything.
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}")"
+          echo "WHILE_RUNNING=${code}" >> "$GITHUB_ENV"
+          echo "With the plugin disabled and the server still running, GET ${REDEEM_PATH} answers ${code}."
+
+      - name: Restart the server with the plugin disabled
+        run: |
+          set -euo pipefail
+          docker restart jellyfin
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished restarting. ${REDEEM_PATH} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not come back within three minutes of the restart."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: What the route answers after the restart, and what the plugin list holds
+        # The second of the two readings, and the one a host that only records the
+        # decision acts on. The plugin list is read in the same step because the
+        # step after it depends on what is in it.
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}")"
+          echo "AFTER_RESTART=${code}" >> "$GITHUB_ENV"
+          curl -fsS "${JELLYFIN_URL}/Plugins"             -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > plugins-after.json
+          python3 -c 'import json,sys; [print(p.get("Id"), p.get("Version"), p.get("Status"), p.get("Name")) for p in json.load(open("plugins-after.json", encoding="utf-8"))]'
+          listed="$(python3 -c 'import json,os; wanted=os.environ["PLUGIN_ID"].replace("-","").lower(); print("yes" if any((p.get("Id") or "").replace("-","").lower()==wanted for p in json.load(open("plugins-after.json", encoding="utf-8"))) else "no")')"
+          echo "LISTED_AFTER_RESTART=${listed}" >> "$GITHUB_ENV"
+          echo "With the plugin disabled and the server restarted, GET ${REDEEM_PATH} answers ${code} and the plugin list carries this plugin: ${listed}."
+
+      - name: Ask the server to enable it again
+        # The third clause of #47 asks that enabling restore what was there
+        # before. This step records what the server answers rather than requiring
+        # a particular answer here, because the answer is one of the things being
+        # measured; the assertion is in the step below with the other three.
+        run: |
+          set -euo pipefail
+          status="$(curl -s -o enable.out -w '%{http_code}' -X POST             "${JELLYFIN_URL}/Plugins/${PLUGIN_ID}/${PLUGIN_VERSION}/Enable"             -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"")"
+          cat enable.out || true
+          echo ""
+          echo "ENABLE_STATUS=${status}" >> "$GITHUB_ENV"
+          echo "POST /Plugins/{id}/{version}/Enable answered ${status}."
+
+      - name: The four readings, held to what a server was seen to do
+        # Every one of these was read off a run before it was written here, and
+        # each is a sentence docs/operator-guide.md now tells an operator. What
+        # this refuses is that page going quietly out of date: a server line where
+        # any of the four moves reds this job rather than leaving the guide saying
+        # something the server stopped doing.
+        #
+        # Nothing here says any of the four is DESIRABLE. The first is the reason
+        # the guide tells an operator not to treat disabling as a way of turning
+        # redemption off, and holding it is holding that warning to the thing it
+        # is a warning about.
+        run: |
+          set -euo pipefail
+          echo "before the disable:            200"
+          echo "disabled, server running:      ${WHILE_RUNNING}"
+          echo "disabled, server restarted:    ${AFTER_RESTART}"
+          echo "listed after the restart:      ${LISTED_AFTER_RESTART}"
+          echo "enable route after that:       ${ENABLE_STATUS}"
+          problems=0
+          if [ "${WHILE_RUNNING}" != "200" ]; then
+            echo "::error::GET ${REDEEM_PATH} answers ${WHILE_RUNNING} with the plugin disabled and the server still running, rather than the 200 this was seen to answer. The route surviving a disable until a restart is what docs/operator-guide.md tells an operator, so that page and #47's first clause both move on this."
+            problems=1
+          fi
+          if [ "${AFTER_RESTART}" != "404" ]; then
+            echo "::error::GET ${REDEEM_PATH} answers ${AFTER_RESTART} after a restart with the plugin disabled, rather than the 404 this was seen to answer. The address going away with the restart is the other half of what that page tells an operator."
+            problems=1
+          fi
+          if [ "${LISTED_AFTER_RESTART}" != "no" ]; then
+            echo "::error::The server's plugin list carries this plugin after a restart with it disabled, and it was seen not to. That listing is what the enable route reads, so this moves the sentence below it as well."
+            problems=1
+          fi
+          if [ "${ENABLE_STATUS}" != "404" ]; then
+            echo "::error::POST /Plugins/{id}/{version}/Enable answers ${ENABLE_STATUS} after a restart with the plugin disabled, rather than the 404 this was seen to answer. Enabling through that route becoming available is #47's third clause becoming measurable, which is a good change and still one somebody has to read."
+            problems=1
+          fi
+          if [ "${problems}" -ne 0 ]; then
+            exit 1
+          fi
+          echo "All four readings are what a server was seen to do."
+
+      - name: Stop the server
+        if: always()
+        run: docker rm --force jellyfin || true
