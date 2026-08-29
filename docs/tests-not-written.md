@@ -104,6 +104,10 @@ server holds rather than a class this plugin declares.
 `.github/workflows/e2e-no-web-client.yaml` starts the same image with the web
 client turned off, confirms it is gone before asking for anything else, and
 compares the served setup page against the tracked file byte for byte.
+`.github/workflows/e2e-plugin-disabled.yaml` disables the plugin through the
+server's own administrator route and reads the public redemption address twice,
+once with the server still running and once after a restart, because those are
+two moments an operator meets and #47 asks about both.
 
 That block said two jobs and named two while four had landed, which is the
 drift this page is least able to afford: it is the map somebody reads to find
@@ -121,8 +125,8 @@ server failed to load answers 404 at every one of its addresses, so a job that
 reads 200 there has read the loading, and `e2e-authorization.yaml` gives that as
 its own reason for asserting the anonymous route before anything else.
 
-Status: the ABI floor build, the packaging job and the four server jobs exist,
-and every one of the four is green on the default branch, read at
+Status: the ABI floor build, the packaging job and five server jobs exist. Four
+of the five are green on the default branch, read at
 `3f842ef4280d7ffe930566587292af1eea91cff2`:
 
 ```
@@ -136,6 +140,12 @@ e2e-identity.yaml	3f842ef4 success
 e2e-no-web-client.yaml	3f842ef4 success
 e2e-scheduled-task.yaml	3f842ef4 success
 ```
+
+The fifth is `e2e-plugin-disabled.yaml` and it is deliberately absent from that
+loop rather than missing from it. It landed with the change that added this
+sentence, so it has never run on the default branch and a row for it would be an
+empty cell read as a verdict. What it has is a run at the head of the pull
+request that added it, which is a different claim and is made there.
 
 The manual install has a place to be recorded and nothing recorded in it, and
 that is the half of this row which has not moved. What those jobs answer for is
