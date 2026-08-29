@@ -39,6 +39,7 @@ RULES=(
   'clock-read-outside-the-seam@#41@\bDateTime\.(UtcNow|Now|Today)\b|\bDateTimeOffset\.(UtcNow|Now)\b|\bEnvironment\.TickCount(64)?\b|\bStopwatch\.GetTimestamp\s*\(|\bTimeProvider\.System\b@^[^:]*/SystemClock\.cs:'
   'code-canonicalised-outside-one-function@#49@(?i)\bcode\b[^;\n]*\.(Trim|ToUpper|ToLower)@^[^:]*InvitationCode\.cs:'
   'expiry-or-use-count-judged-outside-the-decision@#56@^(?!\s*(?:///|//|\*)).*?(?:\b(?:ExpiresAt|UsesRemaining)\b\s*(?:<=|>=|<|>)|(?:<=|>=|<|>)\s*\w*\.?\b(?:ExpiresAt|UsesRemaining)\b|\bUsesRemaining\b\s*[=!]=\s*\d|\b\d+\s*[=!]=\s*\w*\.?\bUsesRemaining\b)@^[^:]*RedemptionDecision\.cs:'
+  'revocation-judged-outside-the-decision@#48@^(?!\s*(?:///|//|\*)).*?(?:\b(?:if|while)\s*\([^)]*\b\w+\.(?:IsRevoked|RevokedAt)\b|\b\w+\.IsRevoked\s*(?:\?|&&|\|\|)|(?:&&|\|\|)\s*!?\s*\w+\.IsRevoked\b|\breturn\s+!?\s*\w+\.IsRevoked\b|\b\w+\.RevokedAt\s*(?:is\b|[=!]=))@^[^:]*/\(RedemptionDecision\|Revocation\)\.cs:'
 )
 
 # What each rule is about, printed when it fires, so the failure explains itself
@@ -75,6 +76,8 @@ explain() {
       echo "A code trimmed or cased anywhere but InvitationCode.Canonicalise is a second definition of which codes are equal. Call it instead." ;;
     expiry-or-use-count-judged-outside-the-decision)
       echo "An expiry or a use count compared anywhere but RedemptionDecision is a second answer to whether an invitation may be honoured. Call Decide instead." ;;
+    revocation-judged-outside-the-decision)
+      echo "A revocation branched on anywhere but the routine that decides a redemption, or the one that writes it, is a second answer to whether an invitation may be honoured. Call Decide instead." ;;
   esac
 }
 
@@ -264,6 +267,38 @@ explain() {
 # on a commented line, because doc comments carry these member names constantly
 # and a rule that read them would fire on the documentation of the thing it
 # protects. All of that is on #56.
+#
+# The revocation rule is the same invariant on the third member, and it is a
+# rule of its own rather than a fourth alternative on the one above for the
+# reason recorded at #29: the selftest reads one tripping fixture per rule id,
+# so a member added to a rule that already trips is a member nothing proves.
+# Its own issue is #48 rather than #56, because #56's Done-when asks the lint
+# for an expiry or a use-count comparison and asks it for nothing else, and it
+# is closed. #48's last clause is the one that names all three, and revocation
+# was the one member of the three that no rule held.
+#
+# It is also the one rule here with two exempt files, which is a weaker claim
+# than one exemption and is stated rather than left to be counted. Revocation
+# state is branched on in exactly two places and each is the single home of one
+# operation on it: the routine that decides whether an invitation may be
+# honoured, and the routine that writes a revocation, which has to read the
+# member to be idempotent - that is #54's own clause, revoking twice being a
+# no-op with the first timestamp kept. A third file joining that list is a
+# decision somebody has to argue for here rather than a line they can add.
+#
+# The shape it refuses is a branch and not a read. A revocation carried from
+# one record to another, an equality between two records, and the property
+# that defines IsRevoked from RevokedAt are all left alone, because none of
+# them answers whether an invitation may be honoured; what is matched is the
+# member inside an if or a while, combined with && or ||, negated, returned,
+# or pattern-matched against null. That is what keeps the assertions in the
+# test assembly quiet, and Assert.False(invitation.IsRevoked) was the shape
+# that narrowed the pattern rather than a case imagined for it.
+#
+# What it therefore does not see: a revocation pulled into a local on an
+# earlier line and branched on the next, a branch written across two lines, and
+# any of it in a comment, which is the same bound the rule above carries and
+# for the same reason - doc comments carry these member names constantly.
 #
 # The clock rule's own fixtures hold an expiry comparison, in both halves of the
 # pair, and they are not a violation of this rule for one reason worth stating:
