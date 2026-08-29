@@ -142,11 +142,20 @@ present at the redemption page. The record carries the hash and no code, and
 that is refused rather than remembered:
 `InvitationRecordTests.ARecordWithoutAKeyedHashIsRefused` refuses a record with
 nothing to compare against, and `NoMemberOfTheRecordHandsBackSomethingShapedLikeACode`
-mints a code and asserts that no member of the type hands back anything
-canonicalisation would accept as one.
+asserts that no member of the type hands back anything canonicalisation would
+accept as one.
 `InvitationModelTests.AMintedCodeIsNotRecoverableFromTheStore` writes a record
 and reads the file back, asserting the longest run of code alphabet in it is
 shorter than a code.
+
+The second of those said it mints a code, and it does not. It reads a record the
+test builds, with a hash made of a repeated byte, so what it holds is a property
+of the type's members rather than of a record built from a live mint. The
+difference matters in the direction that flatters the page: a member that leaked
+the code it was constructed from would be invisible to a record constructed
+without one. The minted direction is held by the other two tests in this
+section, which mint through the real path and then read the store and every file
+the mint left behind.
 
 The stored form is keyed, which this paragraph said it was not.
 `InvitationCodeHash` reduces a canonical code under the secret `HashSecret`
@@ -330,10 +339,18 @@ refuses it.
 
 Two things revocation deliberately does not do, both asserted rather than
 described. `RevocationTests.TheAccountsAlreadyCreatedAreStillNamed` holds that
-revoking stops future accounts and does not disown past ones, and
+revoking does not disown the accounts already made from that invitation, and
 `NothingHereCanBeHandedAnAccount` holds that no account manager can be passed
 into any of it, so a later change cannot start deleting accounts through this
 routine.
+
+The first of those was credited here with holding that revoking stops future
+accounts as well, and it does not. It compares one record's list of accounts
+before and against after, which says nothing about what a later redemption is
+answered with. What stops the future ones is
+`RedemptionDecisionTests.ARevokedInvitationIsRefused`, named in the paragraph
+above, and reading one test as holding both is how a property ends up with less
+behind it than the page says.
 
 Immediacy is not held. A revocation taking effect against a redemption that is
 already in flight follows from the lock covering read, decide and write as one
