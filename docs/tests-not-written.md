@@ -33,7 +33,30 @@ the tracker is a network call and because a sentence here goes stale when
 somebody closes an issue rather than when somebody edits this file, so the
 merge is not the moment the answer changes.
 
-What is still held by nobody is the rest of a status line. "Neither part
+A count this page states about itself is held as well, in
+`TestsNotWrittenPageTests` beside the legs that hold the block of server jobs.
+`TheCountOfRefusalsThePageStatesIsTheNumberOfRowsItCarries` requires the number
+in the opening sentence above and the number in the heading over the rows to be
+the number of rows under it.
+`TheCountOfServerJobsThePageStatesIsTheNumberItNames` requires both numbers in
+the real-server row's status line to be the number of jobs that row goes on to
+name, so a count here reaches the workflow directory through the names rather
+than reading it a second way. A third leg asks that the four sentences were
+found at all, so a page reworded past them reds rather than reporting the same
+silence as a page whose numbers agree.
+
+Each of the two is one word away from being wrong. The count of server jobs is
+the one that already went wrong, on the line above the block that names them,
+and the count of refusals is the one this page invites: its last section tells
+the next person how to add a row and says nothing about the two words that go
+stale when they do.
+
+They are not every count written here. The rows count assertions and
+replacements among themselves, and nothing reads any of those, so a number
+inside a row is still a number somebody has to keep true by hand. What these
+legs hold is the two that count the page's own subjects.
+
+What is still held by nobody is the prose of a status line. "Neither part
 exists", and whether the replacement a row names covers the risk the row
 claims, are judgements about the tree and about meaning; both of the two rows
 that went stale were stale in sentences of that kind as well as in what they
