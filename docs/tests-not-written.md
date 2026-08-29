@@ -107,7 +107,9 @@ compares the served setup page against the tracked file byte for byte.
 `.github/workflows/e2e-plugin-disabled.yaml` disables the plugin through the
 server's own administrator route and reads the public redemption address twice,
 once with the server still running and once after a restart, because those are
-two moments an operator meets and #47 asks about both.
+two moments an operator meets and #47 asks about both. It answers 200 at the
+first and 404 at the second, which is the half of that issue no reading of this
+tree could reach.
 
 That block said two jobs and named two while four had landed, which is the
 drift this page is least able to afford: it is the map somebody reads to find

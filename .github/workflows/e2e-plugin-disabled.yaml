@@ -26,6 +26,14 @@
 # What this does NOT assert is anything about a redemption. The route serves a
 # page and there is no post behind it, so what is reachable or unreachable here
 # is an address rather than the act of redeeming.
+#
+# Nor does it measure a restore. #47's third clause asks that enabling the plugin
+# again put back what was there before, and on this server line there is nothing
+# to enable: after a restart with the plugin disabled the server's plugin list
+# does not carry it, so the enable route answers 404. That is recorded here as a
+# reading rather than worked around, because reaching into the data directory to
+# undo the disable would be this job inventing an operator action rather than
+# taking one the server offers.
 name: '🚫 Plugin Disabled'
 
 on:
@@ -277,73 +285,72 @@ jobs:
           docker logs jellyfin || true
           exit 1
 
-      - name: What the route answers after the restart
+      - name: What the route answers after the restart, and what the plugin list holds
         # The second of the two readings, and the one a host that only records the
-        # decision acts on.
+        # decision acts on. The plugin list is read in the same step because the
+        # step after it depends on what is in it.
         run: |
           set -euo pipefail
           code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}")"
           echo "AFTER_RESTART=${code}" >> "$GITHUB_ENV"
-          curl -fsS "${JELLYFIN_URL}/Plugins" \
-            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" \
-            | python3 -c 'import json,sys; [print(p.get("Id"), p.get("Version"), p.get("Status"), p.get("Name")) for p in json.load(sys.stdin)]'
-          echo "With the plugin disabled and the server restarted, GET ${REDEEM_PATH} answers ${code}."
+          curl -fsS "${JELLYFIN_URL}/Plugins"             -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > plugins-after.json
+          python3 -c 'import json,sys; [print(p.get("Id"), p.get("Version"), p.get("Status"), p.get("Name")) for p in json.load(open("plugins-after.json", encoding="utf-8"))]'
+          listed="$(python3 -c 'import json,os; wanted=os.environ["PLUGIN_ID"].replace("-","").lower(); print("yes" if any((p.get("Id") or "").replace("-","").lower()==wanted for p in json.load(open("plugins-after.json", encoding="utf-8"))) else "no")')"
+          echo "LISTED_AFTER_RESTART=${listed}" >> "$GITHUB_ENV"
+          echo "With the plugin disabled and the server restarted, GET ${REDEEM_PATH} answers ${code} and the plugin list carries this plugin: ${listed}."
 
-      - name: Enable it again and read the route once more
-        # The third clause of #47 asks that enabling restores what was there
-        # before. This reaches the reachability half of it and nothing else: no
-        # store, no invitation and no configuration is written anywhere in this
-        # job, so there is no other state here for a restore to be judged against.
+      - name: Ask the server to enable it again
+        # The third clause of #47 asks that enabling restore what was there
+        # before. This step records what the server answers rather than requiring
+        # a particular answer here, because the answer is one of the things being
+        # measured; the assertion is in the step below with the other three.
         run: |
           set -euo pipefail
-          status="$(curl -s -o enable.out -w '%{http_code}' -X POST \
-            "${JELLYFIN_URL}/Plugins/${PLUGIN_ID}/${PLUGIN_VERSION}/Enable" \
-            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"")"
+          status="$(curl -s -o enable.out -w '%{http_code}' -X POST             "${JELLYFIN_URL}/Plugins/${PLUGIN_ID}/${PLUGIN_VERSION}/Enable"             -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"")"
           cat enable.out || true
-          case "${status}" in
-            2*)
-              echo "The server accepted the enable with ${status}."
-              ;;
-            *)
-              echo "::error::POST /Plugins/{id}/{version}/Enable answered ${status}, so the plugin was left disabled and the restore half is unmeasured."
-              docker logs jellyfin || true
-              exit 1
-              ;;
-          esac
-          docker restart jellyfin
-          for _ in $(seq 1 90); do
-            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
-            if [ "${public}" = "200" ]; then
-              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}" || true)"
-              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
-                echo "AFTER_ENABLE=${code}" >> "$GITHUB_ENV"
-                echo "With the plugin enabled again and the server restarted, GET ${REDEEM_PATH} answers ${code}."
-                exit 0
-              fi
-            fi
-            sleep 2
-          done
-          echo "::error::The server did not come back within three minutes of the second restart."
-          docker logs jellyfin || true
-          exit 1
+          echo ""
+          echo "ENABLE_STATUS=${status}" >> "$GITHUB_ENV"
+          echo "POST /Plugins/{id}/{version}/Enable answered ${status}."
 
-      - name: The three readings together
-        # The assertions are on the two ends rather than on the middle. That the
-        # route answers before the disable and again after the enable is what
-        # makes the middle readings mean anything. What the middle readings ARE is
-        # printed here and written up in #47, rather than asserted before anybody
-        # has read one.
+      - name: The four readings, held to what a server was seen to do
+        # Every one of these was read off a run before it was written here, and
+        # each is a sentence docs/operator-guide.md now tells an operator. What
+        # this refuses is that page going quietly out of date: a server line where
+        # any of the four moves reds this job rather than leaving the guide saying
+        # something the server stopped doing.
+        #
+        # Nothing here says any of the four is DESIRABLE. The first is the reason
+        # the guide tells an operator not to treat disabling as a way of turning
+        # redemption off, and holding it is holding that warning to the thing it
+        # is a warning about.
         run: |
           set -euo pipefail
           echo "before the disable:            200"
           echo "disabled, server running:      ${WHILE_RUNNING}"
           echo "disabled, server restarted:    ${AFTER_RESTART}"
-          echo "enabled again, restarted:      ${AFTER_ENABLE}"
-          if [ "${AFTER_ENABLE}" != "200" ]; then
-            echo "::error::GET ${REDEEM_PATH} answers ${AFTER_ENABLE} after the plugin was enabled again, so enabling did not restore the route the disable was measured against."
+          echo "listed after the restart:      ${LISTED_AFTER_RESTART}"
+          echo "enable route after that:       ${ENABLE_STATUS}"
+          problems=0
+          if [ "${WHILE_RUNNING}" != "200" ]; then
+            echo "::error::GET ${REDEEM_PATH} answers ${WHILE_RUNNING} with the plugin disabled and the server still running, rather than the 200 this was seen to answer. The route surviving a disable until a restart is what docs/operator-guide.md tells an operator, so that page and #47's first clause both move on this."
+            problems=1
+          fi
+          if [ "${AFTER_RESTART}" != "404" ]; then
+            echo "::error::GET ${REDEEM_PATH} answers ${AFTER_RESTART} after a restart with the plugin disabled, rather than the 404 this was seen to answer. The address going away with the restart is the other half of what that page tells an operator."
+            problems=1
+          fi
+          if [ "${LISTED_AFTER_RESTART}" != "no" ]; then
+            echo "::error::The server's plugin list carries this plugin after a restart with it disabled, and it was seen not to. That listing is what the enable route reads, so this moves the sentence below it as well."
+            problems=1
+          fi
+          if [ "${ENABLE_STATUS}" != "404" ]; then
+            echo "::error::POST /Plugins/{id}/{version}/Enable answers ${ENABLE_STATUS} after a restart with the plugin disabled, rather than the 404 this was seen to answer. Enabling through that route becoming available is #47's third clause becoming measurable, which is a good change and still one somebody has to read."
+            problems=1
+          fi
+          if [ "${problems}" -ne 0 ]; then
             exit 1
           fi
-          echo "Enabling restored the route."
+          echo "All four readings are what a server was seen to do."
 
       - name: Stop the server
         if: always()

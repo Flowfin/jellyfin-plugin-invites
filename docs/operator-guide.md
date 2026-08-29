@@ -341,8 +341,8 @@ that is not something the first machine can see. Rotate anyway.
 
 ## Disabling the plugin
 
-Disabling is not the same question as upgrading, and the answer is settled in one
-half and honestly unknown in the other.
+Disabling is not the same question as upgrading, and both halves of it are
+settled now. The second was honestly unknown until a job put it to a server.
 
 **Expiry keeps running.** An invitation with a day left, on a plugin disabled for
 a week, is expired when the plugin comes back. Expiry is about how long the link
@@ -350,21 +350,31 @@ has been loose in the world rather than about the plugin's uptime, and a plugin
 that credited its own downtime back would silently extend the exposure of every
 link you had already sent.
 
-**Whether the redemption address stops answering is a question about the server,
-and this repository does not answer it.** A plugin's routes are discovered from
-its assembly when the server builds its route table, and nothing takes an address
-back out of a table that is already built. Whether the server stops routing to a
-disabled plugin's assembly is the server's own behaviour, and nobody here has
-probed it on a running installation. Nothing in this plugin asserts that disabling
-it makes the redemption address unreachable.
+**The redemption address keeps answering until the server is restarted.** A
+plugin's routes are discovered from its assembly when the server builds its route
+table, and nothing takes an address back out of a table that is already built.
+That was an argument until it was put to a server.
+`.github/workflows/e2e-plugin-disabled.yaml` installs the packaged plugin on a
+published 10.11.11 image, disables it through the server's own route, and reads
+the address twice. With the server still running it answers 200, exactly as it did
+before the disable. After a restart it answers 404.
 
-Until somebody measures that on a real server, do not treat disabling the plugin
-as a way of turning redemption off. What stops an invitation being redeemed is
-revoking it, which is a decision this plugin makes and can prove.
+**So do not treat disabling the plugin as a way of turning redemption off.**
+Pressing the button changes nothing an invited person can see until you restart
+the server, and until then the address answers as it always did. What stops an
+invitation being redeemed is revoking it, which is a decision this plugin makes
+and can prove.
 
-There is nothing else to lose by disabling. The store is a file the plugin owns
-and the plugin being switched off does not touch it, so enabling it again finds
-the records exactly as they were.
+**Getting it back is not a button on that page.** After the restart the server's
+own plugin list no longer carries this plugin at all, and the route that would
+enable it again answers 404. What an operator does on that server line to bring a
+disabled plugin back is not something the job above measured, so nothing here
+tells you; what it does tell you is not to expect the switch you used to turn it
+off to be there to turn it on.
+
+There is nothing lost from the store by disabling. The store is a file the plugin
+owns and the plugin being switched off does not touch it, so a plugin that is
+running again finds the records exactly as they were.
 
 ## Removing the plugin
 
