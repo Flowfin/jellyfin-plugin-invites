@@ -8,8 +8,10 @@ using Xunit;
 namespace Jellyfin.Plugin.Invites.Tests;
 
 /// <summary>
-/// The workflow jobs <c>docs/tests-not-written.md</c> says put a question to a
-/// real server are the jobs that do, in both directions.
+/// What <c>docs/tests-not-written.md</c> says about itself is what it holds: the
+/// workflow jobs it names as putting a question to a real server are the jobs
+/// that do, in both directions, and every count it states is the number of
+/// things it carries.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -41,6 +43,33 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// comment being read as a job that starts one. Whether the sentence beside a
 /// name describes what that job actually asks the server is a judgement no
 /// reading of the tree makes.
+/// </para>
+/// <para>
+/// <b>A count this page states is derived rather than trusted.</b> Two of them
+/// are typed here as words: how many refusals the list holds, in its opening
+/// sentence and in the heading over them, and how many jobs put a question to a
+/// real server, in the status line of the row that is about them. Each is one
+/// word away from being wrong, and each goes wrong while somebody is editing the
+/// page for another reason.
+/// </para>
+/// <para>
+/// The second has already gone wrong on the row it sits on. That row said two
+/// jobs and named two while four had landed, so a count inside a status line is
+/// not a hypothetical failure here. The block legs above were the repair for the
+/// names and not for the number standing over them: a sixth job reds those legs
+/// and sends somebody to this page, and nothing there would say that the word
+/// above the block had stopped being true as well.
+/// </para>
+/// <para>
+/// The first is the one the page invites. Its last section tells the next person
+/// how to add a row, and a row added on those instructions leaves the opening
+/// sentence and the heading both stating the old number.
+/// </para>
+/// <para>
+/// <b>What these legs do not do.</b> They compare a number against a count and
+/// judge nothing else. Whether the sentence carrying the number says anything
+/// true beside it is a reading a person makes, and the rest of a status line is
+/// where #100 stays open.
 /// </para>
 /// <para>
 /// <b>The means.</b> A test in this suite rather than a rule in
@@ -81,6 +110,97 @@ public class TestsNotWrittenPageTests
         @"jellyfin/jellyfin@sha256:",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The opening sentence, whose first word is the number of refusals the
+    /// page says it holds.
+    /// </summary>
+    private static readonly Regex _statedInTheOpening = new(
+        @"^([A-Za-z]+) obvious tests are refusals here\b",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The heading over the rows, whose last word is the same number again.
+    /// </summary>
+    /// <remarks>
+    /// The line has to end after the word, so the other headings on this page
+    /// that open with the same two words are not in the population. A carriage
+    /// return is admitted before the end of the line, because a clone with
+    /// <c>core.autocrlf</c> set otherwise makes the verdict depend on the
+    /// reader's git configuration rather than on the page.
+    /// </remarks>
+    private static readonly Regex _statedInTheHeading = new(
+        @"^## The ([A-Za-z]+)[ \t]*\r?$",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// A row of the list.
+    /// </summary>
+    private static readonly Regex _row = new(
+        @"^### ",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// A heading of the rank the rows sit under, which is where the section
+    /// holding them ends.
+    /// </summary>
+    private static readonly Regex _section = new(
+        @"^## ",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The count of server jobs the real-server row states before it names
+    /// them.
+    /// </summary>
+    private static readonly Regex _serverJobsExist = new(
+        @"\b([A-Za-z]+) server jobs exist\b",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The same count again, in the clause saying what was read of them.
+    /// </summary>
+    /// <remarks>
+    /// A second site rather than a second reading of the first. A repair that
+    /// corrected one and not the other would leave the row disagreeing with
+    /// itself, which is one word further than the drift this row already
+    /// suffered.
+    /// </remarks>
+    private static readonly Regex _everyOneOfThemIsGreen = new(
+        @"\bevery one of the ([A-Za-z]+) is green\b",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The words this page writes its counts as.
+    /// </summary>
+    /// <remarks>
+    /// A page a person reads spells a small count out, so the map lives here
+    /// rather than the page being asked to write digits. It stops where it does
+    /// because every count this page states is a count of its own rows or of
+    /// its own jobs, and a list of either running past twelve would be a
+    /// different document.
+    /// </remarks>
+    private static readonly Dictionary<string, int> _numberWords =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "one", 1 },
+            { "two", 2 },
+            { "three", 3 },
+            { "four", 4 },
+            { "five", 5 },
+            { "six", 6 },
+            { "seven", 7 },
+            { "eight", 8 },
+            { "nine", 9 },
+            { "ten", 10 },
+            { "eleven", 11 },
+            { "twelve", 12 },
+        };
 
     /// <summary>
     /// The page names workflows and the directory holds jobs that start a
@@ -137,6 +257,102 @@ public class TestsNotWrittenPageTests
             "docs/tests-not-written.md lists these as jobs that put a question to a real server and no such workflow in .github/workflows names the pinned published server image: "
             + string.Join(", ", silent)
             + ". Either the name is stale or the job stopped starting a server, and the page reads as a complete map either way.");
+    }
+
+    /// <summary>
+    /// The page states the counts these legs read. Without this, a sentence
+    /// reworded past a pattern would report the same silence as a page whose
+    /// numbers agree, and the two legs below would compare nothing.
+    /// </summary>
+    [Fact]
+    public void TheScanFindsTheCountsThePageStates()
+    {
+        var page = Page();
+
+        Assert.Matches(_statedInTheOpening, page);
+        Assert.Matches(_statedInTheHeading, page);
+        Assert.Matches(_serverJobsExist, page);
+        Assert.Matches(_everyOneOfThemIsGreen, page);
+        Assert.NotEqual(0, RowsCarried());
+    }
+
+    /// <summary>
+    /// The number of refusals the page states, in both places it states one, is
+    /// the number of rows it carries. Its last section tells the next person
+    /// how to add a row and says nothing about those two words.
+    /// </summary>
+    [Fact]
+    public void TheCountOfRefusalsThePageStatesIsTheNumberOfRowsItCarries()
+    {
+        var carried = RowsCarried();
+
+        Assert.Equal(carried, Stated(_statedInTheOpening, "the number of refusals, in its opening sentence"));
+        Assert.Equal(carried, Stated(_statedInTheHeading, "the number of refusals, in the heading over them"));
+    }
+
+    /// <summary>
+    /// The number of server jobs the real-server row states, in both places it
+    /// states one, is the number of jobs it goes on to name. Those names are
+    /// held against the workflow directory by the legs above, so this reaches
+    /// the tree through them rather than reading the directory a second way.
+    /// </summary>
+    [Fact]
+    public void TheCountOfServerJobsThePageStatesIsTheNumberItNames()
+    {
+        var named = Named().Count;
+
+        Assert.Equal(named, Stated(_serverJobsExist, "how many server jobs exist"));
+        Assert.Equal(named, Stated(_everyOneOfThemIsGreen, "how many server jobs were read"));
+    }
+
+    /// <summary>
+    /// The number a pattern reads out of the page, as a number.
+    /// </summary>
+    /// <param name="pattern">The sentence carrying it, capturing the word.</param>
+    /// <param name="what">What the sentence states, for the refusal.</param>
+    /// <returns>The count the page states.</returns>
+    private static int Stated(Regex pattern, string what)
+    {
+        var match = pattern.Match(Page());
+        Assert.True(
+            match.Success,
+            "docs/tests-not-written.md no longer states "
+            + what
+            + " in the words this leg reads, so nothing compares that number against what the page carries. Failing rather than passing over a count that has stopped being read.");
+
+        var word = match.Groups[1].Value;
+        Assert.True(
+            _numberWords.ContainsKey(word),
+            "docs/tests-not-written.md states "
+            + what
+            + " as \""
+            + word
+            + "\", which is not a number word this leg can read, so the count it states is compared against nothing.");
+
+        return _numberWords[word];
+    }
+
+    /// <summary>
+    /// How many rows the list carries.
+    /// </summary>
+    /// <remarks>
+    /// Counted inside the section the heading opens rather than over the whole
+    /// page, so a subheading written anywhere else is not counted as a refusal.
+    /// </remarks>
+    /// <returns>The number of rows.</returns>
+    private static int RowsCarried()
+    {
+        var page = Page();
+
+        var heading = _statedInTheHeading.Match(page);
+        Assert.True(
+            heading.Success,
+            "docs/tests-not-written.md no longer carries the heading the rows sit under, so nothing knows where the list begins. Failing rather than counting the whole page.");
+
+        var after = page[(heading.Index + heading.Length)..];
+        var next = _section.Match(after);
+
+        return _row.Matches(next.Success ? after[..next.Index] : after).Count;
     }
 
     /// <summary>
