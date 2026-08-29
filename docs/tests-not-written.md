@@ -87,39 +87,62 @@ Replaced by four things that each cover part of it. The ABI floor build in
 version the manifest's `targetAbi` names, so a call into a server member that
 arrived after the floor is caught at build time rather than at redemption time.
 The packaging job in `.github/workflows/package.yaml` builds the artefact the
-manifest lists. Two jobs install that artefact into an unmodified published
-server image and put the question to the server itself:
-`.github/workflows/e2e-authorization.yaml` asserts that the plugin's one
-anonymous route answers and that every administrator route refuses an
-unauthenticated request, and `.github/workflows/e2e-identity.yaml` installs the
-upstream template beside this plugin and asserts that the server holds both
-under two identifiers with this plugin still serving its own route. And one
+manifest lists. Then a runner installs that artefact into an unmodified
+published server image and puts the question to the server itself. And one
 manual install per supported server line before a release, recorded in
 `docs/manual-checks.md`.
 
-The anonymous route answering is the part of those two jobs that belongs to this
-row rather than to the issue each was built for. A plugin the server failed to
-load answers 404 at every one of its addresses, so a job that reads 200 there
-has read the loading, and `e2e-authorization.yaml` gives that as its own reason
-for asserting the anonymous route before anything else.
+The jobs that put a question to a real server are these:
+`.github/workflows/e2e-authorization.yaml` asserts that the plugin's one
+anonymous route answers and that every administrator route refuses an
+unauthenticated request. `.github/workflows/e2e-identity.yaml` installs the
+upstream template beside this plugin and asserts that the server holds both
+under two identifiers with this plugin still serving its own route.
+`.github/workflows/e2e-scheduled-task.yaml` completes the wizard and reads the
+server's own scheduled task list back, so the retention sweep is a task the
+server holds rather than a class this plugin declares.
+`.github/workflows/e2e-no-web-client.yaml` starts the same image with the web
+client turned off, confirms it is gone before asking for anything else, and
+compares the served setup page against the tracked file byte for byte.
 
-Status: the ABI floor build, the packaging job and the two server jobs exist,
-and both server jobs are green on the default branch, read at
-`a78856887b7bfbc9b30253c9852b051486451cc9`:
+That block said two jobs and named two while four had landed, which is the
+drift this page is least able to afford: it is the map somebody reads to find
+out what has been asked of a real server, so a job missing from it is a job
+nobody counts. It was found by asking which workflows name the pinned published
+server image and which of those this page writes down, and the two answers
+differed by the two jobs that arrived last. `TestsNotWrittenPageTests` holds the
+block in both directions now. A workflow naming that image and missing from the
+block reds the suite, and a name in the block that is not such a workflow reds
+it too, so the repair cannot rot the way the sentence it replaces did.
+
+The anonymous route answering is the part those jobs share, and it is what
+belongs to this row rather than to the issue each was built for. A plugin the
+server failed to load answers 404 at every one of its addresses, so a job that
+reads 200 there has read the loading, and `e2e-authorization.yaml` gives that as
+its own reason for asserting the anonymous route before anything else.
+
+Status: the ABI floor build, the packaging job and the four server jobs exist,
+and every one of the four is green on the default branch, read at
+`3f842ef4280d7ffe930566587292af1eea91cff2`:
 
 ```
-$ gh run list --workflow e2e-identity.yaml --branch master --limit 1 --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
-a7885688 success
-$ gh run list --workflow e2e-authorization.yaml --branch master --limit 1 --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
-a7885688 success
+$ for w in e2e-authorization e2e-identity e2e-no-web-client e2e-scheduled-task; do
+    printf '%s\t' "$w.yaml"
+    gh run list --workflow "$w.yaml" --branch master --limit 1 \
+      --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
+  done
+e2e-authorization.yaml	3f842ef4 success
+e2e-identity.yaml	3f842ef4 success
+e2e-no-web-client.yaml	3f842ef4 success
+e2e-scheduled-task.yaml	3f842ef4 success
 ```
 
 The manual install has a place to be recorded and nothing recorded in it, and
-that is the half of this row which has not moved. What the two jobs answer for
-is one server line on one image pinned by digest, the shipping version of the
-line `build.yaml` names in `targetAbi`. Per supported line is what the manual
-install is for, and a job pinned to one digest says nothing about the line above
-or below it.
+that is the half of this row which has not moved. What those jobs answer for is
+one server line on one image pinned by digest, the shipping version of the line
+`build.yaml` names in `targetAbi`. Per supported line is what the manual install
+is for, and a job pinned to one digest says nothing about the line above or
+below it.
 
 ### A test of the plugin behind a real reverse proxy with real certificates
 
@@ -332,7 +355,7 @@ single count hides which half of a row is missing.
 Row by row, which is the same thing each status line above says at more length.
 The setup page has neither of its two, because #107 is open and no manual check
 has been recorded. The real-server row has its ABI floor build, its
-packaging job and two jobs that install the packaged artefact into a published
+packaging job and the jobs that install the packaged artefact into a published
 server, and not its manual install. The reverse-proxy row has both. The mail row has nothing to replace and
 says so. The dashboard row has all three for both pages. The sleeping row has
 the seam and the boundary cases for three of its four behaviours, and not the
