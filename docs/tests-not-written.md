@@ -127,27 +127,31 @@ server failed to load answers 404 at every one of its addresses, so a job that
 reads 200 there has read the loading, and `e2e-authorization.yaml` gives that as
 its own reason for asserting the anonymous route before anything else.
 
-Status: the ABI floor build, the packaging job and five server jobs exist. Four
-of the five are green on the default branch, read at
-`3f842ef4280d7ffe930566587292af1eea91cff2`:
+Status: the ABI floor build, the packaging job and five server jobs exist, and
+every one of the five is green on the default branch, read at
+`00854ccde17a625781cdc8e9dcf76bae0ee0faef`:
 
 ```
-$ for w in e2e-authorization e2e-identity e2e-no-web-client e2e-scheduled-task; do
+$ for w in e2e-authorization e2e-identity e2e-no-web-client e2e-plugin-disabled e2e-scheduled-task; do
     printf '%s\t' "$w.yaml"
     gh run list --workflow "$w.yaml" --branch master --limit 1 \
       --json headSha,conclusion --jq '.[]|"\(.headSha[0:8]) \(.conclusion)"'
   done
-e2e-authorization.yaml	3f842ef4 success
-e2e-identity.yaml	3f842ef4 success
-e2e-no-web-client.yaml	3f842ef4 success
-e2e-scheduled-task.yaml	3f842ef4 success
+e2e-authorization.yaml	00854ccd success
+e2e-identity.yaml	00854ccd success
+e2e-no-web-client.yaml	00854ccd success
+e2e-plugin-disabled.yaml	00854ccd success
+e2e-scheduled-task.yaml	00854ccd success
 ```
 
-The fifth is `e2e-plugin-disabled.yaml` and it is deliberately absent from that
-loop rather than missing from it. It landed with the change that added this
-sentence, so it has never run on the default branch and a row for it would be an
-empty cell read as a verdict. What it has is a run at the head of the pull
-request that added it, which is a different claim and is made there.
+This paragraph said four of the five, named the fifth as deliberately absent from
+the loop, and gave as its reason that the job had never run on the default
+branch. That was true when it was written and stopped being true at the merge
+that landed it, which is the same commit: the merge is a push to `master` and the
+job runs on one. So a sentence explaining an absence outlived the absence by the
+length of one workflow run, in the paragraph of this page most likely to be
+quoted as a verdict. It was found by asking the loop for the fifth name rather
+than by reading the paragraph.
 
 The manual install has a place to be recorded and nothing recorded in it, and
 that is the half of this row which has not moved. What those jobs answer for is
