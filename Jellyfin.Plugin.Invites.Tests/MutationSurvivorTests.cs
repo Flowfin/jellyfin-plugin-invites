@@ -360,4 +360,107 @@ public class MutationSurvivorTests
 
         Assert.Equal(Array.Empty<string>(), unmoved);
     }
+
+    /// <summary>
+    /// Each argument the operations refuse is refused on its own.
+    /// </summary>
+    /// <remarks>
+    /// Three statement removals survived here, one per <c>ThrowIfNull</c>. They
+    /// are the class this file was opened for, a refusal that throws nothing,
+    /// and the reason they survived is that every test in this suite builds the
+    /// type with all three arguments present. Removing one leaves a type that
+    /// accepts a null and fails later, somewhere the failure no longer names
+    /// which of the three the caller forgot.
+    /// </remarks>
+    /// <param name="missing">The argument this case leaves out.</param>
+    [Theory]
+    [InlineData("directory")]
+    [InlineData("clock")]
+    [InlineData("address")]
+    public void TheOperationsRefuseEachArgumentOnItsOwn(string missing)
+    {
+        var refusal = Assert.Throws<ArgumentNullException>(() => new InvitationOperations(
+            missing == "directory" ? null! : new StubStoreDirectory("nowhere"),
+            missing == "clock" ? null! : new TestClock(_minted),
+            missing == "address" ? null! : new StubPublicAddress("https://films.example/")));
+
+        Assert.Equal(missing, refusal.ParamName);
+    }
+
+    /// <summary>
+    /// A minting that produced no code is refused, and so is one with no record.
+    /// </summary>
+    /// <remarks>
+    /// Two statement removals survived in this constructor, and both are the
+    /// same class as the three above. The code guard is the one worth being
+    /// exact about: what it refuses is a blank code as well as a missing one,
+    /// because a link built from whitespace is a link that resolves and cannot
+    /// be redeemed, so the case is asked in all three spellings rather than
+    /// only with null.
+    /// </remarks>
+    /// <param name="code">The code this case presents.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AMintingWithNoCodeIsRefused(string? code)
+    {
+        var refusal = Assert.Throws<ArgumentException>(
+            () => new Minting(code!, Record(), "https://films.example/"));
+
+        Assert.Equal("code", refusal.ParamName);
+    }
+
+    /// <summary>
+    /// A minting with no record is refused before anything is built from it.
+    /// </summary>
+    [Fact]
+    public void AMintingWithNoRecordIsRefused()
+    {
+        var refusal = Assert.Throws<ArgumentNullException>(
+            () => new Minting("ABCDEFGHJKLMNPQRSTUVWXYZ23", null!, "https://films.example/"));
+
+        Assert.Equal("invitation", refusal.ParamName);
+    }
+
+    /// <summary>
+    /// An operation on a server that told this plugin no data directory is
+    /// refused, and the refusal says what to ask first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The mutant that survived here is not a removal. Cutting the throw out
+    /// does not compile, because the routine then returns a possible null; what
+    /// the run produced is the branch handing its caller the unset value, so
+    /// the site is reached at run time and the store is built on nothing.
+    /// </para>
+    /// <para>
+    /// It survived because nothing asked any operation what it does on such a
+    /// server. Both spellings of absent are asked here, an unset path and a
+    /// blank one, because <see cref="InvitationOperations.StoreIsAvailable"/>
+    /// treats them alike and a guard that agreed with it on only one of the two
+    /// would be a second answer to the same question.
+    /// </para>
+    /// </remarks>
+    /// <param name="path">The path the server handed the plugin.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AnOperationWithNoDataDirectoryIsRefused(string? path)
+    {
+        var operations = new InvitationOperations(
+            new StubStoreDirectory(path),
+            new TestClock(_minted),
+            new StubPublicAddress("https://films.example/"));
+
+        Assert.False(operations.StoreIsAvailable);
+
+        var refusal = Assert.Throws<InvalidOperationException>(() => operations.All());
+
+        Assert.Contains("StoreIsAvailable", refusal.Message, StringComparison.Ordinal);
+
+        Assert.Throws<InvalidOperationException>(
+            () => operations.Mint(_operator, "guest", null, null));
+    }
 }
