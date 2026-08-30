@@ -15,8 +15,8 @@ Four things, named in #22: the redemption decision, the expiry comparison, the
 use-count arithmetic and the account-template application.
 
 They are addressed as three directories and one file rather than as a list of
-routines, because the first three already sit together and the fourth has no
-code yet:
+routines, because the first three already sit together and the fourth had no code
+when the scope was written:
 
 ```
 $ grep -A7 '"mutate"' stryker-config.json
