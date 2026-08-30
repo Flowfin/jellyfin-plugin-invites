@@ -26,9 +26,20 @@ The expiry comparison and the use-count arithmetic are inside
 `Redemption/RedemptionDecision.cs`, which is where the greppable rule
 `expiry-or-use-count-judged-outside-the-decision` keeps them. The counts
 themselves are on `Invitations/Invitation.cs`. The account template is
-`Accounts/AccountTemplate.cs`, and the routine that applies it is #69 and is not
-written; naming the directory rather than the file is what puts that routine in
-scope on the day it lands instead of leaving a widening nobody remembers to make.
+`Accounts/AccountTemplate.cs`, and the routine that applies it is
+`Accounts/AccountTemplateApplication.cs`. THIS PARAGRAPH SAID THAT ROUTINE WAS
+NOT WRITTEN, AND THE ARRANGEMENT IT DESCRIBES IS WHAT MADE THE SENTENCE SAFE TO
+GO STALE: naming the directory rather than the file is what put the routine in
+scope on the day it landed, so the widening nobody remembers to make did not have
+to be made.
+
+    git log --diff-filter=A --format='%h %ad %s' --date=short -- Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs
+    048c4b4 2026-08-30 Apply an account template in one routine, for #69
+
+What that costs is worth having here rather than being read off a run: the first
+run after it lands mutates a file the runs before it did not, so its score is not
+comparable with theirs. #376 carries where the score stood before it and what
+that gate has been reporting.
 
 `Codes/InvitationCode.cs` is in scope and is not one of the four. It is there
 because the decision's first act is to canonicalise what was presented, so a
