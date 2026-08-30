@@ -496,16 +496,38 @@ Each fault was put back afterwards and the suite returns to where it started:
 The other three entries are the username disclosure, the deleted library, and
 uninstall leaving accounts alone. No fault was run against any of them here, and
 for two of the three there is nothing to run one against. Nothing in the plugin
-judges a username or resolves a library identifier:
+judges a username, and nothing in it resolves a library identifier or notices one
+that has gone:
 
     git grep -niE 'Username' -- 'Jellyfin.Plugin.Invites/*.cs' | grep -cv '///'
     0
     git grep -niE 'EnabledFolders|libraryId|ResolveLibrar' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
+    exit=0
 
 The first of the two is counted rather than statused. One line in the plugin
 carries the word and it is inside a documentation comment, so that grep exits 0
 and what has to be zero is the count surviving the filter.
+
+CORRECTED IN THE CHANGE THAT MOVED IT. The second grep exited 1 here until the
+routine that applies an account template landed under #69, and the sentence above
+it read that nothing in the plugin resolves a library identifier. The paste is
+what changed rather than the claim, and both are worth being exact about, because
+this page's own subject is a claim outliving the evidence under it.
+
+What it matches is two lines:
+
+    git grep -niE 'EnabledFolders' -- Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs
+    Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs:86:        "EnabledFolders",
+    Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs:175:        policy.EnabledFolders = libraries;
+
+Both are a template's already-resolved list being handed to the field the server
+keeps it in. Neither turns a name into an identifier, and neither asks whether an
+identifier still names a library on the server, which is what the entry above is
+about and what #70 owns. So the entry still has nothing
+to run a fault against, and the grep that stood for that has stopped being the
+question: it now matches the field's name wherever it is written, and the claim
+is carried by the sentence rather than by the exit status. Whoever gives #70 an
+answer is the one who replaces this with a fault.
 
 A third grep stood beside these two until this revision. It asked whether
 anything in the plugin compares the running server against the line it was built
