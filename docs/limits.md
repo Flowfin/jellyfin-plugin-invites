@@ -264,10 +264,18 @@ of those says whether the server still has it. Copying the store file is still
 available and is still the only thing that carries the fields the view does not,
 so it is a fallback rather than the instruction it used to be.
 
-What is not built is an export as a named operation, offered at the moment an
-operator removes the plugin rather than found by one who thought of it first.
-That is #91 and it is the part this entry cannot promise. Owned by #91, with the
-account side in #45 and #94.
+No export as a named operation is built, and none is going to be. Reading the
+listing route and saving what it answers IS the export, decided on #91 on
+2026-08-29: a plugin should not grow a second surface for data an existing route
+already answers, kept permanently for a step an operator takes once. What the
+decision asks for instead is an instruction at the moment it matters, and that is
+the uninstall section of [the operator guide](operator-guide.md#removing-the-plugin),
+which carries the command to run.
+
+What this entry still cannot promise is a prompt. Nothing offers the trail to an
+operator who presses uninstall without having read either page, so the reminder
+is a document rather than the software. Owned by #91, with the account side in
+#45 and #94.
 
 ## What this page does not do yet
 

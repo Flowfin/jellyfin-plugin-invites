@@ -386,10 +386,39 @@ removing a plugin is not a thing software should do quietly.
 
 What goes with the plugin is the answer to which accounts came from which
 invitation. That link lives in the plugin's records and nowhere else, so the
-moment before an uninstall is the last moment it exists. If it matters to you,
-read it off `GET /Invites` and save what it answers, or copy the store file,
-before you remove anything. There is no export offered at the moment you
-uninstall, and that is a gap rather than a decision.
+moment before an uninstall is the last moment it exists.
+
+### Take the trail before you remove anything
+
+`GET /Invites` hands back every record with the accounts it produced. Saving what
+it answers is the export, and it is a file on your own machine rather than
+anything the plugin keeps:
+
+    curl -fsS 'https://your-server.example/Invites' \
+      -H 'Authorization: MediaBrowser Token="YOUR_API_KEY"' \
+      -o invites-before-uninstall.json
+
+Substitute your server's address and an API key belonging to an administrator.
+The header form is the one this repository's own end-to-end jobs send to a real
+Jellyfin server, rather than a shape written from memory here:
+
+    git grep -h 'Authorization: MediaBrowser Token' -- .github/workflows/e2e-identity.yaml
+                -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > plugins.json
+
+Copying the store file is the other way, and it is still worth knowing about: it
+carries the fields the route does not return, and it needs no credential because
+it is a file on the server's disk.
+
+There is no export button, and that is a decision rather than a gap. Adding one
+would give this plugin a second surface for data an existing route already
+answers, kept permanently for a step an operator takes once; the instruction
+above serves the same moment and leaves nothing to maintain. Decided on #91 on
+2026-08-29, with the alternative that a future need the listing route genuinely
+cannot serve arrives as its own issue.
+
+Neither route nor file is offered to you by the server at the moment you press
+uninstall. Nothing prompts, so the reminder is this page, and an operator who
+removes the plugin without reading it loses the link.
 
 ## Where to look next
 
