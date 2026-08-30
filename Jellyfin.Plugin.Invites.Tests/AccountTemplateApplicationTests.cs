@@ -103,6 +103,84 @@ public class AccountTemplateApplicationTests
     }
 
     /// <summary>
+    /// Moving one grant moves exactly the policy fields that grant is written
+    /// to, and no others.
+    /// </summary>
+    /// <param name="which">
+    /// Which grant moves. Nought to ten are the eleven permissions in the order
+    /// the template's constructor takes them, eleven to thirteen are the three
+    /// ceilings, and fourteen is the libraries.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// The run above cannot see two grants swapped between their fields, and
+    /// this is the leg that can. Every permission on a template points the same
+    /// way there, so a routine handing the subtitle grant to the lyric field and
+    /// the lyric grant to the subtitle field produces the same policy and passes.
+    /// That fault was applied and watched to pass before this leg was written.
+    /// </para>
+    /// <para>
+    /// Here one grant moves at a time and what is compared is which fields moved
+    /// with it. The expectation is derived from
+    /// <see cref="WhatTheTemplateGrants"/> rather than from a second mapping, so
+    /// there is one table for a reader to check and the routine is judged
+    /// against it in both directions: a field that should have moved and did
+    /// not, and a field that moved and should not have.
+    /// </para>
+    /// <para>
+    /// <b>The case worth reading is eleven, which expects nothing to move.</b>
+    /// <see cref="AccountTemplate.MayManage"/> is handed to no field of the
+    /// server's policy, so a template that grants it produces exactly the same
+    /// account as one that does not. That is the state #62 owns rather than a
+    /// defect here, and asserting it means the day somebody gives that grant a
+    /// field is the day this case reds.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(12)]
+    [InlineData(13)]
+    [InlineData(14)]
+    public void MovingOneGrantMovesExactlyTheFieldsItIsWrittenTo(int which)
+    {
+        var baseline = ABaseline();
+        var moved = ABaselineWithOneGrantMoved(which);
+
+        var fromBaseline = new UserPolicy();
+        AccountTemplateApplication.ApplyTo(fromBaseline, baseline);
+
+        var fromMoved = new UserPolicy();
+        AccountTemplateApplication.ApplyTo(fromMoved, moved);
+
+        var grantedBefore = WhatTheTemplateGrants(baseline);
+        var grantedAfter = WhatTheTemplateGrants(moved);
+
+        var shouldMove = grantedBefore.Keys
+            .Where(name => !Equal(grantedBefore[name], grantedAfter[name]))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        var didMove = WritableFields()
+            .Where(field => !Equal(field.GetValue(fromBaseline), field.GetValue(fromMoved)))
+            .Select(field => field.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Equal(shouldMove, didMove);
+    }
+
+    /// <summary>
     /// The fields the routine says it writes are exactly the fields this table
     /// carries an expected value for.
     /// </summary>
@@ -342,6 +420,82 @@ public class AccountTemplateApplicationTests
             noCeilings ? null : 2,
             noCeilings ? null : 13,
             leftAlone ?? ImmutableArray<string>.Empty);
+
+    /// <summary>
+    /// A template built out of its parts, so that one of them can be moved and
+    /// nothing else.
+    /// </summary>
+    /// <param name="permissions">
+    /// The eleven permissions, in the order the constructor takes them.
+    /// </param>
+    /// <param name="libraries">The libraries.</param>
+    /// <param name="bitrate">The remote bitrate ceiling.</param>
+    /// <param name="sessions">The simultaneous stream ceiling.</param>
+    /// <param name="rating">The parental rating ceiling.</param>
+    /// <returns>The template.</returns>
+    private static AccountTemplate ATemplateOf(
+        bool[] permissions,
+        ImmutableArray<Guid> libraries,
+        int? bitrate,
+        int? sessions,
+        int? rating) =>
+        new(
+            libraries,
+            permissions[0],
+            permissions[1],
+            permissions[2],
+            permissions[3],
+            permissions[4],
+            permissions[5],
+            permissions[6],
+            permissions[7],
+            permissions[8],
+            permissions[9],
+            permissions[10],
+            bitrate,
+            sessions,
+            rating,
+            ImmutableArray<string>.Empty);
+
+    /// <summary>
+    /// The template every one-grant run starts from.
+    /// </summary>
+    /// <returns>The template.</returns>
+    private static AccountTemplate ABaseline() =>
+        ATemplateOf(
+            new bool[11],
+            ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")),
+            1_000_000,
+            1,
+            5);
+
+    /// <summary>
+    /// The baseline with exactly one of its grants moved.
+    /// </summary>
+    /// <param name="which">
+    /// Which grant moves. Nought to ten are the permissions in the order the
+    /// constructor takes them, then the three ceilings, then the libraries.
+    /// </param>
+    /// <returns>The template.</returns>
+    private static AccountTemplate ABaselineWithOneGrantMoved(int which)
+    {
+        var permissions = new bool[11];
+        var libraries = ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555"));
+        int? bitrate = 1_000_000;
+        int? sessions = 1;
+        int? rating = 5;
+
+        switch (which)
+        {
+            case 11: bitrate = 2_000_000; break;
+            case 12: sessions = 2; break;
+            case 13: rating = 6; break;
+            case 14: libraries = ImmutableArray.Create(new Guid("66666666-6666-6666-6666-666666666666")); break;
+            default: permissions[which] = true; break;
+        }
+
+        return ATemplateOf(permissions, libraries, bitrate, sessions, rating);
+    }
 
     /// <summary>
     /// Every writable property of the server's user policy.
