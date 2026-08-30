@@ -206,10 +206,22 @@ The other half of this is duration. The stored hash is compared with
 `CryptographicOperations.FixedTimeEquals`, every record is compared rather than
 the loop returning on the first match, and
 `RedemptionDecisionTests.TheAnswerDoesNotDependOnWhereTheRecordSits` moves the
-matching record through every position and requires the same answer. The
-`secret-compared-with-equality` and `secret-compared-by-sequence` rules refuse
-the two spellings that would take it back. No timing was measured, and this is a
-claim about which branches the routine takes rather than about a clock.
+matching record through every position and requires the same answer. Three
+rules refuse the spellings that would take it back:
+`secret-compared-with-equality`, `secret-compared-by-sequence` and
+`secret-compared-through-a-comparer`.
+
+This paragraph named the first two and called them the two spellings. The third
+had been in the lint for two days when that sentence was written, and it is the
+one the other two cannot see: a comparison written as `string.Equals(stored,
+presented, StringComparison.Ordinal)` puts the secret one comma along, past an
+identifier-in-front-of-an-operator pattern, and it is what somebody writes after
+an analyser asks them to say which comparison they meant. A page naming two of
+three describes a narrower guard than the one that is there, which is the
+direction this section is least able to afford: the reader who trusts it is the
+reader deciding whether that spelling is available. No timing was measured, and
+this is a claim about which branches the routine takes rather than about a
+clock.
 
 Byte-identical responses are not held, because no route answers a presented
 code. This paragraph said nothing here serves a route, and routes are served.
@@ -323,8 +335,16 @@ a jump forward across several at once.
 [docs/expiry-rules.md](docs/expiry-rules.md) is where the backwards jump is
 argued rather than defended.
 
-`clock-read-outside-the-seam` refuses a machine clock read anywhere but the one
+`clock-read-outside-the-seam` refuses the machine clock anywhere but the one
 file, so a later change cannot quietly acquire a second opinion about the time.
+What it refuses is a fixed vocabulary rather than the idea: `DateTime.UtcNow`,
+`DateTime.Now`, `DateTime.Today`, `DateTimeOffset.UtcNow`,
+`DateTimeOffset.Now`, `Environment.TickCount`, `Stopwatch.GetTimestamp` and
+`TimeProvider.System`. This paragraph said it refuses a machine clock read,
+which is wider than what it does, and the difference is reachable: a
+`Stopwatch.StartNew()` written into the plugin and read for the time it has
+counted leaves the rule green. That was probed rather than argued, and the probe
+was taken out again.
 
 ### An invitation can be revoked, and revoking it twice costs nothing
 
