@@ -463,4 +463,104 @@ public class MutationSurvivorTests
         Assert.Throws<InvalidOperationException>(
             () => operations.Mint(_operator, "guest", null, null));
     }
+
+    /// <summary>
+    /// The two readings a retention sweep is built out of refuse a record that
+    /// is not there.
+    /// </summary>
+    /// <remarks>
+    /// Two more statement removals of the same class, one per routine. Both are
+    /// reached with a record every test in this suite supplies, so removing the
+    /// guard leaves a routine that dereferences null and fails as a null
+    /// reference rather than as a named argument. The assertion is the exception
+    /// type and the parameter, because that is the difference the mutant makes:
+    /// something is thrown either way.
+    /// </remarks>
+    /// <param name="routine">The routine this case drives.</param>
+    [Theory]
+    [InlineData("IsLive")]
+    [InlineData("RetentionStartsAt")]
+    public void TheDecisionReadingsRefuseARecordThatIsNotThere(string routine)
+    {
+        var refusal = Assert.Throws<ArgumentNullException>(() =>
+        {
+            if (routine == "IsLive")
+            {
+                RedemptionDecision.IsLive(null!, _minted);
+                return;
+            }
+
+            RedemptionDecision.RetentionStartsAt(null!, _minted);
+        });
+
+        Assert.Equal("invitation", refusal.ParamName);
+    }
+
+    /// <summary>
+    /// The refusal a full server hands back says how full it is.
+    /// </summary>
+    /// <remarks>
+    /// The sentence this asserts is built in a private routine whose whole body
+    /// survived the run, which means no test read the message back. What it is
+    /// for is an operator who has just been refused a mint and needs to know
+    /// what to do about it, so the numbers being in it is the point of the type
+    /// carrying them at all.
+    /// </remarks>
+    [Fact]
+    public void TheCeilingRefusalNamesTheCountAndTheCeiling()
+    {
+        var refusal = new LiveCeilingReachedException(500, 500);
+
+        Assert.Equal(500, refusal.Live);
+        Assert.Equal(500, refusal.Ceiling);
+        Assert.Contains("500 live invitations", refusal.Message, StringComparison.Ordinal);
+        Assert.Contains("at most 500", refusal.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The three constructors this type carries for the analyser answer for
+    /// themselves.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Three block removals survived here, one per constructor, and this does
+    /// not kill them. Each body assigns zero to a property whose own default is
+    /// zero, so removing it changes nothing a caller can read, which was probed
+    /// rather than reasoned about: with all three bodies emptied by hand the
+    /// whole suite stays green, this test included. They are equivalent mutants
+    /// and the threshold cannot reach them.
+    /// </para>
+    /// <para>
+    /// It is here anyway, because the property the survivors pointed at is
+    /// worth holding whatever kills them. These three exist because an analyser
+    /// rule asks an exception type for the standard set and nothing in the
+    /// plugin calls them. What they must not do is look like the refusal that
+    /// carries numbers: a caller reading <c>Live</c> off one of them gets a
+    /// count that was never measured, and an assignment of the real count added
+    /// here later would be caught by this rather than by nothing.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheConstructorsCarriedForTheAnalyserCountNothing()
+    {
+        var bare = new LiveCeilingReachedException();
+
+        Assert.Equal(0, bare.Live);
+        Assert.Equal(0, bare.Ceiling);
+        Assert.Contains("as many live invitations", bare.Message, StringComparison.Ordinal);
+
+        var worded = new LiveCeilingReachedException("the store is full");
+
+        Assert.Equal(0, worded.Live);
+        Assert.Equal(0, worded.Ceiling);
+        Assert.Equal("the store is full", worded.Message);
+
+        var underneath = new InvalidOperationException("underneath");
+        var wrapped = new LiveCeilingReachedException("the store is full", underneath);
+
+        Assert.Equal(0, wrapped.Live);
+        Assert.Equal(0, wrapped.Ceiling);
+        Assert.Equal("the store is full", wrapped.Message);
+        Assert.Same(underneath, wrapped.InnerException);
+    }
 }
