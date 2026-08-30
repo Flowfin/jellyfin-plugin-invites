@@ -8,6 +8,7 @@
       "Invitations/**/*.cs",
       "Accounts/**/*.cs",
       "!Accounts/ServerAccounts.cs",
+      "!Accounts/RequestOperatorIdentity.cs",
       "Codes/InvitationCode.cs"
     ],
     "ignore-mutations": ["string"],

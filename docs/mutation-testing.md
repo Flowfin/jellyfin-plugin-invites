@@ -111,6 +111,56 @@ Nine of the other twelve string mutants that died were on
 `string.IsNullOrWhiteSpace` conditions whose behaviour is covered by the
 equality and logical mutators, which stay on.
 
+## The file that is not mutated, and what that costs
+
+`Accounts/RequestOperatorIdentity.cs` is excluded, beside `ServerAccounts.cs`
+which was excluded for its own reason.
+
+It is a two-member wrapper over the server's authorization context, and it holds
+two mutants no test written against this suite can kill.
+
+The first is the argument of `ConfigureAwait(false)`. Flipped to `true` it
+resumes on the captured synchronisation context; a test host captures none, and
+the routine has nothing after the await but a field read. So the two spellings
+are one behaviour here, and the suite stays green on the flipped spelling for
+that reason rather than for want of an assertion:
+
+```
+$ sed -i 's/ConfigureAwait(false)/ConfigureAwait(true)/' \
+    Jellyfin.Plugin.Invites/Accounts/RequestOperatorIdentity.cs
+$ dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release --no-build
+Bestanden!   : Fehler:     0, erfolgreich:   636, übersprungen:     8, gesamt:   644
+```
+
+The second is the body of `OfAsync`, which the run replaces with a default
+return. Killing it means asserting that the routine hands back the identifier the
+server named, and the server's `AuthorizationInfo.UserId` has no setter:
+
+```
+error CS0200: Für die Eigenschaft oder den Indexer "AuthorizationInfo.UserId"
+ist eine Zuweisung nicht möglich. Sie sind schreibgeschützt.
+```
+
+Naming an operator means building a user, and the assembly that declares one is
+not referenced by the suite. `OperatorIdentityTests` says the same in its own
+remarks and asserts what it can, which is that the wrapper reads the field and
+invents nothing when the server names nobody. That assertion passes a routine
+returning the empty identifier for any reason, so it cannot be the one that kills
+this mutant.
+
+A line-level disable was tried on the first of the two before the file was
+excluded, and it is worth recording why it was not enough. It removed the boolean
+mutant and the block removal underneath it, which the run had reported as
+`Ignored` while the boolean stood, arrived as a survivor in its place. One
+unkillable mutant became another, in the same file, so the threshold stayed
+unreachable and the disable bought nothing.
+
+What excluding the file costs is the standing proof for one guard: the
+constructor refuses a null context, that mutant was killed on the run of
+2026-08-30, and it is now unmeasured. `OperatorIdentityTests` still asserts it,
+so what is lost is the proof that the assertion would notice rather than the
+assertion.
+
 ## What the run does not measure
 
 A mutation score is a statement about the suite, not about the plugin. A routine
