@@ -38,8 +38,21 @@ The tests are named rather than pasted, and the names are what the suite prints:
 
 ### An invitation can never create an administrator
 
-Not refused by a test. Nothing in this plugin creates an account or writes a
-user policy, so there is no execution path for a test to reach.
+Not refused by a test. Nothing in this plugin creates an account, so there is no
+execution path for a test to reach.
+
+THIS PARAGRAPH ALSO SAID NOTHING HERE WRITES A USER POLICY, AND SOMETHING DOES.
+The routine that applies an account template landed under #69 and writes fifteen
+fields of one:
+
+    git grep -c '^        policy\.' -- Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs
+    Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs:15
+
+`IsAdministrator` is not among the fifteen, and that is refused over the whole
+plugin rather than chosen by the routine: `administrator-flag-set` carries no
+exemption at all and the routine's own file is not outside it. So what is left of
+this paragraph's reason is the first half of what it claimed. There is a policy
+to write and there is still no account for it to be written to.
 
 Refused at the capability. Creating an administrator means creating an account,
 and the plugin cannot create one: `TheSeamOverTheServersAccountsDeclaresNothingThatWrites`
@@ -128,8 +141,12 @@ red before anything is written with one. It covers that one routine, and this
 line is about every routine.
 
 The line has two halves and they need different mechanisms. That the routine
-does not modify an account it was handed is a test, and it waits on the routine
-in #69 and the write side of the seam in #103. The second half, that no other
+does not modify an account it was handed is a test, and this sentence named #69
+for the routine it waits on. That routine exists and it is never handed an
+account: what it takes is a policy and a template, which is why the test this
+half wants is still absent. It waits on the write side of the seam in #103 and
+on something that creates the account the policy would belong to. The second
+half, that no other
 path in the plugin ever reaches the server's update method, said here that it is
 not a test at all and is a greppable invariant.
 `OnlyTheReadSeamCanBeHandedTheServersUserManager` is that half as a test, and it
@@ -151,10 +168,23 @@ rather than as a missing one. `EveryQuotaOnTheTemplateHasARowAndEveryRowIsAQuota
 ties every quota the template carries to a field of the server's policy, read
 off the assembly rather than off a document.
 
-Not refused on the account. What no test here reaches is the account afterwards,
-because the routine that applies a template is #69 and the fake user manager it
-would be applied through is #103. Until then this line is defended on the value
-and not on the result.
+Refused by a test on the policy as well, since #69. THIS PARAGRAPH SAID THE LINE
+IS DEFENDED ON THE VALUE AND NOT ON THE RESULT, and the middle of those two
+arrived. `EveryFieldIsTheTemplatesGrantOrTheValueTheServerHadSet` asserts every
+field of the server's user policy after a template is applied: the fifteen the
+template grants carry what it granted, and the twenty-nine this plugin writes
+nothing to carry exactly the value they had. It runs twice with the markers
+reversed, so a routine writing a constant into a field it should leave alone is
+caught by one of the two runs rather than by neither.
+`MovingOneGrantMovesExactlyTheFieldsItIsWrittenTo` moves one grant at a time and
+asserts which fields moved with it, which is what refuses a grant handed to the
+wrong field; a swap of two of them passes the run above and reddens this one.
+
+Not refused on the account. What no test here reaches is still the account, and
+the reason is narrower than it was: there is no creation path and the write side
+of the seam a test would drive it through is #103. So the line is defended on
+the value and on the policy a template produces, and not on the account that
+policy would be written to.
 
 ### An invitation can never be redeemed after expiry, after revocation, or with no uses left
 
@@ -272,9 +302,9 @@ sections:
 
 | Line | What is missing | Where it lands |
 | --- | --- | --- |
-| Never create an administrator | Any execution path, and the decision that a grant may not manage | #62, #69 |
-| Never modify an existing account | The routine, and the write side of the seam a test would drive it through | #69, #103 |
-| Never grant beyond the template | The account the template was applied to | #69, #103 |
+| Never create an administrator | Account creation, and the decision that a grant may not manage | #62 |
+| Never modify an existing account | Account creation, and the write side of the seam a test would drive it through | #103 |
+| Never grant beyond the template | The account the policy is written to | #103 |
 | Never be recovered, for a backup | A check somebody makes by hand, and a register to record it in | #100 |
 | Never be recovered, for an error message | The refusal response | #77 |
 | Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
@@ -286,6 +316,15 @@ the other direction: a line's source arriving with no test for the line is what
 this table exists to make visible, so a change that lands one of the issues
 above lands the line's test in the same change and moves its row out of this
 table.
+
+#69 LEFT THE THIRD COLUMN OF THREE ROWS AND NO ROW LEFT THE TABLE. That issue is
+closed as completed, so a reader following the column to find where the missing
+thing lands arrived at finished work, which is the defect this page is for
+happening on this page. What the routine it landed does is written in the second
+and third sections above; what none of the three rows was ever about is the
+routine, and each one still names account creation or the seam that would drive
+it. A row leaves this table when the line has a test, not when an issue named
+beside it closes.
 
 Nothing in the table moves for the capability refusal added under #91, and that
 is deliberate. What is missing in each row is a routine and the test over it,
