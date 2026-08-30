@@ -179,11 +179,18 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}'
           curl -fsS -X POST "${JELLYFIN_URL}/Startup/Complete"
-          token="$(curl -fsS -X POST "${JELLYFIN_URL}/Users/AuthenticateByName" \
+          # The response is written to a file and read back from it rather than
+          # piped into python3. A download piped into an interpreter is the shape
+          # Scorecard names downloadThenRun, and it reads the same whether the
+          # interpreter runs the downloaded bytes or only parses them; taking
+          # them off disk says which of the two this is. Read in #363. The file
+          # holds the token, so it is removed as soon as the value is out of it.
+          curl -fsS -X POST "${JELLYFIN_URL}/Users/AuthenticateByName" \
             -H 'Content-Type: application/json' \
             -H "Authorization: ${auth}" \
-            -d '{"Username":"operator","Pw":"plugin-disabled-job-throwaway"}' \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessToken"])')"
+            -d '{"Username":"operator","Pw":"plugin-disabled-job-throwaway"}' > auth.json
+          token="$(python3 -c 'import json; print(json.load(open("auth.json"))["AccessToken"])')"
+          rm -f auth.json
           if [ -z "${token}" ]; then
             echo "::error::The wizard completed but no access token came back, so nothing here could disable the plugin."
             docker logs jellyfin || true
