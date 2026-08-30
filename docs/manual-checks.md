@@ -61,12 +61,30 @@ passed the check above and failed the release. So the run goes on: mint one
 invitation, redeem it, and read the resulting account's policy back against the
 template the invitation carried.
 
-The policy is read field by field rather than glanced at. The template names
-seven grants, and the fields it does not name are supposed to be exactly what
-the server set when it created the user, so a run that only confirms the account
-exists has not looked at the half where a mistake hides. #69 is where that table
-is written and it is what this row reads against, so this page does not carry a
-second copy of it.
+The policy is read field by field rather than glanced at. THIS PARAGRAPH SAID THE
+TEMPLATE NAMES SEVEN GRANTS AND IT NAMES SIXTEEN PROPERTIES. Eight permissions
+arrived on that type under #64 and each one is a field of the server's policy
+somebody doing this check has to look at:
+
+    grep -cE '^    public .* \{ get; \}' Jellyfin.Plugin.Invites/Accounts/AccountTemplate.cs
+    16
+
+Fifteen of those sixteen properties are written to the account's policy by the
+routine that applies a template. The one that is not is `MayManage`, which the
+server carries no single field for and which #62 owns.
+
+The fields the template does not name are supposed to be exactly what the server
+set when it created the user, so a run that only confirms the account exists has
+not looked at the half where a mistake hides. #69 is where that table is written
+and it is what this row reads against, so this page does not carry a second copy
+of it. That table exists now:
+
+    grep -cE '^        policy\.' Jellyfin.Plugin.Invites/Accounts/AccountTemplateApplication.cs
+    15
+
+What it does not remove is this row. The routine is asserted against a policy a
+test hands it, and this check is the one that reads a policy off a running
+server, which nothing in this repository does.
 
 Two of those three steps cannot be run today, and this is the form rather than
 the run, so they are here waiting for the release rather than left out of it:

@@ -42,11 +42,15 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </para>
 /// <para>
 /// <b>What is not covered here.</b> The value an invited account ends up
-/// carrying in each field. That needs a routine that creates an account and
-/// applies a template, and this plugin has neither, so the whole of #69's
-/// expected-value column is absent rather than asserted. What this file holds is
-/// the source column, which is the half that can be held before the routine
-/// exists and the half that reds when the server's policy grows.
+/// carrying in each field. This paragraph said that needs a routine that
+/// creates an account and applies a template and that the plugin has neither,
+/// and it has one of the two: <see cref="AccountTemplateApplication"/> applies a
+/// template, and <c>AccountTemplateApplicationTests</c> is where #69's
+/// expected-value column is asserted, field by field, over the policy that
+/// routine produces. What is still absent is the account. Nothing creates one,
+/// so no assertion anywhere reaches what a server ends up holding. What this
+/// file holds is the source column, which is the half that reds when the
+/// server's policy grows a field nobody has placed.
 /// </para>
 /// <para>
 /// <b>What was measured and what was not.</b> That a field exists on the policy
