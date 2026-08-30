@@ -34,6 +34,16 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// Nothing here reads a clock or touches a file. Every instant is an argument
 /// and every value is built in the test.
 /// </para>
+/// <para>
+/// That rule is why one survivor is asserted somewhere else rather than here.
+/// The block removal at the short-circuit in
+/// <c>InvitationOperations.Revoke</c> changes nothing a caller can read: it
+/// writes the store again with byte-identical contents, so only a test that
+/// can see a write happen kills it, and seeing one means a real directory.
+/// <see cref="ASecondRevocationWritesNothingTests"/> is where it lives, and
+/// it is named here so that a reader working through the list on #376 finds
+/// it rather than concluding that nothing was written for it.
+/// </para>
 /// </remarks>
 public class MutationSurvivorTests
 {
