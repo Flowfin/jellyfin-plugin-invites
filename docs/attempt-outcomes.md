@@ -178,7 +178,18 @@ Retention is a parameter with no value, and decision 8 in #11 is not what fills
 it. That decision has an answer now, ninety days, and it is about how long a
 spent or expired invitation record is kept.
 [docs/personal-data.md](personal-data.md#retention) holds it, and says in place
-that the answer does not set the trail's bound, which is a separate quantity
-nothing has chosen. So this page still has no number and the reason has moved:
-it is not that the decision is open, it is that the decision was about the other
-parameter.
+that the answer does not set the trail's bound.
+
+THIS PARAGRAPH WENT ON TO CALL THE BOUND A QUANTITY NOTHING HAS CHOSEN, AND
+THIS PAGE CHOSE IT UNDER `## The bound, in two parts` ABOVE:
+
+    git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
+    docs/attempt-outcomes.md:128:**The failure bound is one thousand entries.** This paragraph said the number was
+
+So a reader arriving at this section was told this page has no number for a
+thing this page states, which is worse than a stale claim about another
+document: the two sentences are sections apart and either one alone reads as
+settled. What has no value is retention, meaning how long an entry is kept once
+it is inside the bound, and the reason has moved twice rather than once. It is
+not that decision 8 is open. It is not that the bound is unchosen. It is that
+decision 8 was about the other parameter and nobody has asked this one.

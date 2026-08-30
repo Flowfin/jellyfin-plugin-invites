@@ -158,9 +158,10 @@ recommendation: nothing writes a trail at all.
 
 ## Retention
 
-Two named parameters are what the record and the trail are built against. One
-of them has its answer and the other does not, and the difference is worth
-seeing at a glance rather than being read out of a paragraph.
+Two named parameters are what the record and the trail are built against. Both
+have an answer now, they were chosen in different places and for different
+reasons, and that is worth seeing at a glance rather than being read out of a
+paragraph.
 
 `record-retention` is ninety days. It is how long a spent, expired or revoked
 invitation record is kept after it stops being usable, counted from the moment
@@ -203,18 +204,38 @@ page and the code cannot drift apart without something going red. A page that
 stops carrying the sentence fails there rather than passing quietly, which is
 the direction to fail in.
 
-`trail-bound` is what bounds the attempt trail, and it has no number. Decision 8
-asks how long spent and expired invitation records are kept, which is the
-parameter above, so the answer to it does not set this one.
-`docs/attempt-outcomes.md` reads decision 8 as also covering how long trail
-entries are kept beyond the bound. That reading is not settled here, and either
-way the bound itself is a separate quantity that nothing has chosen.
+`trail-bound` is one thousand failure entries, dropped oldest first. THIS
+PARAGRAPH SAID IT HAD NO NUMBER, AND THE NUMBER LANDED ON 2026-08-17. That is
+the drift this section is least able to carry: a reader here was told the trail
+has a requirement and nothing to satisfy it, while the page that owns the
+quantity had already derived one and had been carrying it for a fortnight.
+
+    git log -1 --format='%h %ad %s' --date=short fd0fdfe
+    fd0fdfe 2026-08-17 Choose the attempt trail's failure bound, for #43
+
+    git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
+    docs/attempt-outcomes.md:128:**The failure bound is one thousand entries.** This paragraph said the number was
+
+It bounds failures and not the whole trail, and that half is the one a summary
+here would lose. Successes are kept and are bounded by the ceilings in #33
+instead, because nothing a stranger does creates a success entry without also
+creating an account. A single oldest-first ring over the whole trail would
+satisfy the word bounded and is refused by name on that page as a
+history-erasing attack. Where the number comes from, which is the limits chosen
+in #31, and what it does not buy, are argued there rather than restated here.
+
+Decision 8 in #11 still does not set it, and the sentence saying so was right.
+That decision is `record-retention` above and the two are different quantities.
+What is left unchosen is a third thing rather than this one: how long a trail
+entry is kept once it is inside the bound, which `docs/attempt-outcomes.md`
+names as a parameter with no value.
 
 #43 requires the trail be bounded and says why: an endpoint a stranger can
 hammer, writing an unbounded trail, is a disk-filling attack that uses the
-operator's own record keeping as the weapon. The bound is a count or an age, and
-it names what is dropped first. Until it is chosen, the trail has a requirement
-and no number.
+operator's own record keeping as the weapon. That requirement is met by a
+number on the page that owns it and by nothing that runs. There is no entry
+type and nothing appends, so what exists is a decision waiting for an
+implementation rather than a defence the plugin has.
 
 ## What deletes anything
 
