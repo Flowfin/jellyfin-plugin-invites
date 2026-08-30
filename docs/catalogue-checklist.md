@@ -1,10 +1,12 @@
 # Plugin catalogue readiness
 
-Checked on 2026-08-07 against version 0.1.0.0, which is what the packaging
-metadata declares at the commit this record lands on:
+Checked on 2026-08-07 against version 0.1.0.0. Every command in this pass names
+the revision it was run at, so each quotation is resolved at its own date rather
+than read as a claim about this commit. That revision is the tree as it stood
+before this plugin took its own identity, which landed the same day:
 
-    git grep -n '^version:' -- build.yaml
-    build.yaml:4:version: "0.1.0.0"
+    git grep -n '^version:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:4:version: "0.1.0.0"
 
 A pass recorded against one version says nothing about a later one, so this
 record is re-run when the version moves rather than re-read.
@@ -107,8 +109,8 @@ The publishing post is explicit about why this one matters:
 Fails. The name is the template's in the packaging metadata and in the plugin
 class:
 
-    git grep -n '^name:' -- build.yaml
-    build.yaml:2:name: "Template"
+    git grep -n '^name:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:2:name: "Template"
 
 Issue #3 owns the display name and issue #8 owns the packaging metadata field.
 
@@ -116,8 +118,8 @@ Issue #3 owns the display name and issue #8 owns the packaging metadata field.
 
 Fails. Both are the template's filler:
 
-    git grep -n '^overview:' -- build.yaml
-    build.yaml:7:overview: "Short description about your plugin"
+    git grep -n '^overview:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:7:overview: "Short description about your plugin"
 
 The description below it is the template's two lines of filler. Issue #8 owns
 both fields.
@@ -126,8 +128,8 @@ both fields.
 
 Fails. The owner is `jellyfin`, which is not who publishes this:
 
-    git grep -n '^owner:' -- build.yaml
-    build.yaml:12:owner: "jellyfin"
+    git grep -n '^owner:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:12:owner: "jellyfin"
 
 Issue #8 owns it.
 
@@ -137,8 +139,8 @@ Fails, in the weaker sense that the value is present and is one the catalogue
 uses, but it is the template's untouched value rather than one chosen for a
 plugin that creates accounts:
 
-    git grep -n '^category:' -- build.yaml
-    build.yaml:11:category: "General"
+    git grep -n '^category:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:11:category: "General"
 
 Issue #8 owns it.
 
@@ -170,8 +172,8 @@ target in the same file. What each part means is in `docs/versioning.md`.
 
 Passes for the declaration and for the compile against it:
 
-    git grep -n '^targetAbi:' -- build.yaml
-    build.yaml:5:targetAbi: "10.11.0.0"
+    git grep -n '^targetAbi:' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:5:targetAbi: "10.11.0.0"
 
 The floor build compiles against the line that field names, derived from the
 field rather than restated, so a raised claim moves what the floor build
@@ -183,9 +185,9 @@ server of that line, which is issue #123 and is a manual step there.
 
 Fails. The changelog is the template's word:
 
-    git grep -n 'changelog' -- build.yaml
-    build.yaml:15:changelog: >
-    build.yaml:16:  changelog
+    git grep -n 'changelog' f4caf6bca8363ac1c7968792d90195d8911e4f99 -- build.yaml
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:15:changelog: >
+    f4caf6bca8363ac1c7968792d90195d8911e4f99:build.yaml:16:  changelog
 
 Issue #124 owns the first entry and the convention behind it.
 
@@ -303,10 +305,10 @@ Passes. The identifier is this plugin's, it is one value, and it is in the three
 places that have to agree: the plugin class, the packaging metadata, and the
 configuration page that asks the dashboard for this plugin's settings.
 
-    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' -- build.yaml 'Jellyfin.Plugin.Invites/'
-    Jellyfin.Plugin.Invites/Configuration/configPage.html:32:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
-    Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
-    build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
+    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' a1cfeac2ec1e729042eae685517a5deb9b13912b -- build.yaml 'Jellyfin.Plugin.Invites/'
+    a1cfeac2ec1e729042eae685517a5deb9b13912b:Jellyfin.Plugin.Invites/Configuration/configPage.html:32:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+    a1cfeac2ec1e729042eae685517a5deb9b13912b:Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
+    a1cfeac2ec1e729042eae685517a5deb9b13912b:build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
 
 The item above quotes two paths under the template's project name, and the
 rename took both of them:
@@ -464,10 +466,10 @@ before it, by saying so underneath rather than by editing a landed pass.
 The identifier item quotes the configuration page at line 32, and the page has
 grown since:
 
-    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' -- build.yaml 'Jellyfin.Plugin.Invites/'
-    Jellyfin.Plugin.Invites/Configuration/configPage.html:144:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
-    Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
-    build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
+    git grep -n '7565756d-8964-49fd-a2c6-f2a878d5001a' 7aa4bfe958e56f8fdf547a68b12c383393fca461 -- build.yaml 'Jellyfin.Plugin.Invites/'
+    7aa4bfe958e56f8fdf547a68b12c383393fca461:Jellyfin.Plugin.Invites/Configuration/configPage.html:144:                    pluginUniqueId: "7565756d-8964-49fd-a2c6-f2a878d5001a",
+    7aa4bfe958e56f8fdf547a68b12c383393fca461:Jellyfin.Plugin.Invites/Plugin.cs:32:    public override Guid Id => Guid.Parse("7565756d-8964-49fd-a2c6-f2a878d5001a");
+    7aa4bfe958e56f8fdf547a68b12c383393fca461:build.yaml:3:guid: "7565756d-8964-49fd-a2c6-f2a878d5001a"
 
 The verdict is untouched. It is still one identifier in the three places that
 have to agree, and the item passes for the reason it already gave. What moved is
@@ -503,3 +505,50 @@ sentence above it gives.
 This is a reading of the tracker rather than of the tree, and nothing in this
 repository holds it. The item's own verdict was not re-run, no field of
 `build.yaml` was re-read for this note, and no server was run.
+
+## Read again on 2026-08-30, to date the quotations rather than to re-judge them
+
+No verdict on this page is re-judged here and no item is re-read. What changed is
+that ten quotations now name the revision they were taken at, in the
+`<rev>:<path>:<line>:<content>` form, and the commands above them name the same
+revision so that each paste is the output of the command printed beside it.
+
+## What was wrong, and how it was found
+
+Every one of the ten pointed at a line that carries something else today, which
+is what this page's own quotations are for: it is a record of what the files held
+on two days, and the lines have moved since for reasons the record is not about.
+Nothing here could tell that apart from a paste that had gone quietly stale, so
+`.github/lint/pasted-line-reference-records.txt` carried the ten as declared
+dated quotations and the check counted them rather than judging them. That
+register is a debt rather than a dispensation, and #282 names this page as what
+retires it. Naming the revision is what retires it: a quotation read at its own
+date is judged again instead of being excused, so the ten entries come out of the
+register in the same change and it is left holding none.
+
+The opening sentence of the first pass said the version quoted was what the
+packaging metadata declares at the commit this record lands on. The value was
+right and the line number was not. Both passes of that day are in this record's
+history and the identity rename sits between the reading and the landing:
+
+    git log --format='%h %ad %s' --date=short -- build.yaml docs/catalogue-checklist.md | sed -n '1,4p'
+
+At `76b1329`, the commit this record landed on, `version:` is the fifth line of
+`build.yaml` rather than the fourth, because `747cea6` had already inserted
+`imageUrl` above it. So the first pass read the tree at `f4caf6b` and the sentence
+described `76b1329`, and the two disagree by one line for every quotation in that
+pass. The sentence now says which revision the pass read.
+
+## What this section does not do
+
+It re-judges nothing. Every `Passes`, `Fails` and `Partly` on this page is the
+verdict it already carried, taken on the day it says, and none of the evidence
+behind one was re-run. The 2026-08-16 pass corrected the pass above it by saying
+so underneath, and the 2026-08-20 reading corrected one quotation the same way;
+this section keeps that convention for the reasoning and departs from it for the
+ten commands and their output, which are the only lines edited in place. Editing
+them is what makes the quotations resolvable at all, and a correction written
+underneath would have left the register carrying ten entries forever.
+
+It says nothing about the last failing item. What that waits on is the section
+above and is unchanged.
