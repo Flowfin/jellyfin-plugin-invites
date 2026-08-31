@@ -1,0 +1,63 @@
+name: '📦 Manifest'
+
+on:
+  # Every branch and every pull request. The generator reads build.yaml, so a
+  # change to that file is a change to what a catalogue entry would say, and the
+  # pull request that breaks the reader is usually one that never opened it.
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+# Read-only. Nothing here publishes, uploads or fetches; the entry this job
+# generates is written to the runner's disk and read back by the same job.
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  manifest:
+    name: The manifest entry generates from the metadata in the tree
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The generator bites its own fixtures
+        # First, and on every run rather than once at review time. The release
+        # route is the one route in this repository that runs at most a few times
+        # a year, so a generator that had stopped refusing would be found by a
+        # broken release rather than by a red mark. The selftest is what stands
+        # between those two.
+        run: bash .github/lint/manifest.sh selftest
+
+      - name: build.yaml still generates an entry
+        # The tracked metadata, against a stand-in archive this step creates, so
+        # the run reads the real fields and needs no packaging tool. What it
+        # proves is that build.yaml is still readable and still passes every
+        # refusal; the checksum here is of a file nobody publishes and means
+        # nothing beyond the field being filled in.
+        #
+        # A release generates the same entry against the archive that was built,
+        # in .github/workflows/publish.yaml. This job cannot stand in for that
+        # one: no archive exists on this route.
+        run: |
+          set -euo pipefail
+          stand_in="${RUNNER_TEMP}/stand-in.zip"
+          printf 'not the published archive' > "${stand_in}"
+          bash .github/lint/manifest.sh generate \
+            "${stand_in}" \
+            "https://example.invalid/stand-in.zip" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            build.yaml > "${RUNNER_TEMP}/manifest.json"
+          python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "${RUNNER_TEMP}/manifest.json"
+          echo "The entry parses as JSON. What it says:"
+          cat "${RUNNER_TEMP}/manifest.json"

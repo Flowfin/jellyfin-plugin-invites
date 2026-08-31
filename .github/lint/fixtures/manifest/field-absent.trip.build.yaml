@@ -1,0 +1,32 @@
+---
+# A fixture, and a fixture vocabulary is a fixture vocabulary. Nothing here names
+# this plugin: a fixture built out of the real build.yaml proves the state of the
+# tree on the day it ran rather than proving the reader, and the day somebody
+# edits the real file the fixture moves with it for a reason the selftest is not
+# about.
+#
+# What it exercises that a simpler file would not: a quoted scalar, an unquoted
+# one, a folded block over two paragraphs, a literal block, a key whose value
+# holds a double quote and a backslash, and a list the reader must walk past
+# without reading it as a scalar.
+name: "Fixture Plugin"
+guid: "00000000-1111-2222-3333-444444444444"
+imageUrl: "https://example.invalid/logo.png"
+version: "1.2.3.4"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: An unquoted overview, ending at a comment. # this half is not the value
+description: >
+  A folded paragraph that is wrapped across two lines in the file and is one
+  line in the entry.
+
+  A second paragraph, kept apart from the first by the blank line above it. It
+  holds a "quoted phrase" and a backslash \ so the escaping is exercised rather
+  than assumed.
+category: Administration
+artifacts:
+- "Fixture.Plugin.dll"
+changelog: |
+  A literal block, whose line breaks are part of the value.
+
+  A second paragraph of it.

@@ -132,7 +132,14 @@ Jellyfin catalogue serves as the plugin checksum, so an operator comparing what
 they installed against what this record covers compares the same kind of value:
 
     git grep -n 'md5sum' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:514:          md5sum "${zip}" > "${zip%.zip}.md5"
+    .github/workflows/publish.yaml:550:          md5sum "${zip}" > "${zip%.zip}.md5"
+    .github/workflows/publish.yaml:581:          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
+
+The command returned one line until #119 and returns two. The first is the one
+this paragraph is about, the sidecar a catalogue reads. The second takes the same
+digest of the same archive for a different question, whether the manifest entry
+generated in the build job describes the file the release job is attaching, and
+it writes nothing.
 
 Compute it from the archive that was actually installed rather than copying it
 out of a release. The run these checks belong to is the dry run, which creates no

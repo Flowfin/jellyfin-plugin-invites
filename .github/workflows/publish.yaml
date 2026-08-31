@@ -392,18 +392,54 @@ jobs:
           done
           ls -l "${ARTIFACT}" "${ARTIFACT}.meta.json"
 
+      - name: Generate the manifest entry from the archive
+        id: manifest
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        # The entry a catalogue installs from, generated here rather than typed
+        # anywhere: every field except the address and the time comes out of
+        # build.yaml, and the checksum comes off the archive this run just built.
+        # #119 is where that is asked for and .github/lint/manifest.sh is where
+        # the refusals are, one per field, each with a fixture.
+        #
+        # It runs in this job because this is the job that holds both the archive
+        # and a checkout of the tree the metadata is in. The release job holds
+        # neither, and giving it one would put a checkout in the only job with
+        # write access. What the release job does instead is compare the checksum
+        # in this file against the archive it is about to attach, so the round
+        # trip through the artifact store is judged rather than assumed.
+        #
+        # The address is composed rather than configured: a release asset is
+        # served at a location the tag and the file name decide, so there is no
+        # second place for it to be wrong. On an -rcN dry run it names a release
+        # that is never created, which is correct for a run whose whole purpose
+        # is to prove the metadata of a version nobody is publishing.
+        run: |
+          set -euo pipefail
+          archive="$(basename "${ARTIFACT}")"
+          directory="$(dirname "${ARTIFACT}")"
+          bash .github/lint/manifest.sh generate \
+            "${ARTIFACT}" \
+            "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${archive}" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            build.yaml > "${directory}/manifest.json"
+          echo "manifest=${directory}/manifest.json" >> "$GITHUB_OUTPUT"
+          cat "${directory}/manifest.json"
+
       - name: Hand the package to the later jobs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-artifact
           retention-days: 30
           if-no-files-found: error
-          # The archive and the metadata the packager writes beside it. The metadata
-          # travels with the release so a catalog can be built from the package that
-          # was actually shipped instead of from a file read back out of the tree.
+          # The archive, the metadata the packager writes beside it, and the
+          # manifest entry generated from the archive. All three travel with the
+          # release so a catalog can be built from the package that was actually
+          # shipped instead of from a file read back out of the tree.
           path: |
             ${{ steps.jprm.outputs.artifact }}
             ${{ steps.jprm.outputs.artifact }}.meta.json
+            ${{ steps.manifest.outputs.manifest }}
 
   attest:
     name: Attest build provenance
@@ -514,6 +550,53 @@ jobs:
           md5sum "${zip}" > "${zip%.zip}.md5"
           sha256sum "${zip}" > "${zip%.zip}.sha256"
           ls -l
+
+      - name: The manifest entry describes the archive being attached
+        # The entry was generated in the build job, against the archive as it was
+        # built. This job attaches the archive as it came back out of the artifact
+        # store, and those are two files until something says they are one. A
+        # catalogue entry whose checksum belongs to a different build is an
+        # install route that refuses every download, and it would be found by an
+        # operator rather than by this run.
+        #
+        # It reads the file rather than parsing it, because a released asset is
+        # not the place to introduce a dependency on a JSON tool, and the field
+        # this compares is thirty-two hexadecimal characters with a fixed name.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          zips=(./*.zip)
+          if [ "${#zips[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one plugin archive, found ${#zips[@]}."
+            exit 1
+          fi
+
+          if [ ! -f ./manifest.json ]; then
+            echo "::error::The build job handed over no manifest.json, so the release would carry an archive with no catalogue entry describing it. That step is 'Generate the manifest entry from the archive' in the build job."
+            exit 1
+          fi
+
+          # `|| true` because a grep that matches nothing exits 1, and under
+          # `set -e` that kills the run before the message below is reached. The
+          # first version of this step did exactly that: an entry with the field
+          # missing was refused with no line saying why, which is the failure
+          # somebody routes around rather than reads. Found by handing it an
+          # entry with the field taken out.
+          declared="$(grep -o '"checksum": "[0-9a-f]\{32\}"' ./manifest.json | head -1 | grep -o '[0-9a-f]\{32\}' || true)"
+          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
+
+          if [ -z "${declared}" ]; then
+            echo "::error::manifest.json carries no checksum field this step could read. Nothing is published on a manifest whose one load-bearing field cannot be found."
+            exit 1
+          fi
+
+          if [ "${declared}" != "${actual}" ]; then
+            echo "::error::The manifest entry declares checksum ${declared} and ${zips[0]}, the archive about to be attached, is ${actual}. The entry describes a different build, so every install from it would refuse the download."
+            exit 1
+          fi
+
+          echo "The manifest entry's checksum is the archive's: ${actual}"
 
       - name: Create the release and upload the assets
         # Creates the release for the pushed tag and attaches every file in the
