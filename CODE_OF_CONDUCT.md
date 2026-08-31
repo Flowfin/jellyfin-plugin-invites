@@ -27,14 +27,13 @@ project's work happens.
 
 ## What happens
 
-The maintainer of this repository handles it. Report by email to the address on
-the maintainer's GitHub profile, or through GitHub's own abuse reporting if the
-maintainer is the problem.
+I handle it. Report by email to the address on my GitHub profile, or through
+GitHub's own abuse reporting if I am the problem.
 
 Expect an acknowledgement within seven days. What follows is a conversation, an
 edit or deletion of the content, or a block from the repository, depending on
 what happened. There is no committee, no appeal process and no published
-timeline beyond the acknowledgement, because there is one maintainer and
+timeline beyond the acknowledgement, because I am the only person here and
 inventing more would be a promise rather than a plan.
 
 A report about a security vulnerability goes to [SECURITY.md](SECURITY.md)

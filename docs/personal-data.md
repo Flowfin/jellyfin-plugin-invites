@@ -132,12 +132,12 @@ recommendation is that it is not stored. If it is kept anyway, it is kept in
 clear, shown in the administrator view, and covered by the record's retention.
 
 Then a contact address for the invited person. This paragraph wrote it as a
-parameter because the call was the maintainer's. It has been made, and it is
-the one this inventory argued for: decision 9 in #11 is answered and the guided
-setup collects none, because the plugin's job ends when an account exists,
-account recovery is the server's job, and an address collected here would be
-the only field making this plugin hold contact data the server does not already
-hold. The last section says what holds it off the record.
+parameter because the call was mine. It has been made, and it is the one this
+inventory argued for: decision 9 in #11 is answered and the guided setup
+collects none, because the plugin's job ends when an account exists, account
+recovery is the server's job, and an address collected here would be the only
+field making this plugin hold contact data the server does not already hold.
+The last section says what holds it off the record.
 
 Last, the address a redemption came from. This one is worth separating with
 care,
