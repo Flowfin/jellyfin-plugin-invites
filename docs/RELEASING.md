@@ -43,8 +43,12 @@ The suffix is what the run reads, in one place, and the two jobs that reach outs
 the run are conditioned on what it read:
 
     $ git grep -n "needs.gate.outputs.publish" -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:415:    if: needs.gate.outputs.publish == 'true'
-    .github/workflows/publish.yaml:446:    if: needs.gate.outputs.publish == 'true'
+    .github/workflows/publish.yaml:451:    if: needs.gate.outputs.publish == 'true'
+    .github/workflows/publish.yaml:482:    if: needs.gate.outputs.publish == 'true'
+
+Both lines moved down by thirty-six under #119, which put the manifest entry's
+generation into the build job above them. Neither condition changed and neither
+job gained or lost one; what moved is where they sit in the file.
 
 ## The manual checks
 
