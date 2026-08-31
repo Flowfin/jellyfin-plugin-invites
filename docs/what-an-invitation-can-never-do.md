@@ -305,7 +305,7 @@ sections:
 | Never create an administrator | Account creation, and the decision that a grant may not manage | #62 |
 | Never modify an existing account | Account creation, and the write side of the seam a test would drive it through | #103 |
 | Never grant beyond the template | The account the policy is written to | #103 |
-| Never be recovered, for a backup | A check somebody makes by hand, and a register to record it in | #100 |
+| Never be recovered, for a backup | A check somebody makes by hand. The register it would be recorded in is in the tree and carries no row for it | #100 |
 | Never be recovered, for an error message | The refusal response | #77 |
 | Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
 | Never create more than one account per use | Account creation, and the redemption path that spends a use under the lock. The count itself is authoritative already | #40, #53 |
@@ -334,3 +334,33 @@ lines cannot be broken quietly today, because the change that would break them
 has to add a write to the seam or a second type able to take the user manager,
 and both are red before a line of the routine is written. The row leaves this
 table when the routine and its test arrive, not before.
+
+THE BACKUP ROW SAID THE REGISTER WAS MISSING AND THE SECTION ABOVE IT SAID THE
+REGISTER IS IN THE TREE, at the same commit. Both sentences are about
+`docs/manual-checks.md`, one names it and one does not, and a reader who took
+the table for the summary it advertises itself as read that a check of this kind
+has nowhere to be written down:
+
+    git log --oneline --diff-filter=A -1 -- docs/manual-checks.md
+    617c9b7 List the tests this plugin refuses to write, and what replaces each
+
+What that costs is the row's own subject. The repair for this line is somebody
+running a check against a backup once per release and writing down what they
+found; a reader told the place to write it does not exist stops there, and one
+told the register exists and carries no such row is one edit away from the whole
+repair. So the cell names only the check now, which is what is actually absent:
+
+    grep -c '^| Setup page renders' docs/manual-checks.md
+    1
+    grep -ci 'backup' docs/manual-checks.md
+    0
+
+The register carries five checks and none of them reads a backup. That is
+unchanged by this edit and what belongs in it is #100's.
+
+NOTHING FOUND THIS AND NOTHING WOULD HAVE. The two disagreeing sentences are on
+one page, the section names the path and the cell does not, and the check that
+refuses a moved `path:line:text` paste reads neither, because a prose cell in a
+table is not a reference. It was found by reading the section and the table
+against each other, which is a person rather than a route, and the same shape
+can be written again tomorrow with every workflow here green.
