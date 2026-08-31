@@ -133,7 +133,7 @@ they installed against what this record covers compares the same kind of value:
 
     git grep -n 'md5sum' -- .github/workflows/publish.yaml
     .github/workflows/publish.yaml:550:          md5sum "${zip}" > "${zip%.zip}.md5"
-    .github/workflows/publish.yaml:581:          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
+    .github/workflows/publish.yaml:587:          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
 
 The command returned one line until #119 and returns two. The first is the one
 this paragraph is about, the sidecar a catalogue reads. The second takes the same
