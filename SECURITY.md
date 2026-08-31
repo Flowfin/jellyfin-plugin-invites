@@ -42,7 +42,7 @@ the Jellyfin project's own policy and not here.
 ## What to expect
 
 This is a small project without a staffed security team, so the numbers below
-are what one maintainer can actually hold to rather than what reads well.
+are what I can actually hold to rather than what reads well.
 
 - An acknowledgement within seven days that the report was received and read.
 - An assessment within thirty days: whether it is accepted, what it is thought
