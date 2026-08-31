@@ -35,11 +35,17 @@ was built for; where they disagree, every one of its own addresses answers a
 refusal naming both versions and nothing else happens. Install the build for the
 line your server runs.
 
-There is no published release and no repository URL to paste into the server's
-plugin catalogue. What exists is a build from source, and the commands are in
-[the readme](../README.md#installing). Dropping the resulting file into a plugin
-directory on a real server is one of the checks this repository does not
-automate, and what a person does instead is
+**There is no published release, so there is nothing to install through the
+server's plugin catalogue.** This paragraph also said there is no repository URL,
+and there is one: the hub catalogue this plugin is distributed from answers, and
+it carries two entries, neither of them this plugin. Both are read back in
+[distribution.md](distribution.md), which is where the address is written down.
+It is worth the distinction, because a list that loads and does not contain
+Account Invitations sends you looking for a fault in your install rather than at
+a release that has not happened. What exists is a build from source, and the
+commands are in [the readme](../README.md#installing). Dropping the resulting
+file into a plugin directory on a real server is one of the checks this
+repository does not automate, and what a person does instead is
 [docs/manual-checks.md](manual-checks.md).
 
 ## Step 1: install the plugin

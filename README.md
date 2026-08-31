@@ -99,11 +99,26 @@ manifest.
 
 ## Installing
 
-There is no published release and no catalogue manifest yet, so there is nothing
-to paste into a Jellyfin repository list. Saying so is more useful than an
-install section that describes a URL nobody can fetch. `0.1.0.0` is the version
-the metadata declares and it has not been tagged; the tag that would publish it
-is #155 and the sequence a tag runs through is
+**There is no published release, so there is nothing here for a Jellyfin
+repository list to install.** That is the whole of it and it is not softened
+below.
+
+This section said there was no catalogue manifest either, and there is one. It is
+the hub catalogue this plugin is distributed from, it answers, and it carries two
+entries, neither of them this plugin. Both halves of that are read back rather
+than asserted in [docs/distribution.md](docs/distribution.md), which is also
+where the address is; this section does not repeat it, because there is nothing
+behind it to install.
+
+The two sentences are not the same fact and the difference is what an operator
+meets. "No manifest" sends somebody to build from source. A manifest that answers
+and does not name this plugin is what somebody who pasted the address would
+actually find, and looking for a plugin that is not in a list reads as a failed
+install rather than as an absent release. What a Jellyfin server does with that
+document is not claimed here: nothing in this repository has put it to one.
+
+`0.1.0.0` is the version the metadata declares and it has not been tagged; the
+tag that would publish it is #155 and the sequence a tag runs through is
 [docs/RELEASING.md](docs/RELEASING.md).
 
 To build it from source:
