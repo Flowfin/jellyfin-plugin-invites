@@ -172,7 +172,42 @@ The scope is three directories and a file. Nothing here says the rest of the
 assembly is well tested, and the coverage floors in `docs/coverage-floors.md`
 are a different measure over a wider subject rather than a weaker one over this.
 
-Timeouts count as killed. A mutant that hangs the suite is one a test noticed,
-and this run has had one, in `Codes/InvitationCode.cs`.
+Timeouts count as killed, and that is the sentence on this page to be careful
+with. A mutant that hangs the suite is one a test noticed, and this scope has
+had such a mutant, in `Codes/InvitationCode.cs`. What the same sentence also
+does is turn a run that was too slow into a run that passed, because nothing in
+the report separates a mutant that hung the suite from one whose test host was
+starved of a core.
+
+That is measured rather than supposed. Two runs of this configuration over one
+tree, one after the other on one machine:
+
+```
+$ dotnet stryker --config-file stryker-config.json
+Killed 206, Timeout 85, Survived 0
+The final mutation score is 100.00 %
+
+$ dotnet stryker --config-file stryker-config.json --concurrency 4
+Killed 287, Timeout 0, Survived 4
+The final mutation score is 98.63 %
+```
+
+Stryker spawns one test host per core unless it is told otherwise, which was
+sixteen on that machine; the second run was given four. The first met the break
+threshold and the second did not. The four the second reports are the ones #376
+argues are equivalent rather than untested, and among the eighty-five the first
+called timeouts are three block removals that empty a constructor whose
+properties already default to the values it assigns. Nothing there can hang
+anything, so those three are a statement about the run and not about the
+mutants.
+
+What follows for a reader of a green run is that the score is not the whole
+verdict, and the timeout count is the number to read beside it. A run reporting
+more timeouts than the handful this scope has genuinely produced has measured
+less than its score says, in whichever direction the score moved.
+
+Nothing here changes what the file runs. Whether the configuration should pin a
+concurrency, and whether this gate should be read off its survivors rather than
+off its score, is #376's and is not decided here.
 
 Nothing here has run against a server.
