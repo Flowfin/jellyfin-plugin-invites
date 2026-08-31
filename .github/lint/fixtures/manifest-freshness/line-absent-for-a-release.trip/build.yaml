@@ -1,0 +1,4 @@
+name: "Fixture Plugin"
+guid: "11111111-2222-3333-4444-555555555555"
+version: "0.2.0.0"
+targetAbi: "10.11.0.0"

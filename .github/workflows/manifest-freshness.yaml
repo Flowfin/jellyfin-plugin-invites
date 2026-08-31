@@ -1,0 +1,128 @@
+name: '🛰 Manifest freshness'
+
+# Does the document a server fetches still offer what this repository released?
+#
+# #119's fourth clause. It is the half of that issue that does not trust the run
+# which published: a check inside the publishing workflow cannot catch a
+# publishing run that half failed, because the step that failed is the step that
+# would have had to report it. This runs on its own schedule, fetches the manifest
+# an operator's server fetches, and reads it against the releases that exist.
+#
+# THE ADDRESS IS NOT WRITTEN TWICE. `docs/distribution.md` is where the address an
+# operator adds is recorded, and the step below greps it out of that file rather
+# than carrying a copy that goes stale the first time it moves.
+#
+# WHAT IT DOES NOT DO, said here rather than discovered from a run list. It raises
+# nothing anybody sees. A red run here sits in this repository's run list; no
+# issue is opened, no message is sent, and `docs/distribution.md` says so in the
+# same words. Building a notifier is not proposed by this file.
+#
+# TWO JOBS RATHER THAN ONE, AND THE FIRST ONE IS THE POINT. Today this repository
+# has no release and the hub carries no entry for it, so the comparison job is
+# green about two empty sets and will stay green for as long as that holds. A
+# check nobody has watched refuse anything is a check that might accept
+# everything, so the reader is handed every answer it refuses, from fixtures, on
+# every run - and that job needs no network and no release.
+
+on:
+  schedule:
+    # Once a day, well away from the hour. A release is not published on a
+    # schedule, so what this bounds is how long a manifest that never learned of
+    # one stays unreported.
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: ['**']
+    paths:
+      - '.github/lint/manifest-freshness.sh'
+      - '.github/lint/manifest.sh'
+      - '.github/lint/fixtures/manifest-freshness/**'
+      - '.github/workflows/manifest-freshness.yaml'
+      - 'build.yaml'
+      - 'docs/distribution.md'
+  push:
+    branches: ['master']
+    paths:
+      - '.github/lint/manifest-freshness.sh'
+      - '.github/lint/manifest.sh'
+      - '.github/lint/fixtures/manifest-freshness/**'
+      - '.github/workflows/manifest-freshness.yaml'
+      - 'build.yaml'
+      - 'docs/distribution.md'
+
+# Deny by default. Each job opts into the smallest scope it needs.
+permissions: {}
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    name: The freshness check refuses what it says it refuses
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Every refusal fires on its own fixture and alone
+        # No network and no release. This is the leg that keeps its meaning on a
+        # repository that has published nothing.
+        run: bash .github/lint/manifest-freshness.sh selftest
+
+  compare:
+    name: The manifest a server fetches offers what was released
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the manifest an operator's server would fetch
+        # A fetch that fails is a different answer from a manifest that
+        # disagrees, and it is not this check's subject: the network between a
+        # runner and a host is not something this repository can fix. It is still
+        # a failure, because a manifest nobody can fetch is one nobody can install
+        # from, and the message says which of the two happened.
+        run: |
+          set -euo pipefail
+          address=$(grep -oE 'https://[^ )]*manifest\.json' docs/distribution.md | head -1)
+          if [ -z "${address}" ]; then
+            echo "::error::docs/distribution.md names no manifest address, so there is nothing to fetch. That page is where the address an operator adds is recorded and this step reads it rather than carrying a copy."
+            exit 1
+          fi
+          echo "fetching ${address}"
+          code=$(curl -sS --retry 3 --retry-delay 5 --max-time 60 \
+                   -o "${RUNNER_TEMP}/manifest.json" -w '%{http_code}' "${address}" || echo "000")
+          echo "the fetch answered ${code}"
+          if [ "${code}" != "200" ]; then
+            echo "::error::Fetching ${address} answered ${code} rather than 200. That is the manifest being unreachable rather than out of date, and a server adding this address meets the same thing."
+            exit 1
+          fi
+
+      - name: List the releases this repository has
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release list --repo "${GITHUB_REPOSITORY}" --limit 200 \
+            --json tagName --jq '.[].tagName' > "${RUNNER_TEMP}/releases.txt"
+          echo "releases:"
+          cat "${RUNNER_TEMP}/releases.txt"
+
+      - name: Compare the newest release against what the manifest offers
+        run: |
+          set -euo pipefail
+          bash .github/lint/manifest-freshness.sh check \
+            "${RUNNER_TEMP}/manifest.json" "${RUNNER_TEMP}/releases.txt" build.yaml
