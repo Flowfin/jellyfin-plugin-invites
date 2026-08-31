@@ -72,12 +72,40 @@ jobs:
         # precondition rather than a duplicate of the test workflow.
         run: dotnet test Jellyfin.Plugin.Invites.sln --nologo --configuration Release --no-restore
 
+      - name: The verdict reader bites
+        # Before the run rather than after it: the reader below judges a report
+        # this job produces, so there is no tracked subject it can be proved
+        # against. Its fixtures are that subject, and a reader that had stopped
+        # matching would otherwise report the silence of a run with nothing
+        # wrong.
+        run: bash .github/lint/mutation-verdict.sh selftest
+
       - name: Every mutant in the scope is killed
         # The break threshold is 100 and the reason is in
         # docs/mutation-testing.md: a threshold below it is a budget for
         # survivors nobody has to look at, and one survivor is one rule the
         # suite states and does not enforce.
         run: dotnet stryker --config-file stryker-config.json
+
+      - name: No mutant timed out
+        # The score is not the whole verdict. Stryker counts a timeout as a
+        # kill, so a run whose test hosts were starved reports a higher score
+        # than it measured, and one tree and one configuration have produced
+        # both a passing and a failing score on one machine minutes apart. That
+        # measurement, and what follows from it, are #376 and
+        # docs/mutation-testing.md.
+        #
+        # if: always() because the step above fails the job on the break
+        # threshold, and a run that reds for survivors still owes this reading.
+        if: always()
+        run: |
+          shopt -s nullglob
+          reports=(StrykerOutput/*/reports/mutation-report.json)
+          if [ "${#reports[@]}" -ne 1 ]; then
+            echo "::error::the run left ${#reports[@]} reports where one was expected, so there is no verdict to read."
+            exit 1
+          fi
+          bash .github/lint/mutation-verdict.sh read "${reports[0]}"
 
       - name: Keep the report
         # What the run mutated and what became of each mutant, kept so a later

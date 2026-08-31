@@ -206,8 +206,55 @@ verdict, and the timeout count is the number to read beside it. A run reporting
 more timeouts than the handful this scope has genuinely produced has measured
 less than its score says, in whichever direction the score moved.
 
-Nothing here changes what the file runs. Whether the configuration should pin a
-concurrency, and whether this gate should be read off its survivors rather than
-off its score, is #376's and is not decided here.
+## A timeout is not a kill, and this gate refuses a run that carries one
+
+That is the decision this page left open, and the measurement above is what
+takes it. The score stays what the tool computes, timeouts counted inside it.
+What changes is that the score is no longer the whole verdict:
+`.github/lint/mutation-verdict.sh` reads the run's own JSON report and refuses a
+run carrying any timeout, and `stryker-mutation.yaml` runs it after the tool
+under `if: always()`, so a run that already reds on the break threshold still
+owes this reading.
+
+Against the two runs above it refuses the first and passes the second. The pair
+that produced two verdicts on one tree produces one.
+
+The rule cannot be proved against anything tracked, because what it reads is
+written by a run rather than committed. Fixtures stand in for that, and the
+selftest is a step of the workflow rather than something run once at review
+time:
+
+```
+$ bash .github/lint/mutation-verdict.sh selftest
+bites timed-out (#376): .github/lint/fixtures/mutation-verdict/timed-out.trip.json is refused
+bites no-mutants (#376): .github/lint/fixtures/mutation-verdict/no-mutants.trip.json is refused
+passes clean (#376): .github/lint/fixtures/mutation-verdict/clean.json is read and not refused
+bites absent (#376): a report that does not exist is refused
+```
+
+The second of the four is the near-miss worth naming rather than counting. A
+reader that has stopped matching - one character wrong in how it breaks the
+report up, or a report whose shape has moved - finds no mutant, therefore finds
+no timeout, and reports the same silence as a run with nothing wrong. That
+fixture is a report whose mutants call their outcome something other than
+`status`, and it is refused rather than passed. The fourth is the same failure
+in its cheapest form: a report that was never written.
+
+What the rule costs is what the break threshold of 100 already costs, pointed at
+a second class. A mutant that genuinely hangs the suite - this scope has had
+one, in `Codes/InvitationCode.cs` - now reds this gate and has to be judged
+rather than counted as a kill. Judging it means killing it faster, arguing its
+class out on this page beside the `string` mutator, or raising the tool's own
+timeout so a run can tell a hang from a starved host. All three leave a record.
+Scoring it as a kill leaves none.
+
+What the rule does not do is make the run reproducible, and reading a green run
+as reproducible would be reading it as more than it says. A machine that times
+out everything and one that times out nothing measure different sets either way;
+this refuses both rather than reconciling them. Pinning a concurrency in
+`stryker-config.json` is the other repair #376 names and it is not taken here:
+it fixes the gate to one machine shape, and a runner and the machine the two
+runs above were made on do not have the same number of cores, so a number chosen
+for one is a guess about the other. That half is still open on #376.
 
 Nothing here has run against a server.
