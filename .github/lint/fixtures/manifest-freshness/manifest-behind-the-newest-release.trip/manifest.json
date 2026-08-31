@@ -1,0 +1,28 @@
+[
+  {
+    "guid": "99999999-0000-0000-0000-000000000000",
+    "name": "A Neighbouring Plugin",
+    "versions": [
+      {
+        "version": "1.4.0.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://example.invalid/other_1.4.0.0.zip",
+        "checksum": "00000000000000000000000000000000",
+        "timestamp": "2026-08-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "guid": "11111111-2222-3333-4444-555555555555",
+    "name": "Fixture Plugin",
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://example.invalid/fixture_0.1.0.0.zip",
+        "checksum": "11111111111111111111111111111111",
+        "timestamp": "2026-08-02T00:00:00Z"
+      }
+    ]
+  }
+]
