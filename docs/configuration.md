@@ -3,8 +3,26 @@
 One row per setting: what it does, its default, its bounds, what happens at each
 bound, and what breaks if it is set badly. The reader this is for has met a
 setting and does not know what it means, so the row answers that and nothing
-else. How the settings are used in sequence belongs in the operator guide, which
-is #111 and is not written.
+else. How the settings are used in sequence belongs in
+[the operator guide](operator-guide.md), which #111 owns.
+
+THIS PARAGRAPH SAID THAT GUIDE IS NOT WRITTEN, and it has been in the tree since
+the twenty-sixth:
+
+    git log --diff-filter=A -1 --format='%h %ad %s' --date=short -- docs/operator-guide.md
+    0d2a271 2026-08-26 Write the operator guide, from installing to revoking, for #111
+
+The link was missing in one direction only, which is how it survived being read.
+That guide names this file three times, so a reader walking from the guide
+arrives here; a reader walking the other way was told the place they were being
+sent to does not exist, and stopped.
+
+    git grep -c 'configuration.md' -- docs/operator-guide.md
+    docs/operator-guide.md:3
+
+What it cost is this file's own reader. Somebody who has met a setting, found its
+row, and then wants to know what to do with it in order is exactly the person the
+sentence was written for, and it sent them nowhere.
 
 A setting that reaches the configuration type without a row here fails a check,
 so this file cannot quietly fall behind the type:
