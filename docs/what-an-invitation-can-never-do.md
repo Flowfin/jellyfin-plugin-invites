@@ -231,8 +231,30 @@ there is no code in the object graph for a file to carry.
 Refused by a spelling, for the log. `secret-in-a-log-call` matches a code, a
 password or the hash secret handed to a log call. `docs/logging.md` is where the
 never-list for logging is decided and where the rule's narrowness is written
-down. Nothing in the plugin logs anything yet, so the rule is ahead of its
-subject rather than behind it.
+down.
+
+THIS PARAGRAPH SAID NOTHING IN THE PLUGIN LOGS ANYTHING YET, AND THAT THE RULE IS
+AHEAD OF ITS SUBJECT. The plugin writes log lines, in `LoadOnStart` and
+`RetentionSweep`. That is not a reading taken here: `docs/logging.md` names those
+two routines and `LoggingPageTests` holds the sentence naming them against the
+tree in both directions, so a third routine that starts logging reddens the suite
+rather than ageing that page.
+
+    git grep -n 'The routines in this plugin that write log lines today' -- docs/logging.md
+    docs/logging.md:9:The routines in this plugin that write log lines today are `LoadOnStart` and
+
+How many calls those two hold is deliberately not written on either page, for the
+reason `docs/logging.md` gives where it hands the reader the command instead: the
+number moved once while a document carried it. So this line rests on a rule with
+a subject, scanning calls that exist, rather than on a rule with nothing to scan.
+
+What that does not change is the rule's narrowness, and this is the half a reader
+should leave with. It matches a spelling, so a secret reaching a log call through
+a local or through a string built two files away is invisible to it, which
+`docs/logging.md` says rule by rule. Neither of the two routines is the redemption
+path, and the redemption path is where a code is in scope to be logged at all;
+that path is #74's, so this half of the line has never been put to the case it
+exists for.
 
 Not refused, for a backup. No test in this repository sees a backup: it is a
 file another tool made, on a machine this suite never runs on. What stands
