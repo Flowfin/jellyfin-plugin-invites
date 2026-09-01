@@ -329,29 +329,24 @@ remaining are two members, because neither can be worked out from the other.
 Revoked and revoked at are one stored member, `RevokedAt`, and `IsRevoked`
 derived from it, so no record can say it is revoked and fail to say when.
 
-The clause asking that a documentation page carry the same inventory has no
-page to land in. Every issue in M11 is read for one, and the membership is
-derived rather than typed out, because the milestone gains issues and a list of
-numbers here would go on answering for the set it was written against:
+THE CLAUSE ASKING THAT A DOCUMENTATION PAGE CARRY THE SAME INVENTORY HAD NO PAGE
+TO LAND IN, AND IT HAS ONE. What stood here read every issue in M11 for an owner,
+printed the listing that found none, and called the absence a gap in the plan.
+The gap was closed from the other end: #409 was opened for the page and
+[docs/what-is-held-about-a-person.md](what-is-held-about-a-person.md) is it. The
+listing came out rather than being re-run, because what it was evidence of is the
+absence it no longer describes.
 
-```
-$ gh issue list --repo Flowfin/jellyfin-plugin-invites --milestone 'M11 Documentation' \
-    --state all --limit 50 --json number,body \
-    --jq '.[] | "\(.number)\t\(if (.body|test("personal data|inventory";"i")) then "names it" else "-" end)"' | sort -n
-109	-
-110	-
-111	-
-112	-
-113	-
-114	-
-115	-
-116	-
-282	-
-```
-
-So the page that would carry this is not owned by anything open. That is a gap
-in the plan rather than a step that was skipped, and it is the reason #34 stays
-open with this file landed.
+That page is this inventory addressed to the person it is about rather than to
+somebody deciding what may be stored, and same is a property here rather than a
+review note.
+`Jellyfin.Plugin.Invites.Tests.PersonalDataForAPersonTests` reads the stored
+fields off both pages and requires the two sets to be equal, so a row added to
+either of the two tables above with no line there reds the suite, and so does a
+line there naming a field these tables do not carry. What the comparison rests on
+is the last cell of each row: a row whose deleter is `Not stored` records a
+decision not to hold something and names no field the other page could have a
+line for.
 
 Five of the commands pasted above once printed line numbers and no longer do.
 Nine of the numbers they carried had stopped being true: everything the pastes

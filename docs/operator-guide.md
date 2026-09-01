@@ -437,3 +437,4 @@ removes the plugin without reading it loses the link.
 | [docs/api.md](api.md) | Every route, its parameters and its responses |
 | [docs/disaster-cases.md](disaster-cases.md) | Restore from backup, a cloned server, two servers on one store |
 | [docs/personal-data.md](personal-data.md) | Every field held about an invited person, and what removes it |
+| [docs/what-is-held-about-a-person.md](what-is-held-about-a-person.md) | The page to send somebody who asks what you hold about them |
