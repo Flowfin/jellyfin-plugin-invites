@@ -43,12 +43,13 @@ The suffix is what the run reads, in one place, and the two jobs that reach outs
 the run are conditioned on what it read:
 
     $ git grep -n "needs.gate.outputs.publish" -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:451:    if: needs.gate.outputs.publish == 'true'
-    .github/workflows/publish.yaml:482:    if: needs.gate.outputs.publish == 'true'
+    .github/workflows/publish.yaml:450:    if: needs.gate.outputs.publish == 'true'
+    .github/workflows/publish.yaml:481:    if: needs.gate.outputs.publish == 'true'
 
 Both lines moved down by thirty-six under #119, which put the manifest entry's
-generation into the build job above them. Neither condition changed and neither
-job gained or lost one; what moved is where they sit in the file.
+generation into the build job above them, and up by one under #394, which took
+the gate's own reader of `build.yaml` out of the file. Neither condition changed
+and neither job gained or lost one; what moved is where they sit in the file.
 
 ## The manual checks
 
@@ -132,14 +133,25 @@ the `Publish Release` workflow, and no step of it waits for a hand.
 The `Publish Release` workflow takes it from there.
 
 Only part of step 1 is held by anything but the person doing it. The run fails a
-tag whose numeric part disagrees with `version`, and it fails a `build.yaml` with
-no `changelog` key at all, for a reason that is about the packaging tool rather
-than about release notes:
+tag whose numeric part disagrees with `version`, and it fails a `build.yaml`
+whose `changelog` key is absent or empty, for a reason that is about the
+packaging tool rather than about release notes:
 
     $ git grep -n 'changelog' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:174:          # changelog is in this list because the packaging tool reads build_cfg
-    .github/workflows/publish.yaml:175:          # ['changelog'] without a default and dies with a Python KeyError when it is
-    .github/workflows/publish.yaml:179:          for key in name guid version targetAbi framework owner overview description category artifacts changelog; do
+    .github/workflows/publish.yaml:142:          # directory, and the two already disagreed: asked for changelog, this
+    .github/workflows/publish.yaml:157:          # changelog is in this list because the packaging tool reads build_cfg
+    .github/workflows/publish.yaml:158:          # ['changelog'] without a default and dies with a Python KeyError when it is
+    .github/workflows/publish.yaml:167:          for key in name guid version targetAbi framework owner overview description category changelog; do
+
+The command returned three lines until #394 and returns four, and the key list
+is one name shorter. That issue gave `build.yaml` one reader, so the gate asks
+`.github/lint/manifest.sh` for each of those keys instead of grepping for them:
+the first line above is a remark about that reader, and `artifacts` left the
+list because it is a sequence rather than a scalar and is asked for on a line of
+its own below. What the gate refuses is the same key list and is slightly wider
+on each of them, which is why the sentence above now says absent or empty: the
+reader answers the same way for both, where the grep it replaced could tell them
+apart.
 
 Nothing reads what that key says, compares it against `CHANGELOG.md`, or notices
 that neither text moved with the version. A release whose notes still describe the

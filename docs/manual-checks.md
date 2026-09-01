@@ -132,10 +132,12 @@ Jellyfin catalogue serves as the plugin checksum, so an operator comparing what
 they installed against what this record covers compares the same kind of value:
 
     git grep -n 'md5sum' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:550:          md5sum "${zip}" > "${zip%.zip}.md5"
-    .github/workflows/publish.yaml:587:          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
+    .github/workflows/publish.yaml:549:          md5sum "${zip}" > "${zip%.zip}.md5"
+    .github/workflows/publish.yaml:586:          actual="$(md5sum "${zips[0]}" | awk '{ print $1 }')"
 
-The command returned one line until #119 and returns two. The first is the one
+The command returned one line until #119 and returns two. Both numbers moved up
+by one under #394, which took the gate's own reader of `build.yaml` out of the
+file; neither line changed. The first is the one
 this paragraph is about, the sidecar a catalogue reads. The second takes the same
 digest of the same archive for a different question, whether the manifest entry
 generated in the build job describes the file the release job is attaching, and
