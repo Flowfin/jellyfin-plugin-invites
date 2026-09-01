@@ -107,9 +107,21 @@ description of one:
 - the status code
 - the response body, byte for byte
 - the `Content-Type` and the content length
-- the security headers the page carries, which are #78's: the content security
-  policy, the framing header and the referrer policy
-- the presence and value of every other header the plugin sets
+- every header the route sets, by name and by value. There are five, and they
+  are read off the route rather than listed from memory:
+
+      git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:64:        headers.ContentSecurityPolicy = SetupPage.ContentSecurityPolicy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:65:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:66:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:67:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:68:        headers[ReferrerPolicy] = "no-referrer";
+
+  Whether that is the right set is #78's. That it is the set a refusal has to
+  match is this page's, and the paste above is judged by
+  `.github/lint/pasted-line-reference.sh`, so a value moved in the route reddens
+  this list instead of leaving it describing a response nobody serves that way.
+- the presence and value of any header the plugin sets beside those five
 
 Nothing in the response may be interpolated from the case. A body assembled from
 a per-case string differs by its length even when the text is identical in a
@@ -173,8 +185,16 @@ the same reason the completion page in #79 carries nothing either.
 Settled here: the wording, the case list, what identical covers, which two
 refusals are outside the set, and where the comparison lives.
 
-Not settled here, and not by anybody yet: the exact security header values,
-which are #78's, and the status code, which is #74's to choose when the route
+THIS SECTION SAID THE EXACT SECURITY HEADER VALUES ARE NOT SETTLED BY ANYBODY
+YET. Five are set on the route that serves the page, and the suite asserts four
+of them by name and value and the policy by the hash of the page's own style, so
+a reader who came here to find out what a refusal has to carry was told nobody
+had chosen while the tree had chosen. The list above carries them now.
+
+What that does not settle is whether the set is right or complete, which is
+#78's and is where its clauses live rather than here.
+
+Not settled here: the status code, which is #74's to choose when the route
 exists. A status code is part of what the responses are compared on, so the
 choice binds all six cases at once; it is named here as owed rather than picked
 from a document with no route behind it.
