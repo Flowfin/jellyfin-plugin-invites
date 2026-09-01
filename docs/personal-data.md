@@ -86,6 +86,7 @@ address a redemption arrived from.
 | Invitation identifier, where one matched | Says which invitation an attempt was against. Empty where the presented code matched nothing, because there is nothing to name. | The trail bound |
 | Outcome | One value from the fixed set in #43. Not free text, so nothing typed by anyone reaches it. | The trail bound |
 | Time | When it happened. | The trail bound |
+| Attempts covered | How many attempts one entry accounts for, which is one for every entry except a rate-limiting episode and the trail's own drop notice. A count of attempts rather than anything typed, and it is here rather than left off the inventory because a number saying somebody was refused twenty times is a sentence about them. | The trail bound |
 | Source address | Failed the test. See below. | Not stored |
 
 ## The setup form
@@ -214,7 +215,7 @@ quantity had already derived one and had been carrying it for a fortnight.
     fd0fdfe 2026-08-17 Choose the attempt trail's failure bound, for #43
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:128:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:143:**The failure bound is one thousand entries.** This paragraph said the number was
 
 It bounds failures and not the whole trail, and that half is the one a summary
 here would lose. Successes are kept and are bounded by the ceilings in #33

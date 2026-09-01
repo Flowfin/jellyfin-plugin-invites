@@ -27,6 +27,7 @@ COVERAGE_JSON="Jellyfin.Plugin.Invites.Tests/coverage.json"
 # on it.
 AREAS=(
   'redemption@Redemption@95@Jellyfin.Plugin.Invites/Redemption'
+  'attempts@Attempts@95@Jellyfin.Plugin.Invites/Attempts'
   'codes@Codes@95@Jellyfin.Plugin.Invites/Codes'
   'invitations@Invitations@90@Jellyfin.Plugin.Invites/Invitations'
   'template@Accounts@90@Jellyfin.Plugin.Invites/Accounts'

@@ -2,23 +2,25 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Jellyfin.Plugin.Invites.Attempts;
 using Jellyfin.Plugin.Invites.Redemption;
 using Xunit;
 
 namespace Jellyfin.Plugin.Invites.Tests;
 
 /// <summary>
-/// The outcome set on docs/attempt-outcomes.md, held against the type the
-/// decision routine returns.
+/// The outcome set on docs/attempt-outcomes.md, held against the two types that
+/// carry it.
 /// </summary>
 /// <remarks>
 /// <para>
 /// That page states its own failure mode and had nothing behind it: an issue
 /// that adds a refusal without adding its member there produces an attempt with
 /// no entry, which fails the one-entry-per-attempt property quietly rather than
-/// loudly. A refusal arrives as a member of
-/// <see cref="RedemptionOutcome"/> first, so that is the half of the set a
-/// reading of the tree can judge, and this is that reading.
+/// loudly. <see cref="AttemptOutcome"/> is the set the trail writes and is
+/// compared here in both directions; <see cref="RedemptionOutcome"/> is the
+/// narrower set one routine concludes and is compared in one, because it is a
+/// subset of the page by design rather than an equal of it.
 /// </para>
 /// <para>
 /// <b>Four members rather than five.</b> <c>Honoured</c> deliberately has no row.
@@ -31,10 +33,10 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </para>
 /// <para>
 /// <b>What it cannot see.</b> It compares names. Whether a row's description is
-/// right, whether the issue in the third column is open, and whether the four
-/// refusals no type carries yet are the right four are all judgements no reading
-/// of this tree makes. It also says nothing about the trail: nothing appends an
-/// entry, and this compares two lists rather than watching an attempt.
+/// right, whether the issue in the third column is open, and whether the set is
+/// the right set are all judgements no reading of this tree makes. It also says
+/// nothing about what is appended: nothing on a running server appends an entry,
+/// and this compares lists rather than watching an attempt.
 /// </para>
 /// </remarks>
 public class AttemptOutcomeSetTests
@@ -102,6 +104,54 @@ public class AttemptOutcomeSetTests
             "docs/attempt-outcomes.md has gained a row named "
             + TheMemberWithNoRow
             + ", which is the decision's word for an invitation that MAY produce an account rather than one that did. The trail needs both states, so the two sets keep two words.");
+    }
+
+    /// <summary>
+    /// Every member of the trail's own set has a row, spelled the same way.
+    /// </summary>
+    /// <remarks>
+    /// The narrower comparison above reads the decision's set, which is four of
+    /// these names. This one reads the set the trail actually writes, so a
+    /// refusal that never reaches the decision routine - the rate limit, the
+    /// ceiling, the cross-site check, the validation - is held here or nowhere.
+    /// </remarks>
+    [Fact]
+    public void EveryOutcomeTheTrailCanCarryHasARowOnThisPage()
+    {
+        var rows = OutcomeRows();
+
+        var missing = Enum.GetNames<AttemptOutcome>()
+            .Where(name => !rows.Contains(name, StringComparer.Ordinal))
+            .ToArray();
+
+        Assert.True(
+            missing.Length == 0,
+            "These members of AttemptOutcome have no row in the set on docs/attempt-outcomes.md, so an entry carrying one would be recorded under a name that page does not carry: "
+            + string.Join(", ", missing));
+    }
+
+    /// <summary>
+    /// Every row of the set is a member of the trail's type.
+    /// </summary>
+    /// <remarks>
+    /// The other direction, and it is the one that catches a page describing an
+    /// outcome nothing can produce. A reader takes the table for what the trail
+    /// holds, so a row nobody implemented is a promise this plugin does not keep,
+    /// and it reads exactly like a row that is kept.
+    /// </remarks>
+    [Fact]
+    public void EveryRowOfTheSetIsAnOutcomeTheTrailCanCarry()
+    {
+        var members = Enum.GetNames<AttemptOutcome>();
+
+        var unimplemented = OutcomeRows()
+            .Where(row => !members.Contains(row, StringComparer.Ordinal))
+            .ToArray();
+
+        Assert.True(
+            unimplemented.Length == 0,
+            "These rows of the set on docs/attempt-outcomes.md name no member of AttemptOutcome, so the page promises an outcome no entry can carry: "
+            + string.Join(", ", unimplemented));
     }
 
     /// <summary>

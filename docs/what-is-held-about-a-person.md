@@ -48,8 +48,9 @@ it.
 | Invitation identifier, where one matched | You, where the attempt was yours | Which invitation a redemption attempt was made against. It is empty where the presented code matched nothing, because there is nothing to name | The trail bound |
 | Outcome | You, where the attempt was yours | What happened to an attempt, as one value from a fixed set rather than as free text, so nothing anybody typed reaches it | The trail bound |
 | Time | You, where the attempt was yours | When the attempt happened | The trail bound |
+| Attempts covered | You, where the attempt was yours | How many attempts one line stands for. It is one on almost every line, and more where a rate limiter refused a run of attempts and the trail kept one line for the whole run, or where older failures were dropped and one line says how many went with them | The trail bound |
 
-Four of those thirteen lines are about the operator or about the invitation and
+Four of those fourteen lines are about the operator or about the invitation and
 not about you at all, and they are on this page anyway. An inventory showing only
 the lines that name the reader is one the reader cannot check, because the shape
 of what is kept is part of the answer.

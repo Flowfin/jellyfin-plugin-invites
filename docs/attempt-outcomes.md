@@ -12,24 +12,30 @@ apart, and this trail is the only place where they are told apart. That makes th
 set a requirement of the refusals rather than a convenience for the view that
 renders them.
 
-There is no redemption path to produce an outcome and no trail to append to. The
-command this rested on asked whether the tree has any route at all, and it
-stopped answering the question once the administrator routes and the setup page
-landed, so it is corrected rather than dropped. What holds the claim up is that
-the routine deciding a redemption has no caller:
+THIS PARAGRAPH SAID THERE IS NO TRAIL TO APPEND TO, AND THERE IS ONE NOW. The
+trail, its entry and its bound are in the tree as
+`Jellyfin.Plugin.Invites/Attempts/`, landed under #43. What has not changed is
+the other half of the sentence: there is no redemption path to produce an
+outcome, because the routine deciding a redemption still has no caller.
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
     exit=1
 
-THIS PARAGRAPH SAID NOTHING HERE IS ENFORCED AND ONE PART OF IT NOW IS. Four of
-the nine names below are members of the type the decision routine returns, and
-`AttemptOutcomeSetTests.EveryVerdictTheDecisionReachesHasARowOnThisPage` reads
-the table on this page and requires each of the four to have a row spelled the
-same way. A refusal added to that type without a row added here is refused
-rather than noticed, which is the failure the paragraph under the table
-describes. What is still held by nothing is the rest: `Accepted`, the four
-refusals no type carries yet, the bound, the drop entry, and the
-one-entry-per-attempt property, none of which has an implementation to judge.
+So nothing appends to a trail on a running server, and the difference between
+the two halves is the one to keep: an entry that is appended is now judged by
+something, and no attempt reaches the thing that would append one.
+
+THIS PARAGRAPH SAID NOTHING HERE IS ENFORCED AND MOST OF IT NOW IS. Every name
+in the table below is a member of `AttemptOutcome`, and
+`AttemptOutcomeSetTests` reads the table on this page and compares the two sets
+in both directions, so a member with no row and a row with no member are both
+refused. Four of the names are also members of the type the decision routine
+returns and `EveryVerdictTheDecisionReachesHasARowOnThisPage` holds those, which
+is the narrower comparison that was here before. The bound, the drop order and
+the drop entry are held by `AttemptTrailTests` against the implementation rather
+than by this page. What is still held by nothing is the one-entry-per-attempt
+property, which needs an attempt, and the persistence, which nothing in this
+tree writes.
 
 `docs/personal-data.md` already names this set as what the outcome field holds,
 so the set is written here rather than left as a reference to a list nobody had
@@ -48,8 +54,17 @@ made.
 | `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33         |
 | `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78         |
 | `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #75, #76    |
+| `FailuresDropped`      | Failure entries went out of the bound below, and this entry says how many attempts went with them.                | #43         |
 
-The last four are the reason this is written down now. Each is introduced by a
+`FailuresDropped` is the odd member and it is a member on purpose. It is the
+trail's own admission rather than an attempt's outcome, and putting it in the set
+is what keeps `docs/personal-data.md`'s sentence exactly true: every entry carries
+one value from one closed set, and the outcome field is never free text. The
+alternative, an entry whose outcome is absent, would be a second shape of entry
+for a reader and for anything that writes one back. `AttemptTrail` is the only
+thing that writes it and `AttemptEntry.Of` refuses a caller who tries.
+
+The last four before it are the reason this is written down now. Each is introduced by a
 different issue, and an issue that adds a refusal without adding its member here
 produces an attempt with no entry, which fails the one-entry-per-attempt property
 quietly rather than loudly. Adding a refusal means adding a member.
@@ -155,8 +170,25 @@ When failures are dropped, the trail says so with the count. A trail that
 silently forgot is worse than one that admits it did, and the admission costs one
 entry.
 
-What an entry costs in bytes is not claimed. There is no entry type, so there is
-nothing to measure, and the bound above is a count rather than a size.
+**One notice, and its count is cumulative.** A notice appended on every drop and
+never removed would be the unbounded thing this bound exists against, arriving
+through the door marked honesty: an attacker hammering for a week would leave
+thousands of admissions and no failures worth reading. So a drop takes any
+earlier notice with it and folds that notice's count into the new one. The trail
+therefore holds at most one, and `AttemptTrailTests` asserts that over a run that
+drops many times rather than once.
+
+**A dropped entry takes its whole count.** A rate-limiting episode is one entry
+standing for many refused requests, so counting a dropped one as a single attempt
+would lose the rest and leave the trail claiming it had seen fewer attempts than
+it had. The property that makes this checkable is that the sum of what every
+entry accounts for equals the number of attempts ever appended, and the trail
+keeps that number as the appends happen rather than by reading the entries back,
+so the two are independent statements of one quantity.
+
+What an entry costs in bytes is not claimed. Nothing writes a trail to disk, so
+there is no encoding to measure, and the bound above is a count rather than a
+size.
 
 ## What is settled and what is not
 
@@ -167,12 +199,26 @@ that the trail does not carry it. The reasoning is in
 [docs/personal-data.md](personal-data.md) under the three fields that failed, and
 this page does not restate it.
 
-Whether an attempt refused by the rate limiter appends an entry at all is not
-settled, and it matters more than it looks. If the limiter refuses without
-appending, the trail cannot show the thing an operator most wants to see, which
-is that an invitation was hammered. If it appends on every refusal, the limiter
-stops bounding the writes the trail's own bound exists to bound. #31 and this
-issue need one answer between them rather than two.
+THIS PARAGRAPH SAID WHETHER A THROTTLED ATTEMPT APPENDS AN ENTRY WAS NOT SETTLED,
+AND IT IS SETTLED NOW. It said the two obvious answers were both wrong, and they
+are: a limiter that refuses without appending leaves the trail blank during
+exactly the event it exists to explain, and one that appends on every refused
+request hands the attacker the writing path the bound exists to close. The answer
+is neither, and it is the same one on #31 and on #43 rather than one each.
+
+**The trail records the throttling rather than the requests.** One entry when a
+source starts being refused against an invitation, carrying the outcome, the time
+and how many attempts it covers, and not another until that episode ends. The
+number of writes is then bounded by episodes, which the limiter already bounds,
+instead of by whatever rate a stranger can send at.
+
+The write happens on the state transition rather than on the event, which is the
+shape to keep in view because it is the one a second implementation would drift
+from. `AttemptOutcome.RefusedByRateLimit` carries the count and
+`AttemptEntry.AttemptsCovered` is where it sits. Where an episode starts and ends
+is the limiter's and not the trail's: `AttemptLimiter` is what knows a source, and
+the trail deliberately does not, which is the source-address row above read from
+the other side.
 
 Retention is a parameter with no value, and decision 8 in #11 is not what fills
 it. That decision has an answer now, ninety days, and it is about how long a
@@ -184,7 +230,7 @@ THIS PARAGRAPH WENT ON TO CALL THE BOUND A QUANTITY NOTHING HAS CHOSEN, AND
 THIS PAGE CHOSE IT UNDER `## The bound, in two parts` ABOVE:
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:128:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:143:**The failure bound is one thousand entries.** This paragraph said the number was
 
 So a reader arriving at this section was told this page has no number for a
 thing this page states, which is worse than a stale claim about another
