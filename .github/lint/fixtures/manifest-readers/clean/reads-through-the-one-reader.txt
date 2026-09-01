@@ -1,0 +1,17 @@
+# A workflow step that needs plugin metadata and asks for it. Nothing here
+# parses build.yaml, so nothing here can drift away from what the manifest
+# generator reads. The mentions below are a comment and a message, which is
+# where the name is allowed to appear.
+      - name: The tag and the metadata agree
+        run: |
+          set -euo pipefail
+          version="$(bash .github/lint/manifest.sh field version || true)"
+          if [ -z "${version}" ]; then
+            echo "::error::build.yaml carries no version at column zero."
+            exit 1
+          fi
+          if ! bash .github/lint/manifest.sh sequence artifacts >/dev/null; then
+            echo "::error::build.yaml lists no artifacts."
+            exit 1
+          fi
+          echo "build.yaml declares version ${version}."

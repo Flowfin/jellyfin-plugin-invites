@@ -39,6 +39,16 @@ jobs:
         # between those two.
         run: bash .github/lint/manifest.sh selftest
 
+      - name: No workflow reads build.yaml with a reader of its own
+        # The release gate carried a second reader of build.yaml and the
+        # packaging job a third, written out twice. The two scalar readers
+        # already disagreed on the block keys, and nothing compared them,
+        # because the routes are far enough apart that nobody editing one opens
+        # the other. #394 is where that was measured and this is what refuses
+        # the next one. It runs on every push rather than at review time, for
+        # the same reason as the step above.
+        run: bash .github/lint/manifest.sh readers
+
       - name: build.yaml still generates an entry
         # The tracked metadata, against a stand-in archive this step creates, so
         # the run reads the real fields and needs no packaging tool. What it

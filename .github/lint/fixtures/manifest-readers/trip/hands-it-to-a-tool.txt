@@ -1,0 +1,8 @@
+# The first shape, in the spelling the release gate carried: a program named on
+# the same line as the file it is handed. The vocabulary is what sees this one,
+# and the file it is refused for is on the same line as the tool.
+      - name: Read the metadata
+        run: |
+          set -euo pipefail
+          version="$(awk -v key=version -f "${RUNNER_TEMP}/read_scalar.awk" build.yaml)"
+          echo "::notice::build.yaml declares ${version}."
