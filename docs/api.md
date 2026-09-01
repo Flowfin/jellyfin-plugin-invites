@@ -155,6 +155,33 @@ Mints one invitation and returns the code exactly once.
 | validity | body | no | How long the link lasts. Bounded by the maximum in [docs/expiry-rules.md](expiry-rules.md), and an invitation with no expiry at all is refused |
 | uses | body | no | How many accounts the invitation is good for. Refused at zero and above the ceiling, which is #52 and #33 |
 
+A mint that would take the number of live invitations past the ceiling is
+refused with a conflict and nothing is written. This page named the use-count
+ceiling in the table above and named no other, which read as the whole of what
+this route refuses; it is not, and the second of the three ceilings in #33 has
+been acting since it landed:
+
+    git grep -nE 'catch \(LiveCeilingReachedException refused\)' -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:147:        catch (LiveCeilingReachedException refused)
+
+Nothing about such a request is malformed, so it is not a bad request, and the
+distinction is the operator's repair rather than a taste in status codes: what
+they sent was acceptable and the store's state was not, so what fixes it is
+revoking an invitation rather than changing what they asked for. The message
+carries the count and the ceiling, because an operator told only that they hit a
+limit does not know how far past it they are.
+
+The ceiling counts live invitations and nothing else. A record that has expired,
+been spent or been revoked is not live, does not count against it, and stays in
+the store until retention removes it, so an operator meeting this refusal on a
+server with few outstanding links is reading a bound on what may be redeemed
+rather than on how large the file has grown.
+
+The table above names the use-count ceiling and not this one because that one
+bounds a parameter of the request. This one bounds the store, belongs to no
+parameter, and had no row to go missing from, which is how it came to be absent
+from this page.
+
 The response carries the code. It is the only response in this API that ever
 does, it carries it once, and no later call to any route returns it again. #85
 owns that property on the operator's side and this page owes it the same
