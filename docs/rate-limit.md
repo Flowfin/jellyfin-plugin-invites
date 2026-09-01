@@ -243,7 +243,7 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:148:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:149:memory for as long as its window and no longer, and that the trail does not
 
 ## What this page does not decide
 
@@ -252,9 +252,20 @@ holds the wording and the byte-for-byte requirement for every case including
 this one, and a limiter that answered differently would be the oracle the whole
 set exists to close.
 
-Whether a throttled attempt appends a trail entry at all.
-`docs/attempt-outcomes.md` carries both directions and what each costs, and it
-is one answer for the two pages rather than one each.
+THIS PAGE LISTED WHETHER A THROTTLED ATTEMPT APPENDS A TRAIL ENTRY AMONG WHAT IT
+DOES NOT DECIDE, AND THAT QUESTION IS ANSWERED. It still is not decided here:
+`docs/attempt-outcomes.md` carries the answer and it is one answer for the two
+pages rather than one each. What that page settles, in one sentence so a reader
+of this one need not go and get it, is that the trail records the throttling
+rather than the requests - one entry when a source starts being refused against
+an invitation, carrying how many attempts it covers, and not another until that
+episode ends.
+
+The half that is this page's is the consequence for the limiter: the write
+happens on the state transition rather than on the event, so the limiter's own
+refusals do not become the write path the trail's bound exists to close.
+`AttemptLimiter` does not append anything today, because nothing calls it and
+there is no trail on disk to append to.
 
 ## What is written now, and what of this page it holds
 
