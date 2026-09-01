@@ -4,17 +4,42 @@ Expiry reads like one comparison and is seven decisions. Each one below is
 settled, with the reason it went that way, so the code that enforces it is built
 against a decision rather than reconciled with one afterwards.
 
-Two of these rules are enforced and the rest are not, and this paragraph said
-none of them were. The record these rules judge is in the tree, as `Invitation`
-under #38, and so is the routine that judges it:
+THIS PARAGRAPH SAID TWO OF THESE RULES ARE ENFORCED AND THE REST ARE NOT, AND
+BEFORE THAT IT SAID NONE OF THEM WERE. Five act. The record these rules judge is
+in the tree, as `Invitation` under #38, and so is the routine that judges it:
 
     git grep -n 'public static class RedemptionDecision' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:54:public static class RedemptionDecision
 
-The exclusive boundary is the comparison that routine makes, asserted at the
-exact instant, and the one clock reading is the argument it takes rather than a
-read it performs, with the lint refusing a second read anywhere but the seam.
-Both rules say so in place below.
+Four of the five act at minting and the fifth is the comparison that routine
+makes. They are read off the source rather than counted from the sections below,
+because the count in this paragraph is the thing that went stale twice:
+
+    git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:65:    public DateTimeOffset ExpiresAt { get; }
+    Jellyfin.Plugin.Invites/Invitations/Invitation.cs:188:    public DateTimeOffset ExpiresAt { get; }
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:198:        var lasts = validity ?? DefaultValidity;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:205:        if (lasts <= TimeSpan.Zero)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:213:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:260:                expiresAt: now + lasts,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:235:        if (now >= record.ExpiresAt)
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:573:        public DateTimeOffset ExpiresAt { get; set; }
+
+The clock starting at minting is the addition, `expiresAt: now + lasts`. The
+default validity acting is `validity ?? DefaultValidity`, and what waits on #86
+is an operator being able to change it rather than the default acting at all.
+The maximum is the comparison against `MaximumValidityDays`. A never-expiring
+invitation is refused twice over: `lasts <= TimeSpan.Zero` refuses one at
+minting, and `ExpiresAt` is not nullable in any of its three spellings, so there
+is no value meaning no expiry for a store to carry. The exclusive boundary is
+`now >= record.ExpiresAt`, asserted at the exact instant.
+
+The two that do not act are the one clock reading and the backwards jump. The
+reading is the argument the routine takes rather than a read it performs, with
+the lint refusing a second read anywhere but the seam, and what is missing is a
+redemption for it to serve. The jump is accepted rather than enforced, which is
+its own section, and what holds the acceptance is three tests rather than a
+refusal.
 
 What is absent is a caller. This paragraph said the plugin serves no route, and
 that stopped being true when the administrator routes and the setup page landed,
@@ -26,10 +51,14 @@ decision a clock reading or does anything with its verdict:
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
     0
 
-So the five rules that are not the boundary and the one reading are decisions
-with nothing standing behind them, and each of them names the issue that will
-enforce it. The clock seam they read through is in the tree already, as `IClock`
-under #41.
+THIS SENTENCE SAID THE FIVE RULES THAT ARE NOT THE BOUNDARY AND THE ONE READING
+ARE DECISIONS WITH NOTHING STANDING BEHIND THEM, and four of those five act at
+minting, which the paragraphs above read off the source. What the absent caller
+costs is narrower than that and is the whole of it: no verdict this routine
+reaches turns into anything, so the boundary decides nothing that happens, and
+the one reading has no redemption to serve. A rule enforced at minting is
+unaffected, because minting is a route that answers. The clock seam they read
+through is in the tree already, as `IClock` under #41.
 
 ## The clock starts at minting
 
