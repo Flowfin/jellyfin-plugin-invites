@@ -23,14 +23,20 @@
 #   generate <archive> <source-url> <timestamp> [<build.yaml>]
 #                     write the manifest to stdout, or refuse and say why
 #   field <key> [<build.yaml>]
-#                     write one value to stdout, judging nothing. This is the
+#                     write one scalar to stdout, judging nothing. This is the
 #                     reader on its own, so that a second caller reads the file
 #                     the same way this one does instead of writing a reader of
-#                     its own, and so that the two can be compared by hand while
-#                     there are still two. It is #394's half of this file.
+#                     its own.
+#   sequence <key> [<build.yaml>]
+#                     write a block sequence to stdout, one item per line,
+#                     judging nothing. The same reader for the one shape a
+#                     scalar reader cannot answer for.
+#   readers [<dir>]   fail if a workflow file parses build.yaml itself instead
+#                     of asking this script
 #   selftest          fail unless every refusal fires on its own fixture, fires
-#                     alone, and stays quiet on the clean one, and unless the
-#                     checksum moves when the archive does
+#                     alone, and stays quiet on the clean one, unless the
+#                     checksum moves when the archive does, and unless the
+#                     second-reader refusal bites its own fixture pair
 #
 # WHAT THIS DOES NOT DO, said here rather than left to be discovered.
 #
@@ -65,12 +71,20 @@
 # this directory has, and the fixtures are what keep the reader reaching the
 # spellings it claims.
 #
-# The reader below is this script's own, and .github/workflows/publish.yaml
-# carries a second one inline that reads the same file for the release gate. Two
-# readers of one file drift; holding them together is #394.
+# THERE IS ONE READER OF build.yaml IN THIS REPOSITORY AND IT IS BELOW.
+# .github/workflows/publish.yaml carried a second one inline for the release
+# gate, and .github/workflows/package.yaml carried a third, written out twice,
+# for the artifact list. The two scalar readers already disagreed on the two
+# block keys: asked for changelog, the gate's returned the block indicator `|`
+# rather than the notes, and one character is a value rather than an error, so
+# what waited there was a release whose entry carried `|` where its changelog
+# belonged. That is #394, both callers ask this script now, and `readers` below
+# is what refuses the next one, because a rule nobody can grep for is one that
+# returns.
 set -uo pipefail
 
 FIXTURES=".github/lint/fixtures/manifest"
+READER_FIXTURES=".github/lint/fixtures/manifest-readers"
 
 # The keys an entry is made of. The first list is read as ordinary scalars and
 # the second as block scalars, and both are required: a manifest missing one of
@@ -148,6 +162,59 @@ read_value() {
       # every renderer that shows it.
       sub(/\n+$/, "", out)
       printf "%s", out
+    }
+  ' "$file"
+}
+
+# Read a block sequence at column zero: the key on a line of its own, then one
+# `- item` per line until a line that is not an item. One item per line on
+# stdout, unquoted the same way a scalar is.
+#
+# It is here rather than in a caller for the reason the whole of #394 is about.
+# The artifact list decides what the packaged archive is compared against, and
+# it was read by an awk program written out twice inside one workflow file, so
+# the two copies were already a pair that could drift against each other before
+# either could drift against this file.
+#
+# A key carrying anything after the colon is not a block sequence, so it returns
+# nothing rather than guessing: an inline `[a, b]` is a spelling this reader has
+# never been asked for, and answering for it with the brackets still attached
+# would be the same defect as handing back a block indicator.
+read_sequence() {
+  local key="$1" file="$2"
+  awk -v key="$key" -v quote="'" '
+    BEGIN { found = 0 }
+    found == 0 && index($0, key ":") == 1 {
+      rest = substr($0, length(key) + 2)
+      sub(/\r$/, "", rest)
+      sub(/^[[:space:]]+/, "", rest)
+      sub(/[[:space:]]*#.*$/, "", rest)
+      sub(/[[:space:]]+$/, "", rest)
+      if (rest != "") { exit }
+      found = 1
+      next
+    }
+    found == 1 {
+      line = $0
+      sub(/\r$/, "", line)
+      if (line ~ /^[[:space:]]*$/) { next }
+      # Anything that is not an item ends the sequence, which is the next key.
+      if (line !~ /^[[:space:]]*-/) { exit }
+      sub(/^[[:space:]]*-[[:space:]]*/, "", line)
+      sub(/[[:space:]]+$/, "", line)
+      if (substr(line, 1, 1) == "\"") {
+        line = substr(line, 2)
+        end = index(line, "\"")
+        if (end > 0) { line = substr(line, 1, end - 1) }
+      } else if (substr(line, 1, 1) == quote) {
+        line = substr(line, 2)
+        end = index(line, quote)
+        if (end > 0) { line = substr(line, 1, end - 1) }
+      } else {
+        sub(/[[:space:]]*#.*$/, "", line)
+        sub(/[[:space:]]+$/, "", line)
+      }
+      print line
     }
   ' "$file"
 }
@@ -388,8 +455,38 @@ cmd_selftest() {
     echo "bites checksum-follows-the-archive: ${first} for the fixture, ${second} with one byte added to it"
   fi
 
+
+  # The second-reader refusal, against fixtures that hold the two spellings this
+  # repository's workflows actually carried. A rule with no fixture is a rule
+  # that reports ok because it found nothing, which is what a rule that stopped
+  # matching also reports.
+  #
+  # One tripping file per shape rather than one holding both, for the reason
+  # recorded at the rule: the two halves are refused by two different lines, and
+  # a single fixture tripping either of them would print bites whether the other
+  # still worked or not.
+  local shape trip_readers clean_readers readers_ok=1
+  trip_readers="$(reader_violations "${READER_FIXTURES}/trip")"
+  for shape in hands-it-to-a-tool behind-a-closing-quote; do
+    if ! printf '%s' "$trip_readers" | grep -q "${shape}"; then
+      echo "::error::a-second-build-yaml-reader: ${READER_FIXTURES}/trip/${shape}.txt does not trip the rule, so that half of it cannot bite and proves nothing." >&2
+      readers_ok=0
+    fi
+  done
+  clean_readers="$(reader_violations "${READER_FIXTURES}/clean")"
+  if [ -n "$clean_readers" ]; then
+    echo "::error::a-second-build-yaml-reader: ${READER_FIXTURES}/clean still matches, so reading through this script does not make the rule pass." >&2
+    printf '%s\n' "$clean_readers" >&2
+    readers_ok=0
+  fi
+  if [ "$readers_ok" -eq 0 ]; then
+    overall=1
+  else
+    echo "bites a-second-build-yaml-reader: a reader handed the file on one line and a reader behind a closing quote each trip it, the same steps written through this script do not"
+  fi
+
   if [ "$overall" -eq 0 ]; then
-    echo "ok    every refusal fires on its own fixture and alone, the clean pair generates, and the checksum follows the archive"
+    echo "ok    every refusal fires on its own fixture and alone, the clean pair generates, the checksum follows the archive, and no second reader of the metadata has come back"
   fi
   return $overall
 }
@@ -414,9 +511,119 @@ cmd_field() {
   [ -n "$value" ]
 }
 
+# The same, for the one shape a scalar reader has no answer for. An empty
+# sequence is empty output and exit 1, for the same reason: a caller comparing a
+# packaged archive against an empty list is comparing against nothing, and that
+# is the failure it has to be able to tell apart from a list that disagrees.
+cmd_sequence() {
+  local key="${1:-}" file="${2:-build.yaml}" value
+  if [ -z "$key" ]; then
+    echo "usage: $0 sequence <key> [<build.yaml>]" >&2
+    return 2
+  fi
+  if [ ! -f "$file" ]; then
+    echo "::error::metadata-missing: there is no ${file} to read '${key}' out of." >&2
+    return 1
+  fi
+  value="$(read_sequence "$key" "$file")"
+  printf '%s\n' "$value"
+  [ -n "$value" ]
+}
+
+# What refuses the second reader coming back.
+#
+# The rule is that no file under .github/workflows/ hands build.yaml to a
+# program. Every read goes through this script, which defaults to that path, so
+# a caller does not have to name the file at all, and the two callers that used
+# to parse it themselves now ask for a value instead.
+#
+# It refuses two shapes and neither of them is the file's name on its own. A
+# workflow says build.yaml constantly and correctly: in a step name, in a
+# comment, in a paths filter, in the message a refusal prints. Refusing the name
+# would refuse all of that, so what is matched is the name IN THE POSITION OF AN
+# ARGUMENT TO A READER.
+#
+#   The first shape is the name on a line that also names a text tool. That is
+#   the spelling the release gate carried, an awk program on one line with the
+#   file at the end of it, and it is also what a reader written in sed, python
+#   or yq would look like. The vocabulary is a floor rather than the rule: a
+#   tool nobody has reached for here yet walks past it.
+#
+#   The second is the name at the start of a line, behind the quote that closed
+#   a program written out above it. That is the spelling the packaging job
+#   carried twice, and no vocabulary can see it, because the tool is several
+#   lines further up. It is narrow on purpose - a line whose first thing is a
+#   closing quote and whose next thing is this file is a program being handed
+#   its input and nothing else.
+#
+# The two are refused by two lines, so the selftest reads one tripping fixture
+# per shape rather than one holding both. A fixture tripping either half would
+# print bites whether the other still worked or not, which is how a rule with
+# several alternatives goes quiet without anything going red.
+#
+# A line naming manifest.sh is passed over before either shape is tried, which
+# is how a caller that reads the file through this script keeps naming it.
+#
+# WHAT IT DOES NOT SEE, said here rather than left to be discovered. It reads
+# one line, so a parser handed the file through a variable set on an earlier
+# line is invisible to it, and so is any tool spelled onto a line of its own
+# with the file on the next. An existence test, `[ ! -f build.yaml ]`, is not
+# refused: it reads no value out of the file and there is nothing in it for a
+# second reader to disagree with. And it reads one directory rather than the
+# tree - a second reader written into a script under .github/lint/ is outside
+# its subject, because a script there is where a reader is SUPPOSED to live and
+# refusing one would refuse this file. Inside the directory it reads every file
+# rather than the two workflow suffixes, so a reader dropped into a helper
+# script beside the workflows is refused by the same line.
+READER_TOOLS='awk|sed|grep|cut|head|tail|tr|yq|jq|python3?|perl|ruby'
+
+reader_violations() {
+  local dir="$1"
+  find "$dir" -type f -print0 2>/dev/null \
+    | sort -z \
+    | xargs -0 -r awk -v tools="$READER_TOOLS" -v quote="'" '
+      {
+        line = $0
+        sub(/\r$/, "", line)
+        if (line ~ /^[[:space:]]*#/) { next }
+        if (index(line, "manifest.sh") > 0) { next }
+        # The name on its own, not the tail of plugin-build.yaml.
+        if (line !~ /(^|[^[:alnum:]_-])build[.]yaml([^[:alnum:]_-]|$)/) { next }
+        if (line ~ ("(^|[^[:alnum:]_-])(" tools ")([^[:alnum:]_-]|$)")) {
+          print FILENAME ":" FNR ":" line
+          next
+        }
+        if (line ~ ("^[[:space:]]*[\"" quote "][[:space:]]*build[.]yaml")) {
+          print FILENAME ":" FNR ":" line
+        }
+      }
+    '
+}
+
+cmd_readers() {
+  local dir="${1:-.github/workflows}" out
+
+  if [ ! -d "$dir" ]; then
+    echo "::error::a-second-build-yaml-reader: there is no ${dir} to read. Failing rather than reporting a check that looked at nothing." >&2
+    return 1
+  fi
+
+  out="$(reader_violations "$dir")"
+  if [ -n "$out" ]; then
+    echo "::error::a-second-build-yaml-reader: a workflow file reads build.yaml itself. Two readers of one file drift, and the two that were here already disagreed about what a block scalar is worth. Ask '$0 field <key>' or '$0 sequence <key>' instead." >&2
+    printf '%s\n' "$out" >&2
+    return 1
+  fi
+
+  echo "ok    no workflow file under ${dir} reads build.yaml except through $0"
+  return 0
+}
+
 case "${1:-}" in
   generate) shift; cmd_generate "$@" ;;
   field)    shift; cmd_field "$@" ;;
+  sequence) shift; cmd_sequence "$@" ;;
+  readers)  shift; cmd_readers "$@" ;;
   selftest) cmd_selftest ;;
-  *)        echo "usage: $0 generate <archive> <source-url> <timestamp> [<build.yaml>] | $0 field <key> [<build.yaml>] | $0 selftest" >&2; exit 2 ;;
+  *)        echo "usage: $0 generate <archive> <source-url> <timestamp> [<build.yaml>] | $0 field <key> [<build.yaml>] | $0 sequence <key> [<build.yaml>] | $0 readers [<dir>] | $0 selftest" >&2; exit 2 ;;
 esac

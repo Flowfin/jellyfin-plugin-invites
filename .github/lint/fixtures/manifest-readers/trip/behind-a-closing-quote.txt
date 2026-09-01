@@ -1,0 +1,12 @@
+# The second shape, in the spelling the packaging job carried twice: an awk
+# program written out over several lines, with the file alone on the line that
+# closes it. No vocabulary can see this one, because the tool is three lines
+# further up, and that is why the rule has a second half.
+      - name: The packaged list equals the artifact list
+        run: |
+          set -euo pipefail
+          expected=$(awk '
+            /^artifacts:/ {inblock=1; next}
+            inblock && /^-/ {gsub(/^- *"?/,""); print}
+          ' build.yaml | sort)
+          echo "::error::build.yaml lists nothing."

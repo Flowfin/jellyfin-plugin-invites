@@ -70,38 +70,6 @@ jobs:
           # Nothing here pushes, so do not leave the token in .git/config.
           persist-credentials: false
 
-      - name: Write the manifest reader
-        # One reader, in a file, so the parsing rules are stated once. A quoted scalar
-        # ends at its closing quote, and an unquoted one ends at a comment or at the end
-        # of the line. Trailing whitespace and a CR from a CRLF checkout are removed
-        # before either rule is applied, because otherwise the closing quote is no
-        # longer the last character on the line and stays in the value.
-        run: |
-          set -euo pipefail
-          mkdir -p "${RUNNER_TEMP}/manifest"
-          cat > "${RUNNER_TEMP}/manifest/read_scalar.awk" <<'AWK'
-          index($0, key ":") == 1 {
-            value = substr($0, length(key) + 2)
-            sub(/\r$/, "", value)
-            sub(/^[[:space:]]+/, "", value)
-            sub(/[[:space:]]+$/, "", value)
-            if (substr(value, 1, 1) == "\"") {
-              value = substr(value, 2)
-              end = index(value, "\"")
-              if (end > 0) { value = substr(value, 1, end - 1) }
-            } else if (substr(value, 1, 1) == "'") {
-              value = substr(value, 2)
-              end = index(value, "'")
-              if (end > 0) { value = substr(value, 1, end - 1) }
-            } else {
-              sub(/[[:space:]]*#.*$/, "", value)
-              sub(/[[:space:]]+$/, "", value)
-            }
-            print value
-            exit
-          }
-          AWK
-
       - name: Check the tag and build.yaml agree
         id: metadata
         env:
@@ -167,33 +135,64 @@ jobs:
             exit 1
           fi
 
+          # Every value below comes out of .github/lint/manifest.sh, which is the
+          # one reader of build.yaml in this repository and the same one the
+          # manifest generator further down this file asks. This step used to
+          # carry a reader of its own, written into the runner's temporary
+          # directory, and the two already disagreed: asked for changelog, this
+          # one handed back the block indicator `|` rather than the notes, and one
+          # character is a value rather than an error. Nothing compared them,
+          # because the two routes are far enough apart that nobody editing one
+          # opens the other. That is #394, and `manifest.sh readers` is what
+          # refuses the next one.
+          #
+          # The status is dropped rather than checked: the reader exits non-zero
+          # for a key that is absent or empty, which is a state each check below
+          # reports for itself with a message naming the key, and losing that
+          # message to `set -e` would stop the run with nothing said.
           read_scalar() {
-            awk -v key="$1" -f "${RUNNER_TEMP}/manifest/read_scalar.awk" build.yaml
+            bash .github/lint/manifest.sh field "$1" || true
           }
 
           # changelog is in this list because the packaging tool reads build_cfg
           # ['changelog'] without a default and dies with a Python KeyError when it is
           # absent. That happens after the plugin has already been compiled, which is
           # far past the point where the tag is spent.
+          #
+          # A key that is present and empty is refused here as an absent one,
+          # which is what the reader answers and what the generator has always
+          # refused. artifacts is asked for separately because it is a sequence
+          # rather than a scalar, and a scalar reader has no answer for it.
           missing=0
-          for key in name guid version targetAbi framework owner overview description category artifacts changelog; do
-            if ! grep -Eq "^${key}:" build.yaml; then
-              echo "::error::build.yaml has no top level '${key}' field. A catalog entry built from this package would be incomplete."
+          for key in name guid version targetAbi framework owner overview description category changelog; do
+            if [ -z "$(read_scalar "${key}")" ]; then
+              echo "::error::build.yaml has no top level '${key}' field, or carries it empty. A catalog entry built from this package would be incomplete."
               missing=1
             fi
           done
+          if ! bash .github/lint/manifest.sh sequence artifacts >/dev/null; then
+            echo "::error::build.yaml lists no top level 'artifacts'. The packaging tool builds the archive from that list and compares what it produced against it."
+            missing=1
+          fi
           if [ "${missing}" -ne 0 ]; then
             exit 1
           fi
 
           # `image` names a file that is copied into the archive. The packaging tool
-          # exits on a missing one, again after the build.
-          if grep -Eq "^image:" build.yaml; then
-            image="$(read_scalar image)"
-            if [ ! -f "${image}" ]; then
-              echo "::error::build.yaml declares image '${image}', which is not in the repository. The packaging step copies that file into the archive and fails without it."
-              exit 1
-            fi
+          # exits on a missing one, again after the build. It is the one key here
+          # that may legitimately be absent, so an empty answer is read as the
+          # absence rather than as a refusal.
+          #
+          # What that costs, said rather than left to be found: the reader answers
+          # the same way for a key that is not there and one that is there and
+          # empty, so `image:` written with nothing after it now walks past this
+          # check and fails in the packaging tool instead. The grep this replaced
+          # could tell the two apart and nothing else here could, which is the
+          # price of the file having one reader rather than two.
+          image="$(read_scalar image)"
+          if [ -n "${image}" ] && [ ! -f "${image}" ]; then
+            echo "::error::build.yaml declares image '${image}', which is not in the repository. The packaging step copies that file into the archive and fails without it."
+            exit 1
           fi
 
           version="$(read_scalar version)"

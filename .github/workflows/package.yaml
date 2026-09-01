@@ -58,12 +58,15 @@ jobs:
           set -euo pipefail
           # The artifacts block of build.yaml, one filename per line. Read from
           # the committed file rather than restated here, so this check cannot
-          # drift away from what it is checking.
-          expected=$(awk '
-            /^artifacts:/ {inblock=1; next}
-            inblock && /^[a-zA-Z]/ {inblock=0}
-            inblock && /^-/ {gsub(/^- *"?/,""); gsub(/"?[[:space:]]*$/,""); print}
-          ' build.yaml | sort)
+          # drift away from what it is checking, and read through the one reader
+          # this repository has rather than by an awk program of this job's own.
+          # It was such a program, written out twice in this file, so the two
+          # copies were a pair that could drift against each other before either
+          # could drift against the manifest generator. That is #394.
+          # `|| true` because the reader exits non-zero on an empty list, and the
+          # refusal below is the one that says so rather than `set -e` stopping
+          # the run with nothing printed.
+          expected=$(bash .github/lint/manifest.sh sequence artifacts | sort) || true
           if [ -z "$expected" ]; then
             echo "::error::No artifacts listed in build.yaml. Refusing to compare against an empty list."
             exit 1
@@ -92,11 +95,11 @@ jobs:
         # editing the list alone.
         run: |
           set -euo pipefail
-          expected=$(awk '
-            /^artifacts:/ {inblock=1; next}
-            inblock && /^[a-zA-Z]/ {inblock=0}
-            inblock && /^-/ {gsub(/^- *"?/,""); gsub(/"?[[:space:]]*$/,""); print}
-          ' build.yaml | sort)
+          # The same list, from the same reader, for the reason above.
+          # `|| true` because the reader exits non-zero on an empty list, and the
+          # refusal below is the one that says so rather than `set -e` stopping
+          # the run with nothing printed.
+          expected=$(bash .github/lint/manifest.sh sequence artifacts | sort) || true
           if [ -z "$expected" ]; then
             echo "::error::No artifacts listed in build.yaml. Refusing to compare against an empty list."
             exit 1
