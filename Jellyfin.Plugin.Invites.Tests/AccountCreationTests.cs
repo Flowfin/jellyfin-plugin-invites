@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Invites.Accounts;
 using Xunit;
@@ -186,17 +188,76 @@ public class AccountCreationTests
     }
 
     /// <summary>
+    /// The ceiling, refused inside the routine and before anything reaches the
+    /// server. #62 asks for it here rather than as validation on the way in, so
+    /// that a later caller which skips the validation still meets it.
+    /// </summary>
+    /// <returns>A task that completes when the refusal has been read.</returns>
+    [Fact]
+    public async Task ATemplateThatWouldManageTheServerIsRefusedBeforeAnythingIsCreated()
+    {
+        var server = new ARecordingWriteSeam();
+
+        var refused = await Assert.ThrowsAsync<ArgumentException>(
+            () => AccountCreation.CreateAsync(server, "invited", "a-chosen-credential", ATemplateThatManages()));
+
+        Assert.Empty(server.Asked);
+        Assert.Contains("no account an invitation creates is an administrator", refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// No account that already exists is touched, and the reason is that there
+    /// is no way to hand this routine one. Every parameter of every public
+    /// member is the seam, a name, a credential or a template, so no account
+    /// identifier can be passed in for a later change to start addressing.
+    /// </summary>
+    /// <remarks>
+    /// This is the machine-checkable form of #62's second rule. Asserting after
+    /// a call that no other account changed would pass for a routine that
+    /// reached one and happened to leave it as it was, which is the version
+    /// that changes something after the next edit. Add a <c>Guid</c> parameter
+    /// and this goes red before anything is written with it.
+    /// </remarks>
+    [Fact]
+    public void NothingHereCanBeHandedAnAccountThatAlreadyExists()
+    {
+        var allowed = new[] { typeof(IServerAccountWrites), typeof(string), typeof(AccountTemplate) };
+
+        var parameters = typeof(AccountCreation)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .SelectMany(method => method.GetParameters())
+            .ToList();
+
+        Assert.NotEmpty(parameters);
+        Assert.All(parameters, parameter => Assert.Contains(parameter.ParameterType, allowed));
+    }
+
+    /// <summary>
     /// A template naming one library, which is enough for the trail to show
     /// which template arrived.
     /// </summary>
     /// <returns>The template.</returns>
-    private static AccountTemplate ATemplate()
+    private static AccountTemplate ATemplate() => ATemplate(manages: false);
+
+    /// <summary>
+    /// The same template with the one grant this plugin will not honour.
+    /// </summary>
+    /// <returns>The template.</returns>
+    private static AccountTemplate ATemplateThatManages() => ATemplate(manages: true);
+
+    /// <summary>
+    /// A template naming one library, which is enough for the trail to show
+    /// which template arrived.
+    /// </summary>
+    /// <param name="manages">Whether the account it asks for manages the server.</param>
+    /// <returns>The template.</returns>
+    private static AccountTemplate ATemplate(bool manages)
     {
         return new AccountTemplate(
             libraries: ImmutableArray.Create(_library),
             mayDownload: false,
             mayPlayFromOutsideTheNetwork: false,
-            mayManage: false,
+            mayManage: manages,
             mayControlOtherSessions: false,
             mayWatchLiveTelevision: false,
             mayManageLiveTelevision: false,
