@@ -7,28 +7,23 @@ directions and does not pretend the other tool is not there. jfa-go is well
 established, it does more than this plugin plans to do, and for several of the
 things it does this plugin has no answer at all.
 
-Nothing in this plugin is implemented yet. Every behaviour attributed to it
-below is a planned behaviour held by an open issue, and the issue number is
-where the promise is kept:
+Nothing here can be redeemed yet, and that is the sentence to read before any
+row below. An operator can mint an invitation and revoke one, and the plugin is
+sixty-seven source files rather than the seven this paragraph used to count.
+What nobody can do is turn a link into an account: the redemption route serves a
+page and has no post behind it, and no routine here creates an account.
 
-```
-$ git ls-files -- '*.cs' ':!.github/lint/fixtures'
-Jellyfin.Plugin.Invites.Tests/ClockSeamTests.cs
-Jellyfin.Plugin.Invites.Tests/PluginPagesTests.cs
-Jellyfin.Plugin.Invites.Tests/Stubs.cs
-Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
-Jellyfin.Plugin.Invites/Plugin.cs
-Jellyfin.Plugin.Invites/Time/IClock.cs
-Jellyfin.Plugin.Invites/Time/SystemClock.cs
-$ git grep -nE 'Invitation|Redeem' -- '*.cs' ':!.github/lint/fixtures'
-Jellyfin.Plugin.Invites/Plugin.cs:29:    public override string Name => "Account Invitations";
-```
+    git ls-tree -r --name-only origin/master | grep -c '^Jellyfin.Plugin.Invites/.*\.cs$'
+    67
+    git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
+    exit=1
 
-Seven source files, and the only one of them carrying the word invitation
-carries it as the display name. So this is not a
-page telling an operator to switch today. It is the page that says what
-switching would and would not get them, written before the code exists so that
-no feature gets claimed here and built afterwards.
+So this is still not a page telling an operator to switch today, and the reason
+is narrower than it was: one action rather than an empty tree. It is still the
+page that says what switching would and would not get them, and a row below that
+names an issue is a promise kept there rather than a behaviour running here.
 
 ## Where the claims about jfa-go come from
 
@@ -65,6 +60,13 @@ happens inside the Jellyfin server process.
 | A guided setup page served by the plugin, where the person picks a username and a password | #74, #76 |
 | Revocation that takes effect on the next redemption, including one already in flight | #54 |
 | An administrator view of what was invited and what became of it | #89 |
+
+Two of those rows have parts that run already. The validity period and the use
+count in the first row are on the record and are refused above their ceiling at
+minting, which is why #52 is closed and #51 carries what is left of that row.
+The setup page in the third row is served, without the post that would receive
+what somebody types into it. Neither row has produced an account, because
+nothing has been redeemed.
 
 The one thing that is structurally different is that there is no second
 service. No container, no separate process, no reverse proxy entry, no second
