@@ -240,7 +240,7 @@ quantity had already derived one and had been carrying it for a fortnight.
     fd0fdfe 2026-08-17 Choose the attempt trail's failure bound, for #43
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:143:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:178:**The failure bound is one thousand entries.** This paragraph said the number was
 
 It bounds failures and not the whole trail, and that half is the one a summary
 here would lose. Successes are kept and are bounded by the ceilings in #33

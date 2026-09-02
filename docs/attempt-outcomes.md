@@ -45,11 +45,11 @@ made.
 
 | Outcome                | What it means                                                                                                     | Produced by |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| `Accepted`             | The code was honoured and an account was created.                                                                 | #74         |
-| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #74         |
-| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #74    |
-| `Spent`                | The record was found and had no uses left.                                                                        | #55, #74    |
-| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #74    |
+| `Accepted`             | The code was honoured and an account was created.                                                                 | #399        |
+| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #399        |
+| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #399   |
+| `Spent`                | The record was found and had no uses left.                                                                        | #55, #399   |
+| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #399   |
 | `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31         |
 | `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33         |
 | `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78         |
@@ -97,9 +97,44 @@ whole redemption decision in one routine, and that routine reaches five states:
     Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:52:    Honoured = 4,
 
 What no issue has built is the caller that turns one of those into an entry, and
-that is the post on the redemption route, #74. So the column names it on the
-five rows a decision reaches, and #51, #54 and #55 stay beside it because each
-of those still owns the rule its row is about.
+that is the post on the redemption route. So the column names it on the five
+rows a decision reaches, and #51, #54 and #55 stay beside it because each of
+those still owns the rule its row is about.
+
+## The column named the setup page for the post, and it does not now
+
+THIS SECTION AND FIVE ROWS ABOVE NAMED #74 AS THE CALLER THAT TURNS A DECISION
+INTO AN ENTRY. The post has not been #74 since 2026-08-31, when #71 split the
+act in two: the post that receives the form became #399 and the routine that
+creates the account became #398. #74 landed the setup page, and its own
+remaining clause is about bytes rendering in a browser, which no entry is
+written by.
+
+The move above repaired one wrong pointer in this column and installed another
+in the same act. It was written on 2026-08-28, three days before the split, so
+it was right when it landed and stopped being right without anything on this
+page changing - which is the shape a `Produced by` column has and the reason it
+is worth a section rather than a quiet substitution.
+
+What it cost the reader this page is for. The last four members of the set exist
+so that an issue adding a refusal adds its member here, and the column is how
+somebody checks whether the caller for a member has arrived. Sent to #74, they
+found an issue that had landed and would have read the caller as built.
+
+`docs/refusal-response.md` carries the same vocabulary in its own `Owned by`
+column and was carried over on 2026-09-02, so the two tables that share these
+names agree again rather than disagreeing about which issue writes the entry.
+
+Nothing in this tree would have found it. `AttemptOutcomeSetTests` reads this
+table for the names in its first column and never for the last one, and
+`tracker-claim.sh` judges a present-tense claim that an issue is open or closed,
+which "the post is #74" is not. It was found by reading the page against the
+tracker.
+
+Writing this section moved the line two pasted references name, one below and
+one on [docs/personal-data.md](personal-data.md), from 143 to 178. Both are
+re-made from the command rather than adjusted by the difference, which is what
+`pasted-line-reference.sh` refused this change for until they were.
 
 `Accepted` and `Honoured` are not two spellings of one state, and moving the
 column does not make them one. The decision's `Honoured` says the invitation may
@@ -230,7 +265,7 @@ THIS PARAGRAPH WENT ON TO CALL THE BOUND A QUANTITY NOTHING HAS CHOSEN, AND
 THIS PAGE CHOSE IT UNDER `## The bound, in two parts` ABOVE:
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:143:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:178:**The failure bound is one thousand entries.** This paragraph said the number was
 
 So a reader arriving at this section was told this page has no number for a
 thing this page states, which is worse than a stale claim about another
