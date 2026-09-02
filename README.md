@@ -137,10 +137,14 @@ automate, and what a person does instead is in
 
 ## Screenshots
 
-None yet. The configuration page has four sections on it to photograph and
+None yet. The configuration page has five sections on it to photograph and
 nobody has taken a picture of one; the setup page is served and has no post
 behind it, so a screenshot of it would show a form that cannot be submitted.
-They arrive with #84 and #74.
+Neither is waiting on the issues this paragraph used to name. The
+configuration page landed under #84, which closed on 2026-08-17, so what is
+missing there is somebody taking a photograph rather than work. The post that
+would make the setup form submittable is #399, which #71 split out of #74 on
+2026-08-31; #74 landed the page and judges no code.
 
 ## Security
 
