@@ -87,9 +87,29 @@ What answers today is narrower than that paragraph, and the difference is worth
 reading before anybody calls this route. #74 landed the page and nothing else:
 the same bytes are served for every code, no invitation is looked up, and the
 response carries no anti-forgery token. So the refusal half is undelivered, and
-the route discloses nothing about a code because it does not read one. The
-lookup by code that both halves need does not exist in this plugin; #75 and #77
-own the refusal and #78 owns the token.
+the route discloses nothing about a code because it does not read one. #75 and
+#77 own the refusal and #78 owns the token.
+
+THIS PARAGRAPH SAID THE LOOKUP BY CODE THAT BOTH HALVES NEED DOES NOT EXIST IN
+THIS PLUGIN. It exists, and what is absent is a caller for it. `Decide` takes
+what somebody presented, canonicalises it, hashes it with the store's keyed hash
+and matches it against the records it was handed, and no route calls it:
+
+    git grep -n 'var match = Lookup(codeHash.Of(canonical), records);' -- Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:99:        var match = Lookup(codeHash.Of(canonical), records);
+
+    git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs' ; echo "exit=$?"
+    exit=1
+
+A wrong absence costs more here than it does in most places, because this
+paragraph is read by whoever writes the route it describes, and it sends them at
+the one mistake the invariant lint exists against. Somebody told the lookup is
+missing writes a second one beside the route, and a second comparison of a
+presented code against the store is a second authority for what a match means.
+`code-canonicalised-outside-one-function` and
+`expiry-or-use-count-judged-outside-the-decision` in `.github/lint/invariants.sh`
+refuse two spellings of that shape, and neither refuses the third, which is a
+lookup written from scratch.
 
 The response carries `Content-Security-Policy`, `X-Frame-Options`,
 `X-Content-Type-Options`, `Cache-Control` and `Referrer-Policy`, and
