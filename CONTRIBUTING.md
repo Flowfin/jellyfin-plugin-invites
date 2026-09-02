@@ -149,10 +149,16 @@ those is a reason to push without running the ones that do.
 ## A change to the redemption decision
 
 One routine decides whether an invitation is honoured, and the suite holds that
-decision as a table of cases rather than as repeated test methods. Neither
-exists yet: they are #56 and #102. Once they do, a change to that routine
-arrives with the rows that cover it, because a branch nobody added a row for is
-a rule the suite does not enforce.
+decision as a table of cases rather than as repeated test methods. Both are in
+the tree, so this rule binds today rather than once something arrives:
+
+    git grep -n "public static RedemptionVerdict Decide" -- Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:80:    public static RedemptionVerdict Decide(
+    git grep -n "^public class RedemptionDecisionTableTests" -- Jellyfin.Plugin.Invites.Tests/RedemptionDecisionTableTests.cs
+    Jellyfin.Plugin.Invites.Tests/RedemptionDecisionTableTests.cs:85:public class RedemptionDecisionTableTests
+
+A change to that routine arrives with the rows that cover it, because a branch
+nobody added a row for is a rule the suite does not enforce.
 
 ## No guard without proof that it bites
 
