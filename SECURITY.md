@@ -384,11 +384,44 @@ invitation that could widen an account that already exists is worse, because it
 needs no new account at all: a feature that reuses an account whose name matches
 turns the link into a privilege-editing tool for whoever holds it.
 
-No test holds either half, because there is no routine that creates an account.
-What exists is narrower and is named here so it is not mistaken for the
-property. `administrator-flag-set` in `.github/lint/invariants.sh` refuses the
-administrator flag being written anywhere in the tree, in either direction, with
-no exemption for the file the other policy rules exempt. It matches an
+THIS SECTION SAID NO TEST HOLDS EITHER HALF, BECAUSE THERE IS NO ROUTINE THAT
+CREATES AN ACCOUNT. There is one, under #398, and both halves are held inside it
+under #62. What each test does and does not reach is set out here rather than
+left to the name, because this was the last property on this page with nothing
+behind it and a name alone would be the weakest form of the repair.
+
+`AccountCreationTests.ATemplateThatWouldManageTheServerIsRefusedBeforeAnythingIsCreated`
+puts a template asking to manage the server through the creation routine and
+requires two things: that it is refused, and that nothing was asked of the
+server. The second is what separates this from a refusal raised after an account
+already exists, which would hold the ceiling and still leave somebody with an
+account they were not meant to get.
+
+`AccountCreationTests.NothingHereCanBeHandedAnAccountThatAlreadyExists` holds the
+other half by shape rather than by a check at run time. Every parameter of the
+routine is the write seam, a name, a credential or a template, so there is no
+account identifier to hand in and no account for it to address except the one the
+creation just made. Asserting after a call that no other account had moved would
+pass for a routine that reached one and left it as it was, which is the version
+that changes something after the next edit.
+
+What neither test reaches is worth as much here as what they hold. The first
+reads one field of one type at one moment, so a template that reached the
+server's administrator flag by a route that does not pass through the creation
+routine is outside it. The second says the routine cannot be pointed at an
+account; whether a redemption presented by somebody already signed in creates
+nothing is a question about a request, and there is no post on the redemption
+route, so nothing in this repository answers it.
+
+The half of the ceiling that is configuration is not held by anything and there
+is nothing for it to hold. #62 asks that a configuration asking for an
+administrator account be rejected at load; the configuration type carries one
+setting and it is an address, so there is no such value to reject. That is #86's
+ground and it is named here so the absence is not read as a refusal.
+
+Beside the two, `administrator-flag-set` in `.github/lint/invariants.sh` refuses
+the administrator flag being written anywhere in the tree, in either direction,
+with no exemption for the file the other policy rules exempt. It matches an
 assignment on the line the field is named on, so a write through a local, a
 policy built by a helper handed a boolean, or a whole policy object handed to
 the server with the flag already set all pass it.
