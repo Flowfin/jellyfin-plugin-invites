@@ -80,6 +80,14 @@ public static class Retention
     /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
     public static bool MayBeRemoved(Invitation invitation, DateTimeOffset now)
     {
+        // Stryker disable once Statement : the same refusal stands one call
+        // down. RedemptionDecision.RetentionStartsAt raises ArgumentNullException
+        // for the same argument under the same name, so removing this line
+        // changes nothing a caller can observe and no test can kill the mutant.
+        // The line stays because a public boundary that refuses its own null is
+        // not a duplicate of a private one: whoever edits that routine next is
+        // not editing this contract. Argued in docs/mutation-testing.md under
+        // #376.
         ArgumentNullException.ThrowIfNull(invitation);
 
         return RedemptionDecision.RetentionStartsAt(invitation, now) is { } since
