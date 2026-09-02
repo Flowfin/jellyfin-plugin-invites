@@ -204,6 +204,56 @@ public class StoreLoadTests
     }
 
     /// <summary>
+    /// The plugin's own state is gone and the accounts it created are still on
+    /// the server: a load of that reads as a disagreement naming every one of
+    /// them, rather than as a store with nothing to report.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the state removing the plugin leaves behind, and it is the one
+    /// thing about that removal a fault can reach. The accounts themselves are
+    /// held one route over, by the seam that declares nothing which writes, so
+    /// what this asserts is that the report stays honest about a state that seam
+    /// permits rather than that the accounts survive.
+    /// </para>
+    /// <para>
+    /// The fault it is aimed at is one line: a load that reads a store it cannot
+    /// find as agreeing, on the reasoning that no records means nothing to
+    /// report. The other load over an absent store hands in no accounts and
+    /// agrees for a reason this one does not share, so that line passes it.
+    /// </para>
+    /// <para>
+    /// <b>The state is constructed rather than produced.</b> Nothing in this
+    /// repository establishes what a Jellyfin server does with a plugin's data
+    /// directory when the plugin is removed, and no uninstall is exercised here.
+    /// What is arranged is a directory with no store in it beside an account
+    /// list that is not empty.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ALoadOverAStoreThatIsGoneNamesEveryAccountTheServerStillHas()
+    {
+        using var directory = new OwnedDirectory();
+
+        using var load = StoreLoad.Of(
+            directory.Path,
+            "kitchen-server",
+            4242,
+            new TestClock(_started),
+            [_accountNoRecordClaims, _accountTheServerKept]);
+
+        Assert.True(load.HoldsTheStore);
+        Assert.False(File.Exists(new InvitationStore(directory.Path).Path));
+
+        var report = Assert.IsType<ConsistencyReport>(load.Report);
+        Assert.False(report.Agrees);
+        Assert.Empty(report.AccountsClaimedButAbsent);
+        Assert.Equal(
+            [_accountTheServerKept, _accountNoRecordClaims],
+            report.AccountsPresentButUnclaimed.ToArray());
+    }
+
+    /// <summary>
     /// The one argument a load cannot do without.
     /// </summary>
     [Fact]
