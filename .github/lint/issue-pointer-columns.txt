@@ -1,0 +1,5 @@
+# The columns whose cells name the issue that will do a thing, and the file
+# each is in. A column not named here is not judged, for the reason
+# .github/lint/issue-pointer.sh gives at its own head.
+docs/attempt-outcomes.md	Produced by
+docs/refusal-response.md	Owned by
