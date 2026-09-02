@@ -48,8 +48,9 @@ namespace Jellyfin.Plugin.Invites.Attempts;
 /// </para>
 /// <para>
 /// <b>What is not here.</b> Nothing appends to a trail on a running server,
-/// because the route that judges a presented code is #74 and #399 and does not
-/// exist. Nothing writes a trail to disk either: where it is persisted, and under
+/// because the route that judges a presented code is #399 and does not exist.
+/// THAT SENTENCE NAMED #74 BESIDE IT, which is the setup page rather than the
+/// post, for the reason <see cref="AttemptEntry"/> carries. Nothing writes a trail to disk either: where it is persisted, and under
 /// which store version, is not decided anywhere in this tree and is not decided
 /// here. The value semantics below are what a persisting caller would write and
 /// read back, rather than a claim that one does.

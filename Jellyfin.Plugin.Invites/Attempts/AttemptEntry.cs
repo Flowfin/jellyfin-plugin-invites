@@ -29,9 +29,15 @@ namespace Jellyfin.Plugin.Invites.Attempts;
 /// </para>
 /// <para>
 /// <b>Nothing appends one of these yet.</b> The route that judges a presented
-/// code is #74 and #399, and until it exists this type records nothing on a
-/// running server. What is here is the entry, its set and its bound; what is not
-/// is a caller.
+/// code is #399, and until it exists this type records nothing on a running
+/// server. What is here is the entry, its set and its bound; what is not is a
+/// caller.
+/// </para>
+/// <para>
+/// THAT SENTENCE NAMED #74 BESIDE IT. #74 landed the setup page and judges no
+/// code; the act was split on 2026-08-31 under #71 and the post became #399. A
+/// reader following the pair reached one issue that was done and read the caller
+/// as half built.
 /// </para>
 /// </remarks>
 public sealed class AttemptEntry
