@@ -38,8 +38,19 @@ The tests are named rather than pasted, and the names are what the suite prints:
 
 ### An invitation can never create an administrator
 
-Not refused by a test. Nothing in this plugin creates an account, so there is no
-execution path for a test to reach.
+Not refused by a test.
+
+THIS PARAGRAPH SAID NOTHING IN THIS PLUGIN CREATES AN ACCOUNT, AND SOMETHING
+DOES. #398 landed the routine that turns an honoured redemption into an account,
+so the reason given here for there being no execution path to reach has gone:
+
+    git grep -n 'public static async Task<Guid> CreateAsync' -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:72:    public static async Task<Guid> CreateAsync(
+
+What is still missing is the caller. Nothing in the plugin reaches that routine
+outside the suite, which is #399's half of the split #398's body records, so the
+line is untested for the same reason as before written the other way round: the
+path exists and nothing walks it from a request.
 
 THIS PARAGRAPH ALSO SAID NOTHING HERE WRITES A USER POLICY, AND SOMETHING DOES.
 The routine that applies an account template landed under #69 and writes fifteen
@@ -54,14 +65,29 @@ exemption at all and the routine's own file is not outside it. So what is left o
 this paragraph's reason is the first half of what it claimed. There is a policy
 to write and there is still no account for it to be written to.
 
-Refused at the capability. Creating an administrator means creating an account,
-and the plugin cannot create one: `TheSeamOverTheServersAccountsDeclaresNothingThatWrites`
-refuses a member on the seam over the server's accounts that takes an argument
-or hands nothing back, and `OnlyTheReadSeamCanBeHandedTheServersUserManager`
-refuses a second type in the plugin able to be handed the user manager at all.
-That is not a defence of this line and it is not nothing: it means the line
-cannot be broken by a change that does not first announce itself by reddening
-one of those two.
+THE CAPABILITY STATE THIS LINE CARRIED IS GONE, AND IT IS THE ONE STATE THIS
+PAGE WARNS EXPIRES. It said creating an administrator means creating an account
+and the plugin cannot create one. It can, since #398, so the argument that the
+line cannot be broken without something first going red no longer rests on the
+plugin being unable to make an account.
+
+What is left of it is narrower and is worth stating exactly, because the two
+assertions it named are both still there.
+`TheSeamOverTheServersAccountsDeclaresNothingThatWrites` still refuses a member
+on the READ seam that takes an argument or hands nothing back, and
+`OnlyTheDeclaredSeamsCanBeHandedTheServersUserManager` still refuses a type
+beyond the two declared seams being handed the user manager at all. Beside them,
+`TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds` holds the write seam to
+three acts and `TheWriteSeamReachesNoMemberBeyondTheFiveItNeeds` holds it to
+five members of the server's own interface. None of the four is about
+administration. What they buy this line is that the account-creating capability
+cannot grow a fifth shape without something going red, which is a fact about the
+surface and not about what is written to a policy.
+
+What actually holds this line is the spelling below and the routine that applies
+a template, which writes fifteen policy fields and no administrator flag. The
+day the redemption post lands is the day this line owes a test of its own, and
+that is #62's rather than this page's.
 
 Refused by a spelling, in part.
 `policy-field-written-outside-the-template` matches a policy field assigned
@@ -77,23 +103,35 @@ than on the template, so that one rule does not live in two places.
 
 ### An invitation can never modify an account that already exists
 
-Not refused by a test. No account is created and none is written.
+Not refused by a test.
+
+THIS LINE'S OWN REASON SAID NO ACCOUNT IS CREATED AND NONE IS WRITTEN, AND HALF
+OF THAT IS NOW WRONG. An account is created and one is written to, under #398.
+What holds this line is the narrower half: everything the write seam does is
+addressed to the account the redemption is creating, and the identifier it is
+addressed by comes out of the creation rather than out of a lookup, so there is
+no shape in which the routine reaches an account that was already there.
 
 This paragraph said the plugin named the server's user operations nowhere, and
 that stopped being true. The command it offered as evidence returned two lines
-when it was written and returns five:
+when it was written, returned five after #91, and returns nine:
 
     git grep -n 'IUserManager' -- '*.cs' ':!.github'
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:92:            foreach (var property in typeof(IUserManager).GetProperties().Where(candidate => candidate.Name == name))
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:99:            foreach (var method in typeof(IUserManager).GetMethods().Where(candidate => candidate.Name == name && !candidate.IsSpecialName))
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:129:            .Where(type => Members(type).Any(parameter => typeof(IUserManager).IsAssignableFrom(parameter)))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:141:            foreach (var property in typeof(IUserManager).GetProperties().Where(candidate => candidate.Name == name))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:148:            foreach (var method in typeof(IUserManager).GetMethods().Where(candidate => candidate.Name == name && !candidate.IsSpecialName))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:177:            .Where(type => Members(type).Any(parameter => typeof(IUserManager).IsAssignableFrom(parameter)))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:221:        var named = typeof(IUserManager)
     Jellyfin.Plugin.Invites.Tests/RevocationTests.cs:132:    /// something after the next edit. Add an <c>IUserManager</c> parameter and
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:41:/// implement <see cref="IUserManager"/>, and <c>ChangePassword</c> is a member
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:75:    private readonly IUserManager _users;
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:81:    public ServerAccountWrites(IUserManager users)
     Jellyfin.Plugin.Invites/Accounts/ServerAccounts.cs:56:    public ServerAccounts(IUserManager users)
 
-Four of the five are in the suite and one is the plugin. The three that were not
-there before are the refusal #91 landed, which names the type in order to refuse
-it, so the count moving upward is the capability being held rather than the
-plugin reaching further.
+Five of the nine are in the suite and four are the plugin, and the direction the
+count moved in has changed meaning. The three that arrived under #91 were the
+refusal naming the type in order to refuse it, so that move was the capability
+being held. Three of the four that arrived under #398 are the write seam itself,
+and that move is the plugin reaching further.
 
 The last line is the plugin. `ServerAccounts` asks the user manager for the
 identifier of every account and for nothing else, which is what
@@ -119,19 +157,29 @@ Neither line is a different line of code; each is the same call further down the
 same method.
 
 That narrows the reason this line is undefended without moving it. An identifier
-is not an account: nothing here hands back a user object to modify, and the type
-has no member that writes. What is gone is the argument that no path in the
-plugin could reach an account at all, and what is left is the smaller one, that
-the path which exists reads identifiers.
+is not an account: the READ seam hands back no user object to modify and has no
+member that writes. What is gone is the argument that no path in the plugin
+could reach an account at all, and what is left is the smaller one, that the
+path which reads reads identifiers.
 
-Refused at the capability, since #91. That the seam reads and never writes was
-an observation, and `AccountsAreNeverWrittenTests` makes it a refusal: a member
-on the interface that takes an argument or hands nothing back, a name the seam
-reaches by reflection that is not a read on the server's own interface, and a
-second type in the plugin able to take the user manager are each refused. The
-middle one is the one a reader should notice, because the seam binds late and a
-write behind a looked-up name is invisible to the compiler and to a lint that
-reads source text.
+Refused at the capability, since #91, AND THE CAPABILITY IS WIDER THAN IT WAS.
+That the read seam reads and never writes was an observation, and
+`AccountsAreNeverWrittenTests` makes it a refusal: a member on that interface
+that takes an argument or hands nothing back, a name it reaches by reflection
+that is not a read on the server's own interface, and a type beyond the two
+declared seams able to take the user manager are each refused. The middle one is
+the one a reader should notice, because both seams bind late in part and a write
+behind a looked-up name is invisible to the compiler and to a lint that reads
+source text.
+
+The second seam is what #398 added, and the same file bounds it in two
+directions. `TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds` holds it to
+creating an account, setting that account's credential and applying a template
+to it, and `TheWriteSeamReachesNoMemberBeyondTheFiveItNeeds` reads the seam's
+own source against every member the server's interface carries and refuses a
+sixth. So there is nothing on either seam that removes, disables, renames or
+re-authenticates an account, and the reason this line still stands is that every
+one of the three acts is addressed to the account the redemption just made.
 
 The fourth line is prose inside a test file, and the test it belongs to is the
 nearest thing in the tree to a defence of this sentence.
@@ -144,12 +192,18 @@ The line has two halves and they need different mechanisms. That the routine
 does not modify an account it was handed is a test, and this sentence named #69
 for the routine it waits on. That routine exists and it is never handed an
 account: what it takes is a policy and a template, which is why the test this
-half wants is still absent. It waits on the write side of the seam in #103 and
-on something that creates the account the policy would belong to. The second
-half, that no other
+half wants is still absent.
+
+THIS SENTENCE SAID THAT HALF WAITS ON SOMETHING THAT CREATES THE ACCOUNT THE
+POLICY WOULD BELONG TO, AND THAT HAS ARRIVED. #398 landed it, and what the half
+waits on now is the recorded-call contract in #103 and the post in #399: the
+routine is reached from the suite and from nowhere else, so a test asserting
+that a redemption modifies no existing account has no request to make.
+
+The second half, that no other
 path in the plugin ever reaches the server's update method, said here that it is
 not a test at all and is a greppable invariant.
-`OnlyTheReadSeamCanBeHandedTheServersUserManager` is that half as a test, and it
+`OnlyTheDeclaredSeamsCanBeHandedTheServersUserManager` is that half as a test, and it
 is stronger than the grep it replaces: it reads the compiled assembly rather
 than source text, so a spelling the lint's pattern does not match is still a
 type able to take the user manager and is still refused.

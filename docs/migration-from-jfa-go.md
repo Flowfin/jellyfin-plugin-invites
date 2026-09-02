@@ -9,16 +9,38 @@ things it does this plugin has no answer at all.
 
 Nothing here can be redeemed yet, and that is the sentence to read before any
 row below. An operator can mint an invitation and revoke one, and the plugin is
-sixty-seven source files rather than the seven this paragraph used to count.
+seventy-one source files rather than the seven this paragraph used to count.
 What nobody can do is turn a link into an account: the redemption route serves a
-page and has no post behind it, and no routine here creates an account.
+page and has no post behind it.
 
-    git ls-tree -r --name-only origin/master | grep -c '^Jellyfin.Plugin.Invites/.*\.cs$'
-    67
+    git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
+    71
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
     Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+
+THIS PARAGRAPH ALSO SAID NO ROUTINE HERE CREATES AN ACCOUNT, AND ONE DOES. #398
+landed it, and the command that stood beside the two above as evidence exits 0
+now rather than 1:
+
     git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
+    exit=0
+
+and what it matches is the write seam, twice in its code and once in the comment
+saying what the seam calls directly:
+
+    git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:20:/// <c>CreateUserAsync(name)</c>, <c>GetUserById(identifier)</c>,
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:143:        var created = await _users.CreateUserAsync(username).ConfigureAwait(false);
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:146:            ? throw ServerAccountWriteRefusedException.AnsweredNothingUsable("CreateUserAsync", "an account")
+
+What that does not change is the sentence the paragraph opens with. The routine
+is reached from the suite and from nothing else, and the missing post is #399,
+so an operator holding a link still cannot become an account.
+
+The counting command changed with it, and the change is not cosmetic. It read
+`origin/master`, which is the mainline rather than the change being read, so it
+would have answered for a tree without this one in it. It reads the index of the
+checkout now, which is what a reader running it at this commit gets.
 
 So this is still not a page telling an operator to switch today, and the reason
 is narrower than it was: one action rather than an empty tree. It is still the

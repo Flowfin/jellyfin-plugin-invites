@@ -155,10 +155,30 @@ is the scheduled sweep rather than a ceiling.
 
 **The third of the three ceilings #33 asks for does not exist.** How many
 accounts the plugin may create in a given period is the one that still holds when
-the other two are set badly, and nothing in the plugin creates an account:
+the other two are set badly.
+
+THIS PARAGRAPH RESTED ON NOTHING IN THE PLUGIN CREATING AN ACCOUNT, AND
+SOMETHING DOES. #398 landed the write seam and the routine that calls it, so the
+command that stood here as evidence no longer exits 1:
 
     git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
-    exit=1
+    exit=0
+
+What it matches is three lines, of which the first is a documentation comment
+and the other two are the call, which is worth separating because a reader
+counting matches here would otherwise read three call sites:
+
+    git grep -nE 'CreateUserAsync' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:20:/// <c>CreateUserAsync(name)</c>, <c>GetUserById(identifier)</c>,
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:143:        var created = await _users.CreateUserAsync(username).ConfigureAwait(false);
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:146:            ? throw ServerAccountWriteRefusedException.AnsweredNothingUsable("CreateUserAsync", "an account")
+
+The ceiling is no less absent for that and the gap is wider, not narrower: what
+kept it harmless was that the act it would bound could not happen, and the act
+exists now. Nothing calls the routine from a request yet, which is #399, so the
+rate a ceiling would bound is still zero per hour on a running server. That is a
+statement about the caller rather than about this configuration, and it stops
+being true on the day the post lands.
 
 So five hundred live invitations at ten uses each is what the standing set can
 authorise with no further operator action, and no number bounds what arrives from
