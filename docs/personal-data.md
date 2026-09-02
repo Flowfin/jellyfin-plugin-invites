@@ -40,7 +40,32 @@ applies.
 
 What is still not written is anything about the invited person. That waits on a
 redemption that commits, and the rows it would fill are `Accounts produced` and
-the attempt trail, which is #43 and has no type at all.
+the attempt trail below.
+
+THIS PARAGRAPH SAID THE ATTEMPT TRAIL HAS NO TYPE AT ALL, AND THE CHANGE THAT
+BUILT THE TYPES LEFT IT SAYING SO. Three of them landed under #43, and the same
+commit edited this page without touching this sentence:
+
+    $ git ls-tree -r --name-only HEAD -- Jellyfin.Plugin.Invites/Attempts/
+    Jellyfin.Plugin.Invites/Attempts/AttemptEntry.cs
+    Jellyfin.Plugin.Invites/Attempts/AttemptOutcome.cs
+    Jellyfin.Plugin.Invites/Attempts/AttemptTrail.cs
+
+So the trail table below is held by a type rather than describing one nothing
+carries, and a reader deciding what is left to build was told the opposite.
+
+What is absent sits at both ends of that type and neither end is a type. Nothing
+appends an entry, and nothing writes a trail anywhere:
+
+    $ git grep -n 'Append(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*AttemptTrail.cs' ; echo "exit=$?"
+    exit=1
+    $ git grep -n 'AttemptTrail' -- 'Jellyfin.Plugin.Invites/*.cs' ':!Jellyfin.Plugin.Invites/Attempts/*' ; echo "exit=$?"
+    exit=1
+
+So no row of that table has been filled on any server, which is what this
+paragraph was saying and is the half of it that still holds. Where a trail is
+written, and under which store version, is decided nowhere in this tree and
+belongs with #40 and #92.
 
 This document is what all three are built against: a field that is not in the
 inventory does not go in the record, and a field in the inventory carries the
