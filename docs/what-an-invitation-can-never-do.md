@@ -327,7 +327,7 @@ should leave with. It matches a spelling, so a secret reaching a log call throug
 a local or through a string built two files away is invisible to it, which
 `docs/logging.md` says rule by rule. Neither of the two routines is the redemption
 path, and the redemption path is where a code is in scope to be logged at all;
-that path is #74's, so this half of the line has never been put to the case it
+that path is #399's, so this half of the line has never been put to the case it
 exists for.
 
 Not refused, for a backup. No test in this repository sees a backup: it is a

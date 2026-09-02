@@ -12,10 +12,12 @@ the page is written carelessly, a dead end that tells an invited person nothing
 and turns into a message to the operator. Both halves are settled here, because
 they are settled in the same sentence.
 
-Nothing serves this page today. The page and the post are #74, the decision
-behind the refusal is #56, and the route-level comparison is #107. This document
-is what those are built against, and it is a decision rather than a description
-of behaviour.
+Nothing serves this page today. The setup page is #74 and it landed; the post
+that receives the form is #399, which #71 split out of #74 on 2026-08-31; the
+refusal half of `GET /redeem/{code}` is #75 and #77, which is what
+[docs/api.md](api.md) says at that route; the decision behind the refusal is #56;
+and the route-level comparison is #107. This document is what those are built
+against, and it is a decision rather than a description of behaviour.
 
 ## The wording
 
@@ -55,10 +57,10 @@ member.
 
 | Case | Owned by | Trail outcome |
 | --- | --- | --- |
-| The presented code matched no record | #74 | `NoSuchInvitation` |
-| The record's expiry had passed | #51, #74 | `Expired` |
-| The record had no uses left | #55, #74 | `Spent` |
-| The operator had revoked the record | #54, #74 | `Revoked` |
+| The presented code matched no record | #399 | `NoSuchInvitation` |
+| The record's expiry had passed | #51, #399 | `Expired` |
+| The record had no uses left | #55, #399 | `Spent` |
+| The operator had revoked the record | #54, #399 | `Revoked` |
 | A rate limit or lockout refused the attempt | #31 | `RefusedByRateLimit` |
 | A ceiling on what the plugin may create refused it | #33 | `RefusedByCeiling` |
 
@@ -69,9 +71,29 @@ for the same states.
 `Owned by` named #56 on four rows and #52 on one, and both are closed, so the
 column sent a reader after a case's owner to work that was done. What #56 built
 is the routine that tells the first four apart; what nothing has built is the
-route that serves the one response for all of them, and that is the post in #74.
+route that serves the one response for all of them, and that is the post in #399.
 The rule issues stay beside it because each still owns what its row says
 happened.
+
+THE COLUMN NAMED #74 ON THOSE FOUR ROWS AND THE POST HAS NOT BEEN #74 SINCE
+2026-08-31. #71 split the act in two that day, the post became #399 and the
+routine that creates the account became #398, and this page went on sending a
+reader after the one response for all six cases to the issue that landed the
+setup page. The two are different work: #74's own remaining clause is whether
+those bytes render in a browser, which no route serves a refusal for.
+
+Three documents were carried over to the new number before this one was, read at
+the commit this repair was written against:
+
+    $ git grep -ln '#399' origin/master -- docs/
+    origin/master:docs/configuration.md
+    origin/master:docs/migration-from-jfa-go.md
+    origin/master:docs/what-an-invitation-can-never-do.md
+
+So the stale pointer was not one page's oversight and not the whole tree's
+either, which is why it was worth a change rather than a note: a reader who
+checked one neighbouring page would have found the right number and concluded
+this one was deliberate.
 
 The last two are in the set for a reason worth keeping in front of whoever
 implements them, because both look like cases that deserve their own message. A
@@ -194,7 +216,9 @@ had chosen while the tree had chosen. The list above carries them now.
 What that does not settle is whether the set is right or complete, which is
 #78's and is where its clauses live rather than here.
 
-Not settled here: the status code, which is #74's to choose when the route
-exists. A status code is part of what the responses are compared on, so the
-choice binds all six cases at once; it is named here as owed rather than picked
-from a document with no route behind it.
+Not settled here: the status code, which belongs to the route that first serves a
+refusal and is therefore the post in #399 rather than #74. A status code is part
+of what the responses are compared on, so the choice binds all six cases at once
+and binds the refusal half of the GET with them; it is named here as owed rather
+than picked from a document with no route behind it, and moving whose it is picks
+nothing.
