@@ -17,8 +17,8 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// <remarks>
 /// <para>
 /// Nothing appends to a trail on a running server. The route that judges a
-/// presented code is #74 and #399 and does not exist, so what is asserted here is
-/// the value and its rules rather than a redemption. Every clause of #43 about
+/// presented code is #399 and does not exist, so what is asserted here is the
+/// value and its rules rather than a redemption. Every clause of #43 about
 /// the shape of an entry, the fixed set, the bound, the drop order and the drop
 /// notice is reachable from that; the clause about every redemption attempt
 /// appending exactly one entry is not, and no test here is written as though it
