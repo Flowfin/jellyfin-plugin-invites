@@ -243,7 +243,12 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:149:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:174:memory for as long as its window and no longer, and that the trail does not
+
+The line moved from 149 to 174 when the paragraph above it was repaired, and the
+sentence this points at is not one of the bytes that changed. It is re-pasted
+here rather than renumbered quietly, because a corrected number with nothing
+said about it reads exactly like one that was right all along.
 
 ## What this page does not decide
 

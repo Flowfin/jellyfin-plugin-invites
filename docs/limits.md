@@ -274,8 +274,9 @@ which carries the command to run.
 
 What this entry still cannot promise is a prompt. Nothing offers the trail to an
 operator who presses uninstall without having read either page, so the reminder
-is a document rather than the software. Owned by #91, with the account side in
-#45 and #94.
+is a document rather than the software. #91 is closed, and it closed with that
+absence stated rather than repaired, so this paragraph is the settled state and
+not a gap somebody is holding. The account side is #45 and #94.
 
 ## What this page does not do yet
 
@@ -645,7 +646,30 @@ No fault is in the tree.
 The entry is still not counted among the six, and the three runs above do not
 move it. What they prove is that the capability is refused rather than merely
 absent. What the entry promises is an uninstall that leaves the accounts where
-they are, and exercising that needs a seam that can create an account so there
-is something to leave behind, which is #103. Nothing here stands in for it, and
-a reader who takes a proven guard for the entry being held is making the
-substitution this paragraph exists to refuse.
+they are, and no test in this repository holds that sentence.
+
+THIS PARAGRAPH SAID THAT SENTENCE WAS WAITING ON A SEAM THAT CAN CREATE AN
+ACCOUNT, SO THERE IS SOMETHING TO LEAVE BEHIND, AND NAMED #103. It waits on
+nothing. That reading was taken on #91 on 2026-09-01 and refused: arrange a
+store, remove it, assert the account set is unchanged, and with the three
+assertions above standing there is no reachable change that could delete an
+account, so the test could not fail. A clause discharged by an un-failable test
+closes an issue and leaves a green mark where an argument used to be, and the
+reader of the old sentence is the one who writes exactly that test.
+
+What was written instead is the half of the same removal that can break, and it
+is about the report rather than about the accounts. It is named here the way the
+three above are, by the name this page's own guard resolves:
+`StoreLoadTests.ALoadOverAStoreThatIsGoneNamesEveryAccountTheServerStillHas`.
+
+A plugin whose state was removed and whose invited accounts remain is a store
+with no records beside a server full of accounts, and a load that read a store
+it cannot find as agreeing would turn the report off exactly there. Its fault and
+the run that reddens that test alone are recorded on #91, made at the commit it
+landed on, and they are deliberately not repeated in this section: what this
+section holds is the runs for the entries it counts, and this is not one of them.
+
+So the entry is held by nothing on the sentence it promises, it is not going to
+be, and the guard that landed beside it keeps the report honest about a state the
+capability guard permits. A reader who takes either of them for the entry being
+held is making the substitution this paragraph exists to refuse.
