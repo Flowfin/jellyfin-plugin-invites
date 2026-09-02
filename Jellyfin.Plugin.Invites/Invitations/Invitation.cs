@@ -263,10 +263,19 @@ public sealed class Invitation : IEquatable<Invitation>
     /// it is worth recording only as what was chosen.
     /// </para>
     /// <para>
-    /// The copied template itself is not a field of this type yet. The type it
-    /// would be is #61's and does not exist, and the grant is what that copy
-    /// decides. Nothing may read this label to work out a grant in the
-    /// meantime.
+    /// The copied template itself is not a field of this type yet, and what is
+    /// missing is not the type. <see cref="Accounts.AccountTemplate"/> landed
+    /// under #61 and carries every grant a template names. What is missing is a
+    /// value to copy: minting takes this label as a string and refuses only a
+    /// blank one, every construction of that type is in the suite, and
+    /// <see cref="Configuration.PluginConfiguration"/> holds one setting which is
+    /// not a template. The named templates a label names are #86's, so the copy
+    /// waits on that schema rather than on anything this type is short of.
+    /// </para>
+    /// <para>
+    /// Nothing may read this label to work out a grant in the meantime. Somebody
+    /// holding a label and needing a template reaches for a lookup first, and a
+    /// lookup is the shape the rule above forbids.
     /// </para>
     /// </remarks>
     public string TemplateLabel { get; }
