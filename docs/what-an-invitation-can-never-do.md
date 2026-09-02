@@ -38,14 +38,29 @@ The tests are named rather than pasted, and the names are what the suite prints:
 
 ### An invitation can never create an administrator
 
-Not refused by a test.
+Refused by a test, in the routine that creates the account.
+`ATemplateThatWouldManageTheServerIsRefusedBeforeAnythingIsCreated` puts a
+template asking to manage the server through `AccountCreation.CreateAsync` and
+requires the refusal AND that nothing was asked of the server. #62 asks for the
+refusal inside the routine rather than as validation on the way in, so a later
+caller that skips its own checks still meets it, and asserting the empty call
+trail is what separates a refusal from a refusal after an account exists.
+
+The state on this line moved from `Not refused by a test` to this one because
+the routine it needed arrived, and the sentence below is what that state used to
+rest on.
 
 THIS PARAGRAPH SAID NOTHING IN THIS PLUGIN CREATES AN ACCOUNT, AND SOMETHING
 DOES. #398 landed the routine that turns an honoured redemption into an account,
 so the reason given here for there being no execution path to reach has gone:
 
     git grep -n 'public static async Task<Guid> CreateAsync' -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
-    Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:72:    public static async Task<Guid> CreateAsync(
+    Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:95:    public static async Task<Guid> CreateAsync(
+
+That number was 72 when this paragraph was written under #398 and the routine is
+the same routine: what moved it is the remarks #62 added above it, in the change
+that put the refusal at the top of this section. The line-reference check refused
+the old number before this branch was pushed rather than a reader finding it.
 
 What is still missing is the caller. Nothing in the plugin reaches that routine
 outside the suite, which is #399's half of the split #398's body records, so the
@@ -84,10 +99,15 @@ administration. What they buy this line is that the account-creating capability
 cannot grow a fifth shape without something going red, which is a fact about the
 surface and not about what is written to a policy.
 
-What actually holds this line is the spelling below and the routine that applies
-a template, which writes fifteen policy fields and no administrator flag. The
-day the redemption post lands is the day this line owes a test of its own, and
-that is #62's rather than this page's.
+THE TEST THIS PARAGRAPH SAID THE LINE OWED IS AT THE TOP OF THIS SECTION, AND IT
+DID NOT WAIT FOR THE POST. It said the day the redemption post lands is the day
+this line owes a test of its own. That was wrong about which arrival mattered:
+what a refusal needs is a routine to live in, not a caller to reach it, and #62
+put it in the routine the moment there was one. The post is still #399's and the
+line is refused before it.
+
+Beside it stand the spelling below and the routine that applies a template,
+which writes fifteen policy fields and no administrator flag.
 
 Refused by a spelling, in part.
 `policy-field-written-outside-the-template` matches a policy field assigned

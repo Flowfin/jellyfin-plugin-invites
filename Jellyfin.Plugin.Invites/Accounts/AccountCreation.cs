@@ -24,6 +24,26 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// Nothing here names a user policy at all.
 /// </para>
 /// <para>
+/// <b>The ceiling is refused here rather than at whoever calls this.</b> #62
+/// asks for two refusals inside the creation routine rather than as validation
+/// on the way in, so that a later caller which skips the validation still meets
+/// them. The first is a template asking for an account that manages the server,
+/// and it is refused before anything is created. The second is touching an
+/// account that already exists, and it is refused by shape rather than by a
+/// test at run time: nothing here takes an account identifier, so there is no
+/// account to be pointed at except the one the creation just made.
+/// </para>
+/// <para>
+/// <b>Why the administrator case refuses rather than quietly dropping the
+/// grant.</b> <see cref="AccountTemplateApplication"/> writes no field for
+/// <see cref="AccountTemplate.MayManage"/>, so a template asking for one would
+/// otherwise produce an ordinary account and nobody would be told. An operator
+/// who minted that template believes they invited an administrator, and the
+/// invitation is worth something different from what they think it is worth
+/// until somebody notices. A refusal at the moment of creation is what makes
+/// them notice.
+/// </para>
+/// <para>
 /// <b>What it deliberately does not take.</b> It is handed no invitation. A
 /// redemption is honoured by <c>RedemptionDecision</c> before this is reached,
 /// and a routine holding an invitation it never reads is a routine that looks
@@ -63,6 +83,9 @@ public static class AccountCreation
     /// <exception cref="ArgumentNullException">
     /// The seam, the username, the password or the template is null.
     /// </exception>
+    /// <exception cref="ArgumentException">
+    /// The template says the account may manage the server.
+    /// </exception>
     /// <remarks>
     /// The identifier comes back because the caller has to record which account
     /// this invitation produced, and reading it back off the server afterwards
@@ -80,6 +103,8 @@ public static class AccountCreation
         ArgumentNullException.ThrowIfNull(password);
         ArgumentNullException.ThrowIfNull(template);
 
+        RefuseAnAccountThatWouldManageTheServer(template);
+
         var account = await server.CreateAccountAsync(username).ConfigureAwait(false);
 
         await server.SetCredentialAsync(account, password).ConfigureAwait(false);
@@ -87,5 +112,34 @@ public static class AccountCreation
         await server.ApplyTemplateAsync(account, template).ConfigureAwait(false);
 
         return account;
+    }
+
+    /// <summary>
+    /// Refuses a template whose account would manage the server.
+    /// </summary>
+    /// <param name="template">The grant the invitation carried.</param>
+    /// <remarks>
+    /// <para>
+    /// It is checked before the first call rather than after, so a refused
+    /// template leaves nothing on the server. A refusal raised afterwards would
+    /// leave an ordinary account behind and would still not have made an
+    /// administrator, which is the worst of the three outcomes: the ceiling
+    /// held and somebody has an account they were not meant to get.
+    /// </para>
+    /// <para>
+    /// The message says what the template asked for and never what the account
+    /// would have been given, because there is nothing to give: no field of the
+    /// server's policy carries this grant, which
+    /// <see cref="AccountTemplateApplication"/> states from its side.
+    /// </para>
+    /// </remarks>
+    private static void RefuseAnAccountThatWouldManageTheServer(AccountTemplate template)
+    {
+        if (template.MayManage)
+        {
+            throw new ArgumentException(
+                "The template says the account it creates may manage the server, and no account an invitation creates is an administrator, whatever the template says. Nothing was created. Mint the invitation against a template that manages nothing, and give an administrator an account through the server's own user page.",
+                nameof(template));
+        }
     }
 }
