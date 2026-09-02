@@ -576,25 +576,50 @@ having moved up into the list above rather than a change to either of the two
 left here.
 
 The ninth entry is different and is worth separating from those two, because it
-reads as covered and is not. Uninstall leaving accounts alone is true today
-because the plugin has no way to touch one: the seam over the server's accounts
-carries a single member and it reads.
+reads as covered and is not.
+
+THE REASON IT READ AS COVERED IS GONE, AND THIS PARAGRAPH CARRIED IT. It said
+uninstall leaving accounts alone was true because the plugin had no way to touch
+one, and that the seam over the server's accounts carried a single member and it
+read. That seam still does:
 
     git grep -nE '^    [A-Za-z?<>,\.]+ [A-Za-z]+ \{ get; \}' -- Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs
     Jellyfin.Plugin.Invites/Accounts/IServerAccounts.cs:27:    IReadOnlyCollection<Guid>? Identifiers { get; }
 
-That was an absence rather than a guard until #91 turned it into one.
-`AccountsAreNeverWrittenTests` carries three assertions, and they are named
+There is a second seam beside it now. #398 landed the act the whole plan turns
+on, and the plugin creates an account, sets its credential and writes a template
+onto its policy:
+
+    git grep -nE '^    Task' -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
+    Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
+    Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
+    Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
+
+So the entry is further from covered than it was, and the capability argument
+under it is narrower rather than gone. What is refused is that a write is one of
+those three, addressed to the account a redemption is creating. Nothing on
+either seam removes, disables, renames or re-authenticates an account, and that
+is held against every member the server's own interface carries rather than
+against a list somebody typed.
+
+That was an absence rather than a guard until #91 turned it into one, and #398
+is where the absence stopped being available as an argument at all.
+`AccountsAreNeverWrittenTests` carries five assertions, and they are named
 below by the names this page's own guard resolves rather than by description:
 `AccountsAreNeverWrittenTests.TheSeamOverTheServersAccountsDeclaresNothingThatWrites`,
-`AccountsAreNeverWrittenTests.EveryNameTheSeamLooksUpOnTheServerIsARead` and
-`AccountsAreNeverWrittenTests.OnlyTheReadSeamCanBeHandedTheServersUserManager`.
+`AccountsAreNeverWrittenTests.EveryNameTheSeamLooksUpOnTheServerIsARead`,
+`AccountsAreNeverWrittenTests.OnlyTheDeclaredSeamsCanBeHandedTheServersUserManager`,
+`AccountsAreNeverWrittenTests.TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds`
+and
+`AccountsAreNeverWrittenTests.TheWriteSeamReachesNoMemberBeyondTheFiveItNeeds`.
 
 This paragraph named all three by what they refuse and stopped there, which is
 the thing the head of this section forbids: a test read by its name and decided
-to look close enough. The three runs below are that repaired. Each fault was
-applied alone, built, run, and put back with a rebuild, at the commit this
-change lands on.
+to look close enough. The runs below are that repaired. Each fault was
+applied alone, built, run, and put back with a rebuild. The first two are the
+runs recorded when they landed and were not re-made here; the third was re-made
+under the name that assertion now carries, and the last two are the assertions
+#398 brought with it.
 
 The first is a member on the seam that takes a value. It is the shape the
 cleanup assistant this entry's own last paragraph describes would arrive in, and
@@ -624,29 +649,56 @@ Three rather than one. The other two are `ServerAccountsTests` asserting what
 the binder looks for, and they redden because the name it looks for is what
 moved; they are not a second reading of this entry.
 
-The third is a second type in the plugin that can be handed the server's user
-manager. It touches neither the interface nor the binder, so the first two
-assertions stay green and only the third sees it, which is what that assertion
-is for:
+The third is a third type in the plugin that can be handed the server's user
+manager. It touches neither interface and neither binder, so the assertions
+above stay green and only this one sees it, which is what it is for:
 
     $ a  CleanupAssistant  added under Jellyfin.Plugin.Invites/Accounts/, taking
       an IUserManager in its constructor and doing nothing with it
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
-      AccountsAreNeverWrittenTests.OnlyTheReadSeamCanBeHandedTheServersUserManager [FAIL]
-    Fehler!      : Fehler: 1, erfolgreich: 648, übersprungen: 8, gesamt: 657
+      AccountsAreNeverWrittenTests.OnlyTheDeclaredSeamsCanBeHandedTheServersUserManager [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 692, übersprungen: 8, gesamt: 701
+
+The fourth is a fourth member on the write seam. Three acts are what a
+redemption needs and a fourth is a power somebody has to argue for, so it
+arrives red rather than beside them:
+
+    $ a  Task DisableAsync(Guid account)  added to IServerAccountWrites and to
+      the two implementations the suite compiles
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      AccountsAreNeverWrittenTests.TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds [FAIL]
+    Fehler!      : Fehler: 1, erfolgreich: 692, übersprungen: 8, gesamt: 701
+
+The fifth is the one to read, because it is the shape the compiler cannot see.
+The write seam reaches its credential member by name, so a constant moving is a
+member changing with nothing in the signature saying so, and the member it moves
+to can be the one that deletes an account:
+
+    $ sed -i 's/"GetUserById"/"DeleteUserAsync"/' Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs
+    $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
+      AccountsAreNeverWrittenTests.TheWriteSeamReachesNoMemberBeyondTheFiveItNeeds [FAIL]
+      ServerAccountWritesTests.TheCredentialIsSetWhenTheServerTakesTheAccountItself [FAIL]
+      ServerAccountWritesTests.AServerWithNoLookupForTheOlderShapeIsRefusedByName [FAIL]
+    Fehler!      : Fehler: 3, erfolgreich: 690, übersprungen: 8, gesamt: 701
+
+Three rather than one, and the other two are the same shape as the second run
+above: `ServerAccountWritesTests` asserts what the binder looks up, so it
+reddens because the name it looks up is what moved. They are not a second
+reading of this entry.
 
 Every fault was put back and the suite returns to where it started:
 
     $ git status --porcelain
     $ dotnet build --configuration Release --no-restore && dotnet test --configuration Release --no-build
-    Bestanden!   : Fehler: 0, erfolgreich: 649, übersprungen: 8, gesamt: 657
+    Bestanden!   : Fehler: 0, erfolgreich: 693, übersprungen: 8, gesamt: 701
 
 No fault is in the tree.
 
-The entry is still not counted among the six, and the three runs above do not
-move it. What they prove is that the capability is refused rather than merely
-absent. What the entry promises is an uninstall that leaves the accounts where
-they are, and no test in this repository holds that sentence.
+The entry is still not counted among the six, and the runs above do not move it.
+What they prove is that the capability is bounded rather than absent, which is a
+weaker thing than what the first three of them proved when the plugin could
+create nothing. What the entry promises is an uninstall that leaves the accounts
+where they are, and no test in this repository holds that sentence.
 
 THIS PARAGRAPH SAID THAT SENTENCE WAS WAITING ON A SEAM THAT CAN CREATE AN
 ACCOUNT, SO THERE IS SOMETHING TO LEAVE BEHIND, AND NAMED #103. It waits on
