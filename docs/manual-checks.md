@@ -92,8 +92,9 @@ the run, so they are here waiting for the release rather than left out of it:
     $ git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
     Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
 
-The redemption route serves a page and there is no post behind it, which is #74,
-so nothing is redeemed and no account is created. A row for a step that cannot
+The redemption route serves a page and there is no post behind it, which is #399
+since #71 split it out of #74 on 2026-08-31, so nothing is redeemed and no
+account is created. A row for a step that cannot
 be run says so in `Notes` and stays in the table. Taking it out until the code
 lands is how a release gets cut without it.
 

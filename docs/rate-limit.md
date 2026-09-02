@@ -297,8 +297,9 @@ counter while passing every assertion about one instance, so the registration's
 lifetime is asserted separately.
 
 **Nothing calls it.** An attempt is a presented code being judged and no route
-judges one, so the limiter counts nothing on a running server today. That is #74,
-and until it lands this page describes a component that is built and unreached.
+judges one, so the limiter counts nothing on a running server today. That is
+#399, and until it lands this page describes a component that is built and
+unreached.
 
 ## What is still not claimed
 
