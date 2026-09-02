@@ -1,0 +1,5 @@
+31	open
+33	open
+43	open
+56	closed
+399	open
