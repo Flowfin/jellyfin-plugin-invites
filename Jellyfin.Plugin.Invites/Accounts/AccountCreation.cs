@@ -105,10 +105,17 @@ public static class AccountCreation
 
         RefuseAnAccountThatWouldManageTheServer(template);
 
+        // Stryker disable once Boolean : the argument of ConfigureAwait is one
+        // behaviour in a test host that captures no synchronisation context,
+        // which was probed rather than reasoned about under #376 and is the
+        // same class docs/mutation-testing.md already argues for the excluded
+        // file. The statement mutation on this line stays in the run and dies.
         var account = await server.CreateAccountAsync(username).ConfigureAwait(false);
 
+        // Stryker disable once Boolean : as above.
         await server.SetCredentialAsync(account, password).ConfigureAwait(false);
 
+        // Stryker disable once Boolean : as above.
         await server.ApplyTemplateAsync(account, template).ConfigureAwait(false);
 
         return account;

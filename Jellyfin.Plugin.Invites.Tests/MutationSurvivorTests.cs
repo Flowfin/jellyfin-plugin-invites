@@ -533,12 +533,15 @@ public class MutationSurvivorTests
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Three block removals survived here, one per constructor, and this does
-    /// not kill them. Each body assigns zero to a property whose own default is
-    /// zero, so removing it changes nothing a caller can read, which was probed
+    /// Three block removals survived here, one per constructor, and this did
+    /// not kill them. Each body assigned zero to a property whose own default is
+    /// zero, so removing it changed nothing a caller can read, which was probed
     /// rather than reasoned about: with all three bodies emptied by hand the
-    /// whole suite stays green, this test included. They are equivalent mutants
-    /// and the threshold cannot reach them.
+    /// whole suite stayed green, this test included. THEY WERE EQUIVALENT
+    /// MUTANTS AND THE THRESHOLD COULD NOT REACH THEM, and under #376 the three
+    /// bodies are empty in the tree rather than emptied by a probe. The six
+    /// statements said the same value twice; deleting them removes the three
+    /// mutants instead of leaving the run to report them every week.
     /// </para>
     /// <para>
     /// It is here anyway, because the property the survivors pointed at is

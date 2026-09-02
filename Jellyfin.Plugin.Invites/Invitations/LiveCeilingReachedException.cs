@@ -40,11 +40,19 @@ public sealed class LiveCeilingReachedException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="LiveCeilingReachedException"/> class.
     /// </summary>
+    /// <remarks>
+    /// The three constructors below carry no counts, so
+    /// <see cref="Live"/> and <see cref="Ceiling"/> take the default of their
+    /// type and nothing here writes them. THEY EACH HELD <c>Live = 0;</c> AND
+    /// <c>Ceiling = 0;</c> UNTIL #376, and those six statements were the same
+    /// value written twice: a mutation run removed each body and no test
+    /// noticed, because there is nothing to notice. The sentence is what the
+    /// assignments were saying, and it says it without leaving three mutants
+    /// nobody can kill.
+    /// </remarks>
     public LiveCeilingReachedException()
         : base("This server already holds as many live invitations as this plugin allows.")
     {
-        Live = 0;
-        Ceiling = 0;
     }
 
     /// <summary>
@@ -54,8 +62,6 @@ public sealed class LiveCeilingReachedException : Exception
     public LiveCeilingReachedException(string message)
         : base(message)
     {
-        Live = 0;
-        Ceiling = 0;
     }
 
     /// <summary>
@@ -66,8 +72,6 @@ public sealed class LiveCeilingReachedException : Exception
     public LiveCeilingReachedException(string message, Exception innerException)
         : base(message, innerException)
     {
-        Live = 0;
-        Ceiling = 0;
     }
 
     /// <summary>
