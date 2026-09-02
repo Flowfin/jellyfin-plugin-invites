@@ -20,7 +20,16 @@ what nothing serves, `ApiDocumentTests` holds it against the assembly on every
 run, and a count in a sentence is read by nobody.
 
 The administrator operations landed under #82, and the fifth of them, rotation
-of the hash secret, under #30. The redemption routes are #74 and #75.
+of the hash secret, under #30. One of the three redemption routes answers and it
+landed under #74; the post is #399 and the completion address is #79.
+
+THIS SENTENCE SAID THE REDEMPTION ROUTES ARE #74 AND #75. It was written on
+2026-08-21, ten days before #71 split the post out of #74 into #399, so it named
+an issue that has landed no route and left the post and the completion address
+attributed to nobody. The paragraph is about what landed, which is what made the
+wrong half read as settled. Which of the three answer is held against the
+assembly under `## What no controller serves yet` below rather than by this
+sentence.
 
 ## What is promised
 
