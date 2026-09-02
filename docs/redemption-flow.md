@@ -1,9 +1,33 @@
 # The redemption flow
 
 This is the whole path from a person following an invitation link to that person
-holding an account, written before any of it is built. Nothing in this document
-is implemented. Every state and every transition below is a promise held by an
-issue, and the issue number is where the promise is kept.
+holding an account, written before any of it was built. Every state and every
+transition below is a promise held by an issue, and the issue number is where
+the promise is kept.
+
+THIS PARAGRAPH SAID NOTHING IN THIS DOCUMENT IS IMPLEMENTED, AND FOUR OF THE
+ROUTINES THE STATES BELOW NAME ARE IN THE TREE. The decision that judges a
+presented code, the limiter that bounds attempts at it, the rules a password is
+refused by, and the routine that creates the account in the one safe order:
+
+    git grep -ln 'public static class RedemptionDecision\|public sealed class AttemptLimiter\|public static class PasswordRules\|public static class AccountCreation' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
+    origin/master:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    origin/master:Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
+    origin/master:Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
+    origin/master:Jellyfin.Plugin.Invites/Setup/PasswordRules.cs
+
+What none of them has is a caller, because the post this flow turns on does not
+exist:
+
+    git grep -nE '\[Http(Get|Post)' origin/master -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+
+So every transition below is still a promise and the sentence was right about
+the flow. What it was wrong about is the distance: four of these promises have
+their routine written and their wiring missing, and a reader deciding what to
+build from a page that says none of it exists writes a second one of something
+that is already there. The setup page at that route is served, which the same
+sentence also denied.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written
@@ -113,9 +137,52 @@ recorded against the invitation's non-secret identifier, and if the delete
 itself fails the account stays disabled, which is the state this flow refuses to
 leave: not an account with no password, but an account nobody can sign into.
 
-That is a claim about a routine that does not exist. What makes it checkable
-later is that the unwind is in the same routine as the create, which is #56's
-whole subject, rather than in a background sweep.
+THAT PARAGRAPH SAID IT IS A CLAIM ABOUT A ROUTINE THAT DOES NOT EXIST. The
+routine exists and it does none of the three things the paragraph promises. It
+landed under #398:
+
+    git log --oneline --diff-filter=A -1 origin/master -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    2b5b156 Create the account an invitation redeems into, for #398
+
+It does not unwind, and it says so on itself rather than leaving a reader to
+find out:
+
+    git grep -n 'Nothing is undone' origin/master -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    origin/master:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:63:/// <b>What a failure part-way leaves.</b> Nothing is undone. A refusal from the
+
+It does not disable the account either. The seam it writes through declares
+three acts and none of them is a delete or a disable:
+
+    git grep -nE '^    Task' origin/master -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
+    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
+    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
+    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
+
+THE DELETE THIS UNWIND NEEDS IS REFUSED RATHER THAN MERELY ABSENT, which is the
+part that changes what somebody building these two branches should do. Widening
+the seam by a fourth act turns a guard red:
+
+    git grep -n 'public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds' origin/master -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
+    origin/master:Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:190:    public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds()
+
+That guard is #91's answer read from this side: a plugin that can delete an
+account is a larger power than a redemption needs, and it was weighed and
+declined rather than not yet built. So the two rows above and this paragraph
+describe a compensating action the tree refuses, and what branches 5 and 6
+actually leave today is what `AccountCreation` names - an account with no
+credential and the server's own default policy, or one with a credential and
+that same policy.
+
+WHICH OF THE TWO IS WRONG IS NOT DECIDED HERE. Either this flow gives up its
+only compensating action and says what the residual is, or the refusal is
+revisited with the delete held to the narrowest surface that serves it. The
+first is what the tree already does and the second is a change to #91's answer.
+The direction of a residual left by a failure part-way is #53's clause, the
+routine that would carry it is #399's, and this paragraph names both rather than
+choosing for them.
+
+What was already right and stays right is where the unwind would live: in the
+same routine as the create rather than in a background sweep.
 
 ## No branch ends undefined
 
