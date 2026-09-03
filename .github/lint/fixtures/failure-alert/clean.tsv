@@ -1,0 +1,5 @@
+.github/workflows/build.yaml	Build	success	2026-09-03T04:49:56Z	46dc3eba1c9c5bde78d53d1741789b1048910a6c	https://github.com/Flowfin/jellyfin-plugin-invites/actions/runs/1	1
+.github/workflows/scan-codeql.yaml	CodeQL	skipped	2026-09-03T04:49:55Z	46dc3eba1c9c5bde78d53d1741789b1048910a6c	https://github.com/Flowfin/jellyfin-plugin-invites/actions/runs/2	2
+.github/workflows/stryker-mutation.yaml	Mutation testing	cancelled	2026-09-01T08:53:01Z	7ac9c3480000000000000000000000000000abcd	https://github.com/Flowfin/jellyfin-plugin-invites/actions/runs/3	3
+.github/workflows/dco.yml	DCO	no-completed-run				
+.github/workflows/fuzz.yaml	Fuzz	success	2026-08-31T09:45:24Z	8f343dce9b50123fe69c6d33265e9305c2167c61	https://github.com/Flowfin/jellyfin-plugin-invites/actions/runs/5	5

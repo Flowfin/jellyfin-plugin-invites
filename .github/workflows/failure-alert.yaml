@@ -1,0 +1,281 @@
+# A red run on the default branch is reported to somebody, from #376.
+#
+# A run that is not a required pull-request check is not mailed to anybody the
+# way a red pull request is. The weekly mutation gate failed on every run it
+# made, the failure was the gate working, and nothing said so anywhere in the
+# tree or on the tracker: its only reader was somebody who happened to open the
+# actions page. The target gate this repository is measured against holds the
+# same class with a default-branch watchdog, and this is that watchdog here.
+#
+# What it does. For every workflow this repository carries, it reads the latest
+# COMPLETED run on the default branch and hands the listing to
+# .github/lint/failure-alert.sh, which decides which of them concluded in a way
+# somebody has to be told about. For each of those it reads the step that failed
+# and the end of that step's log off the run itself, because a report saying
+# THAT something is red and never WHAT is a report somebody stops opening. Then
+# it files one issue, or refreshes the one already open, and closes it when
+# nothing is red any more. One issue rather than one per run: the body always
+# holds the current state, and a comment marks a change in the set of red
+# workflows and nothing else, so a gate that stays red for a month produces one
+# issue and not thirty.
+#
+# No workflow is named here. Coverage is derived from the workflow list, so a
+# workflow landed tomorrow is watched from its first run on the default branch
+# and there is nothing to register anywhere. This file is in that list too: a
+# sweep that failed is reported by the sweep after it.
+#
+# WHY A SWEEP ON A SCHEDULE RATHER THAN A `workflow_run` TRIGGER. Watching
+# every workflow by event needs a `workflow_run` trigger with no filter, which
+# is a trigger the workflow audit on this board refuses to parse, and an event
+# arrives once whereas a red run stays red. The price is latency, and it is
+# stated rather than hidden: a run that goes red on a Tuesday morning is
+# reported at the next tick rather than within a minute.
+#
+# The two network calls are steps of their own, for the reason every scheduled
+# check on this board gives: a failed call and a default branch on which nothing
+# is red arrive at the comparison as the same empty listing, so the fetch fails
+# as a fetch with the call in front of it, and the deciding step reads a file
+# and makes no call at all.
+#
+# This is not in the branch ruleset's required set and must not be: it does not
+# run on a pull request, so requiring it would hold every merge on a check that
+# never reports. Raising that set is #24.
+#
+# The context this reports is `A red run on the default branch is reported`,
+# which is the name to put in a ruleset rather than the workflow's display name.
+name: '🚨 Default-branch alert'
+
+on:
+  schedule:
+    # Every six hours. The gate this exists for runs weekly, the push-only
+    # guards run at every merge, and neither needs an answer within the hour;
+    # what they need is an answer at all, and six hours is the longest a red
+    # run stands unreported. The target gate ticks every half hour, and this
+    # board pays for its checks by the runner-minute and does not.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would be filed to the run log, and open, edit or close no issue.'
+        type: boolean
+        default: true
+
+# Deny-all at the workflow level; the job opts into what it needs.
+permissions: {}
+
+# Never two sweeps at once, and never cancel one mid-flight: it may be editing
+# the alert issue. Serialising is also what stops two sweeps filing two issues.
+concurrency:
+  group: '${{ github.workflow }}'
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: A red run on the default branch is reported
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Read the tree for the deciding script and its fixtures, read the run
+      # list, and file or refresh the alert issue. Nothing else: no ability to
+      # re-run or cancel anything, and no write to the tree.
+      contents: read
+      actions: read
+      issues: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The check bites its own fixtures
+        # First, and on every run rather than once at review time. The mainline
+        # is green most weeks, so the deciding step cannot fire against it, and
+        # a denylist that had quietly turned into an allowlist would go green
+        # forever while a red run sat on the default branch unreported.
+        run: bash .github/lint/failure-alert.sh selftest
+
+      - name: Read the latest completed run of every workflow on the default branch
+        # One line per workflow, whatever its trigger. A workflow that has never
+        # run on the default branch, which is what a pull-request-only workflow
+        # looks like from here, is written with a conclusion the script reads as
+        # quiet rather than dropped, so the listing answers for the whole
+        # directory. All values reaching the shell arrive through env.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -uo pipefail
+          rc=0
+          gh api "repos/${REPO}/actions/workflows?per_page=100" --paginate \
+            --jq '.workflows[] | select(.state == "active") | "\(.id)\t\(.path)\t\(.name)"' > workflows.tsv || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Reading the workflow list failed (exit $rc). This is the network rather than the default branch, and nothing below has run. Re-run the job."
+            exit 1
+          fi
+          if [ ! -s workflows.tsv ]; then
+            echo "::error::The workflow list read as empty. A repository holding no workflow and a call that answered with nothing are the same bytes here, so this refuses rather than sweeping an empty set."
+            exit 1
+          fi
+          : > runs.tsv
+          while IFS=$'\t' read -r id path name; do
+            rc=0
+            run=$(gh api "repos/${REPO}/actions/workflows/${id}/runs?branch=${BRANCH}&status=completed&per_page=1" \
+              --jq '.workflow_runs[0] | if . == null then "no-completed-run\t\t\t\t" else "\(.conclusion // "")\t\(.created_at)\t\(.head_sha)\t\(.html_url)\t\(.id)" end') || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "::error::Reading the runs of ${path} failed (exit $rc). This is the network rather than the default branch, and the listing is incomplete, so nothing below has run. Re-run the job."
+              exit 1
+            fi
+            printf '%s\t%s\t%s\n' "$path" "$name" "$run" >> runs.tsv
+          done < workflows.tsv
+          echo "Read the latest completed run on ${BRANCH} for $(grep -c . runs.tsv) workflow(s)."
+
+      - name: Decide which of them concluded non-success
+        id: decide
+        # Exit 0 is nothing red, 1 is something red, 2 is a listing that could
+        # not be read; only the last fails the job, because the first two are
+        # both answers and the steps below act on each.
+        run: |
+          set -uo pipefail
+          rc=0
+          bash .github/lint/failure-alert.sh read runs.tsv red.tsv || rc=$?
+          case "$rc" in
+            0) echo "verdict=clean" >> "$GITHUB_OUTPUT" ;;
+            1) echo "verdict=red" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+      - name: File or refresh the alert issue
+        if: steps.decide.outputs.verdict == 'red'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          # The issue this files carries the same three things every issue on
+          # this board carries. The label is the dedup key; the assignee is the
+          # one reader of this tracker; the milestone is the earliest open one,
+          # because a red gate holds whatever is being worked first.
+          LABEL: default-branch-alert
+          ASSIGNEE: iderex
+          TITLE: A run on the default branch is red
+        run: |
+          set -uo pipefail
+
+          # WHAT IS RED, WITH THE REASON, and the reason comes from the run.
+          # `gh run view --json jobs` names the failed step cleanly. The log is
+          # capped to the lines before the runner's own error marker, because
+          # the lines after it are the teardown and the lines before it are
+          # what tipped the run over. Colour codes are stripped in both forms:
+          # the tools this board runs write them, and the log as `gh` hands it
+          # back carries the escape as the two characters caret and bracket
+          # rather than as a byte, which was read off a red run rather than
+          # assumed.
+          : > state.md
+          : > key.txt
+          while IFS=$'\t' read -r path name conclusion created sha url run_id || [ -n "$path" ]; do
+            step=$(gh run view "$run_id" --repo "$REPO" --json jobs \
+              --jq '[.jobs[] | select(.conclusion != "success") | .steps[] | select(.conclusion == "failure") | .name][0] // "unknown"' 2>/dev/null || echo "unknown")
+            excerpt=$(gh run view "$run_id" --repo "$REPO" --log-failed 2>/dev/null \
+              | sed 's/\r$//' \
+              | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\^\[\[[0-9;]*m//g' \
+              | sed 's/^[^\t]*\t[^\t]*\t//' | sed 's/^[0-9TZ:.-]\{20,\} //' \
+              | grep -vE '^\s*$' | grep -vE '^##\[(group|endgroup)\]' \
+              | awk '/##\[error\]/ { found=1; for (i=1;i<=n;i++) print buffer[i]; print; exit }
+                     { buffer[++n]=$0; if (n>12) { for (i=1;i<n;i++) buffer[i]=buffer[i+1]; n-- } }
+                     END { if (!found) for (i=1;i<=n;i++) print buffer[i] }' \
+              | cut -c1-200 || true)
+            [ -n "$excerpt" ] || excerpt="(no log available)"
+            printf '%s\t%s\n' "$path" "$step" >> key.txt
+            {
+              printf '### %s\n\n' "$name"
+              printf '`%s` concluded `%s` at `%s` on `%s`, in the step **%s**.\n\n' \
+                "$path" "$conclusion" "$created" "${sha:0:8}" "$step"
+              printf '```\n%s\n```\n\n' "$excerpt"
+              printf 'The run: %s\n\n' "$url"
+            } >> state.md
+          done < red.tsv
+
+          header="The latest completed run of at least one workflow on \`${BRANCH}\` concluded non-success. This body is rewritten at every sweep and always shows the current state; a comment below marks a change in the set of red workflows and nothing else.
+
+          A run that is not a required pull-request check is not mailed to anybody, so it stays red while every pull request shows green. The sweep closes this issue itself once nothing is red. Decided in #376, and \`.github/workflows/failure-alert.yaml\` is the file that writes this."
+          body="$header
+
+          $(cat state.md)"
+          new_key=$(sort -u key.txt | tr '\t' ':' | tr '\n' ';')
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN, filing nothing. Would report: ${new_key}"
+            echo "--- body ---"
+            echo "$body"
+            exit 0
+          fi
+
+          # The label is the dedup key, and it is provisioned here so the first
+          # sweep on a fresh board does not die on a label nobody made.
+          gh label create "$LABEL" --repo "$REPO" --color B60205 \
+            --description "Filed by the default-branch sweep when a workflow run on the default branch concluded non-success, from #376" \
+            --force >/dev/null 2>&1 || true
+
+          num=$(gh issue list --repo "$REPO" --state open --label "$LABEL" \
+            --json number --jq '.[0].number // empty')
+          milestone=$(gh api "repos/${REPO}/milestones?state=open&per_page=100" \
+            --jq 'sort_by(.number) | .[0].title // empty')
+
+          if [ -n "${num:-}" ]; then
+            old_key=$(gh issue view "$num" --repo "$REPO" --json body \
+              --jq '.body' | sed -n 's/.*<!-- key: \(.*\) -->.*/\1/p' | head -1)
+            gh issue edit "$num" --repo "$REPO" --body "$body
+
+          <!-- key: ${new_key} -->"
+            if [ "$old_key" != "$new_key" ]; then
+              echo "The set of red workflows changed; commenting on #${num}."
+              gh issue comment "$num" --repo "$REPO" --body "The set of red workflows changed.
+
+          Now: ${new_key}
+          Before: ${old_key:-(nothing recorded)}
+
+          The body above carries the current state and the end of each failed step's log."
+            else
+              echo "Same set of red workflows as before; body of #${num} refreshed, no comment."
+            fi
+          else
+            args=(--repo "$REPO" --title "$TITLE" --label "$LABEL" --label ci --assignee "$ASSIGNEE")
+            if [ -n "${milestone:-}" ]; then
+              args+=(--milestone "$milestone")
+            else
+              echo "::warning::No open milestone, so the issue is filed without one."
+            fi
+            created=$(gh issue create "${args[@]}" --body "$body
+
+          <!-- key: ${new_key} -->")
+            echo "Filed ${created}."
+          fi
+
+      - name: Close the alert issue when nothing is red
+        if: steps.decide.outputs.verdict == 'clean'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          LABEL: default-branch-alert
+        run: |
+          set -uo pipefail
+          # NOTHING RED MEANS CLOSE, AND THE SWEEP DOES THE CLOSING. A reporter
+          # that only ever opens leaves a dead issue behind every green, and the
+          # sweep after a hand close files the same failure afresh.
+          num=$(gh issue list --repo "$REPO" --state open --label "$LABEL" \
+            --json number --jq '.[0].number // empty')
+          if [ -z "${num:-}" ]; then
+            echo "Nothing red on ${BRANCH}, and no alert issue open to close."
+            exit 0
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN: nothing red on ${BRANCH}; would close #${num}."
+            exit 0
+          fi
+          gh issue comment "$num" --repo "$REPO" --body "Nothing on \`${BRANCH}\` is red any more: the latest completed run of every workflow there is quiet. Closing."
+          gh issue close "$num" --repo "$REPO" --reason completed
+          echo "Closed #${num}."
