@@ -127,13 +127,18 @@ No test holds that the source is cryptographic, and none can. A good source and
 a bad one are indistinguishable from their output at any sample size a suite can
 take. What refuses a bad one is the `weak-random` rule in
 `.github/lint/invariants.sh`, and it matches a spelling rather than a dataflow,
-so the same source reached through a helper two files away passes it. Neither of
-the two things a reader would expect to stand behind it does. The analyzer
-rule for an insecure random source is turned down to information in
-`jellyfin.ruleset`, so the mistake written into the minting routine builds with
-no warning and no error, and the dataflow query that would follow it was run
-against that same mistake in that same routine and reported nothing, which is
-measured in issue #16.
+so the same source reached through a helper two files away passes it. The
+compiler refuses the same spelling in the plugin project: the analyzer rule for
+an insecure random source, CA5394, is raised to a warning in `jellyfin.ruleset`
+and that project treats warnings as errors, so the mistake written into the
+minting routine no longer builds. This paragraph said the rule was turned down
+to information and the mistake built with no warning and no error, which was
+true until the entry was raised under #16. The analyzer rule is a usage rule on
+the same construct as the greppable one, so a source reached through a helper
+passes it exactly as it passes the grep, and it does not reach the test project,
+which names no ruleset. The dataflow query that would follow such a source was
+run against that same mistake in that same routine and reported nothing, which
+is measured in issue #16.
 
 ### A code is stored only as a hash of itself
 
