@@ -192,3 +192,19 @@ csharp_space_between_method_call_empty_parameter_list_parentheses = false
 # Wrapping preferences
 csharp_preserve_single_line_statements = true
 csharp_preserve_single_line_blocks = true
+
+###############################
+# The configuration shape     #
+###############################
+# The server's own configuration mechanism writes this plugin's settings to a
+# file and reads them back into public settable properties, arrays included,
+# and a list setting has no other shape both of its readers fill: a settable
+# collection is what CA2227 refuses, and a read-only one is what the JSON
+# reader behind the configuration page does not fill unless told to. So an
+# array-typed setting is the right shape in this directory and nowhere else,
+# and the rule against returning an array from a property is off here alone.
+# Nothing in the directory decides anything; the decisions over these values
+# are in Jellyfin.Plugin.Invites/Accounts/TemplateSettings.cs, where every
+# analyzer stays on.
+[Jellyfin.Plugin.Invites/Configuration/*.cs]
+dotnet_diagnostic.CA1819.severity = none

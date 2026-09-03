@@ -59,6 +59,7 @@ is what the review is for.
 | Setting | What it does | Default | Bounds | At the bound | If it is set badly |
 | ------- | ------------ | ------- | ------ | ------------ | ------------------ |
 | `PublicBaseUrl` | The address invitation links are built from, as a stranger outside the network reaches this server. It is what the mint response writes its link against, and it is read from here and never from the request | Empty | An absolute `http` or `https` address, with an optional path prefix and no query or fragment | Empty mints as usual and returns the refusal in place of the link, naming this setting | Every link points somewhere the invited person cannot reach, or reaches a server that is not this one. Nothing is minted wrongly and no account is affected, because the address is used only to write the link down |
+| `Templates` | The named account templates an operator mints against. Each entry carries a label, the libraries the account may see, the ten permissions #64 decided and the three ceilings, and it is the value an invitation copies at minting rather than a name it looks up later | `[]` | A list. Every label is non-blank, unpadded and unique ignoring case, every library identifier is non-zero and named once, and every ceiling is absent or at least zero | Empty is a fresh install: no template exists, and once the mint copies a grant out of this list nothing can be minted until an operator writes one down | The list is refused whole when the plugin loads, with the position of the entry and the rule it missed named and no label quoted. Nothing is corrected, nothing is dropped and no account is affected, because a template is read only where a grant is copied |
 
 ## The public base address
 
@@ -98,12 +99,72 @@ a fragment is refused the same way, because appending a path to any of them
 produces something that looks like a link and does not reach the redemption
 route.
 
+## The named templates
+
+Decision 6 in #11 keeps several named templates, chosen by name when an
+invitation is minted, and this setting is where they are written down. Each
+entry is the stored shape of what an invitation minted against it grants: a
+label, the libraries by identifier, the ten permissions #64 decided with the
+posture that issue gave each one, and the three ceilings.
+
+**What a member left out of an entry is worth.** Closed, except the two #64
+opened because they reach nothing beyond the invited person: playing from
+outside the network and changing the account's own display preferences start
+open, every other permission starts closed, the library list starts empty, and
+every ceiling starts absent, which is no ceiling rather than a ceiling of zero.
+So an entry that carries nothing but a label is a usable template that grants
+no library, and that is a template somebody chose rather than a mistake.
+
+**Two things no entry can say.** There is no member for an account that manages
+the server, so no element of the file spells it and an element the server's
+reader does not know is dropped rather than read; the grant every entry becomes
+has that closed whatever else was written, which is #62's ceiling refused by
+shape rather than by a check. And there is no member naming the server's policy
+fields a template leaves alone: that list names fields of the server's own
+policy, which an operator has no way to read, and a wrong name there would be
+refused at the moment the grant is written onto an account that already exists.
+A configured template names none, and the field-by-field assertion over a
+created account derives what was left alone from what the routine writes.
+
+**Labels are names, not codes.** A label is compared ignoring case, so two
+entries whose labels differ only in case are one name written twice and the
+list is refused. A label with a space inside it is a name; a label padded with
+a space at either end is refused, because nobody types the padding on the mint
+form and the entry would name nothing anyone can reach.
+
+**What a fault does.** The whole list is refused, not thinned to the entries
+that pass. Handing on the good ones would be the plugin deciding which of an
+operator's templates count, and an operator who wrote five and can mint against
+four has been corrected without being told, which is the silent fallback the
+rule at the top of this page refuses. The refusal is written to the log once
+when the plugin loads and names the setting, the position of the entry counted
+from one, and the rule it missed. It quotes no label, for the reason
+`docs/logging.md` gives: a value reaches a log line only where it is a row in
+the inventory, and a setting is not one. Repair the entry, load again, and the
+next fault, if there is one, is named the same way.
+
+**What reads this setting today, and what does not yet.** The load the server
+makes when it starts reads it and writes the refusal above. Nothing else reads
+it. The mint takes a template by name and writes that name into the record, and
+does not yet copy a grant out of this list against it:
+
+    git grep -n 'public Minting Mint' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:189:    public Minting Mint(Guid mintedBy, string templateLabel, TimeSpan? validity, int? uses)
+
+So a name that matches no entry is not refused at minting yet, and the record
+carries the name rather than the grant. The copy is #61's second clause, and
+this setting is what that copy is taken from; until it lands, the value an
+entry carries reaches no account, because nothing redeems. That sentence is
+the one to re-read first when #61 lands.
+
 ## A fresh install
 
 A server that installs the plugin and never opens the configuration page runs
-with an empty public address, which builds no invitation links. The closed
-answer for this setting is not a safe address, it is no address, and the reason
-is in the row above.
+with an empty public address, which builds no invitation links, and with no
+template, which is a grant nobody decided rather than a safe one. The closed
+answer for the address is not a safe address, it is no address, and the reason
+is in the row above; the closed answer for the templates is none, and the
+reason is in the section above.
 
 `Jellyfin.Plugin.Invites.Tests.FreshInstallConfigurationTests` holds the type to
 that answer, which is what #87 asks for. It is a table every setting has to be

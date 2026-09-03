@@ -39,13 +39,15 @@ namespace Jellyfin.Plugin.Invites.Startup;
 /// backup shows up in.
 /// </para>
 /// <para>
-/// <b>It also reads the configured public address once.</b> #86 asks that a
-/// setting be judged when the plugin loads rather than only where it is used,
-/// and this is the moment the plugin has for that. An address an operator
-/// mistyped is otherwise met by whoever mints next, holding half an invitation
-/// they cannot hand to anybody. Nothing is corrected and nothing is guessed at:
-/// the setting is read, the same question <see cref="InvitationLink"/> asks is
-/// asked of it, and a setting that cannot be used is named.
+/// <b>It also reads two settings once.</b> #86 asks that a setting be judged
+/// when the plugin loads rather than only where it is used, and this is the
+/// moment the plugin has for that. An address an operator mistyped is otherwise
+/// met by whoever mints next, holding half an invitation they cannot hand to
+/// anybody, and a template list with a fault in it is otherwise met by whoever
+/// mints against a name that turns out to be unusable. Nothing is corrected and
+/// nothing is guessed at: each setting is read, the same question
+/// <see cref="InvitationLink"/> or <see cref="TemplateSettings"/> asks is asked
+/// of it, and a setting that cannot be used is named.
 /// </para>
 /// <para>
 /// <b>It is also where the plugin finds out it is on the wrong server.</b> #97
@@ -82,6 +84,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     private readonly ServerLineGate _line;
     private readonly IStoreDirectory _directory;
     private readonly IPublicAddress _address;
+    private readonly IConfiguredTemplates _templates;
     private readonly IServerAccounts _accounts;
     private readonly IClock _clock;
     private readonly ILogger<LoadOnStart> _logger;
@@ -93,14 +96,16 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// <param name="line">The comparison against the server line this plugin was built for.</param>
     /// <param name="directory">Where the store sits.</param>
     /// <param name="address">The configured public address, read once.</param>
+    /// <param name="templates">The configured account templates, read once.</param>
     /// <param name="accounts">The server's own account list.</param>
     /// <param name="clock">The time source the claim is stamped from.</param>
     /// <param name="logger">Where the answer goes.</param>
-    public LoadOnStart(ServerLineGate line, IStoreDirectory directory, IPublicAddress address, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
+    public LoadOnStart(ServerLineGate line, IStoreDirectory directory, IPublicAddress address, IConfiguredTemplates templates, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
     {
         _line = line;
         _directory = directory;
         _address = address;
+        _templates = templates;
         _accounts = accounts;
         _clock = clock;
         _logger = logger;
@@ -121,6 +126,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
         }
 
         ReportTheConfiguredAddress();
+        ReportTheConfiguredTemplates();
 
         var directory = _directory.Path;
         if (string.IsNullOrWhiteSpace(directory))
@@ -215,6 +221,40 @@ public sealed class LoadOnStart : IHostedService, IDisposable
 
         _logger.LogError(
             "The public address this plugin is configured with cannot be used, so nothing minted against it would reach the person it was meant for. The setting is PublicBaseUrl on this plugin's own configuration page, and it wants an absolute http or https address such as https://media.example.org, with an optional path prefix and no query or fragment. Minting is refused while it stands, and the refusal names which of those it missed.");
+    }
+
+    /// <summary>
+    /// Reads the configured account templates and names the setting where they
+    /// cannot be used.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// No template at all is the decided fresh-install value rather than a
+    /// fault, which docs/configuration.md argues under "A fresh install", so an
+    /// empty list is passed over in silence, and so is the absence of a loaded
+    /// configuration.
+    /// </para>
+    /// <para>
+    /// The line names the setting, the position of the entry and the rule it
+    /// missed, and never a label or any other value typed into the file, for
+    /// the reason <see cref="ReportTheConfiguredAddress"/> gives. The list is
+    /// refused whole rather than thinned to the entries that pass, which is
+    /// <see cref="TemplateSettings"/>'s rule, so one line is written for the
+    /// first fault and the next is met after that one is repaired.
+    /// </para>
+    /// </remarks>
+    private void ReportTheConfiguredTemplates()
+    {
+        var why = TemplateSettings.WhyRefused(_templates.Templates);
+        if (why is null)
+        {
+            return;
+        }
+
+        _logger.LogError(
+            "The account templates this plugin is configured with cannot be used as they stand, so no invitation can carry a grant copied from them. The setting is {Setting} on this plugin's own configuration page. {Why} Nothing was corrected and nothing was dropped; every entry is read again once the setting is repaired.",
+            TemplateSettings.SettingName,
+            why);
     }
 
     private void Report(ConsistencyReport report)
