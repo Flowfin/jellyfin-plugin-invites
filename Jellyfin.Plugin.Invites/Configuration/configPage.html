@@ -21,9 +21,10 @@
                             >
                             <input is="emby-input" id="InvitesMintTemplate" type="text" required />
                             <div class="fieldDescription">
-                                Which grant the invitation carries. The invitation keeps a copy of
-                                it, so editing a template afterwards does not change an invitation
-                                that was already minted.
+                                The label of one of the account templates under Settings below,
+                                compared ignoring case. The invitation keeps a copy of the template,
+                                so editing it afterwards does not change an invitation that was
+                                already minted.
                             </div>
                         </div>
                         <div class="inputContainer">
@@ -150,6 +151,50 @@
                                 building a link is refused rather than guessed at.
                             </div>
                         </div>
+
+                        <h3>Account templates</h3>
+                        <p class="fieldDescription">
+                            The named grants an invitation is minted against. What an invitation
+                            carries is a copy of the entry as it stood when it was minted, so
+                            editing one here changes the next invitation and none already sent. The
+                            templates are saved with the settings, by the button at the bottom.
+                        </p>
+                        <ul id="InvitesTemplateRules" class="fieldDescription">
+                            <li>
+                                Every template needs a label, without a space at either end, and no
+                                two labels may be the same once case is ignored.
+                            </li>
+                            <li>
+                                A library is named once, and the all-zero identifier names no
+                                library. A template naming no library is a template somebody chose,
+                                and it is saved as written.
+                            </li>
+                            <li>
+                                A ceiling is a whole number of at least zero. Left empty, there is
+                                no ceiling.
+                            </li>
+                            <li>
+                                One entry breaking a rule refuses the whole list when the plugin
+                                loads, and the refusal in the server log names the position of the
+                                entry and the rule it missed. Nothing on this page judges these
+                                rules, so a save that breaks one is accepted here and refused there,
+                                and nothing is minted until it is repaired.
+                            </li>
+                            <li>
+                                No template can ask for an account that manages the server. There is
+                                no control for it here and no member for it in the setting.
+                            </li>
+                        </ul>
+                        <div id="InvitesTemplates"></div>
+                        <button
+                            is="emby-button"
+                            type="button"
+                            id="InvitesAddTemplate"
+                            class="raised emby-button"
+                        >
+                            <span>Add a template</span>
+                        </button>
+
                         <button
                             is="emby-button"
                             type="submit"
@@ -270,6 +315,255 @@
                     return document.querySelectorAll("[data-setting]");
                 }
 
+                // One control per member of a configured template, and no other.
+                // The member names are the setting's own, so the object this page
+                // saves is the shape the plugin reads, and the suite holds this
+                // list to that type in both directions. There is deliberately no
+                // entry for an account that manages the server: the setting has
+                // no member for it, so there is nothing here to ask with.
+                var InvitesTemplateMembers = [
+                    { member: "Label", kind: "text", text: "Label" },
+                    {
+                        member: "Libraries",
+                        kind: "libraries",
+                        text: "Libraries the account may see",
+                    },
+                    { member: "MayDownload", kind: "flag", text: "May download media" },
+                    {
+                        member: "MayPlayFromOutsideTheNetwork",
+                        kind: "flag",
+                        text: "May play from outside the network",
+                    },
+                    {
+                        member: "MayControlOtherSessions",
+                        kind: "flag",
+                        text: "May control somebody else's session",
+                    },
+                    {
+                        member: "MayWatchLiveTelevision",
+                        kind: "flag",
+                        text: "May watch live television",
+                    },
+                    {
+                        member: "MayManageLiveTelevision",
+                        kind: "flag",
+                        text: "May schedule and remove recordings",
+                    },
+                    {
+                        member: "MayDeleteContent",
+                        kind: "flag",
+                        text: "May delete media from the server",
+                    },
+                    { member: "MayManageCollections", kind: "flag", text: "May edit collections" },
+                    {
+                        member: "MayManageSubtitles",
+                        kind: "flag",
+                        text: "May fetch and remove subtitles",
+                    },
+                    {
+                        member: "MayManageLyrics",
+                        kind: "flag",
+                        text: "May fetch and remove lyrics",
+                    },
+                    {
+                        member: "MayChangeItsOwnPreferences",
+                        kind: "flag",
+                        text: "May change its own display preferences",
+                    },
+                    {
+                        member: "RemoteBitrateCeiling",
+                        kind: "number",
+                        text: "Remote bitrate ceiling, in bits a second",
+                    },
+                    {
+                        member: "SimultaneousStreamCeiling",
+                        kind: "number",
+                        text: "Streams at once",
+                    },
+                    {
+                        member: "ParentalRatingCeiling",
+                        kind: "number",
+                        text: "Parental rating ceiling",
+                    },
+                ];
+
+                // The server's libraries, read once when the page opens so a
+                // template names a library by ticking it rather than by typing
+                // an identifier. A library the setting names and the server no
+                // longer has is still shown, ticked, so an edit to another field
+                // does not silently drop it.
+                var invitesLibraries = [];
+
+                function invitesLibraryKey(identifier) {
+                    return String(identifier || "").replace(/-/g, "");
+                }
+
+                function invitesLoadLibraries() {
+                    return ApiClient.getJSON(ApiClient.getUrl("Library/VirtualFolders")).then(
+                        function (folders) {
+                            invitesLibraries = (folders || []).map(function (folder) {
+                                return { id: folder.ItemId, name: folder.Name };
+                            });
+                        },
+                        function () {
+                            invitesLibraries = [];
+                        },
+                    );
+                }
+
+                function invitesFlag(text, checked, attribute, value) {
+                    var label = document.createElement("label");
+                    label.className = "emby-checkbox-label";
+                    var box = document.createElement("input");
+                    box.setAttribute("is", "emby-checkbox");
+                    box.type = "checkbox";
+                    box.checked = Boolean(checked);
+                    box.setAttribute(attribute, value);
+                    var span = document.createElement("span");
+                    span.className = "checkboxLabel";
+                    span.textContent = text;
+                    label.appendChild(box);
+                    label.appendChild(span);
+                    return label;
+                }
+
+                function invitesLibrariesControl(named) {
+                    var container = document.createElement("div");
+                    container.className = "checkboxList";
+                    container.setAttribute("data-member", "Libraries");
+                    var chosen = (named || []).map(invitesLibraryKey);
+                    var shown = [];
+                    invitesLibraries.forEach(function (library) {
+                        var key = invitesLibraryKey(library.id);
+                        shown.push(key);
+                        container.appendChild(
+                            invitesFlag(
+                                library.name,
+                                chosen.indexOf(key) >= 0,
+                                "data-library",
+                                library.id,
+                            ),
+                        );
+                    });
+                    (named || []).forEach(function (identifier) {
+                        if (shown.indexOf(invitesLibraryKey(identifier)) === -1) {
+                            container.appendChild(
+                                invitesFlag(
+                                    "Not on this server: " + identifier,
+                                    true,
+                                    "data-library",
+                                    identifier,
+                                ),
+                            );
+                        }
+                    });
+                    return container;
+                }
+
+                function invitesTemplateControl(definition, value) {
+                    var container = document.createElement("div");
+                    container.className = "inputContainer";
+                    if (definition.kind === "flag") {
+                        container.appendChild(
+                            invitesFlag(definition.text, value, "data-member", definition.member),
+                        );
+                        return container;
+                    }
+
+                    if (definition.kind === "libraries") {
+                        var heading = document.createElement("div");
+                        heading.className = "fieldDescription";
+                        heading.textContent = definition.text;
+                        container.appendChild(heading);
+                        container.appendChild(invitesLibrariesControl(value));
+                        return container;
+                    }
+
+                    var label = document.createElement("label");
+                    label.className = "inputLabel inputLabelUnfocused";
+                    label.textContent = definition.text;
+                    var input = document.createElement("input");
+                    input.setAttribute("is", "emby-input");
+                    input.type = definition.kind;
+                    input.setAttribute("data-member", definition.member);
+                    input.value = value === null || value === undefined ? "" : String(value);
+                    container.appendChild(label);
+                    container.appendChild(input);
+                    return container;
+                }
+
+                function invitesTemplateRow(template) {
+                    var row = document.createElement("fieldset");
+                    row.className = "invitesTemplate";
+                    row.setAttribute("data-template", "");
+                    var legend = document.createElement("legend");
+                    legend.textContent = "Template";
+                    row.appendChild(legend);
+                    InvitesTemplateMembers.forEach(function (definition) {
+                        row.appendChild(
+                            invitesTemplateControl(definition, (template || {})[definition.member]),
+                        );
+                    });
+
+                    var remove = document.createElement("button");
+                    remove.setAttribute("is", "emby-button");
+                    remove.setAttribute("type", "button");
+                    remove.className = "raised emby-button";
+                    remove.textContent = "Remove this template";
+                    remove.addEventListener("click", function () {
+                        row.parentNode.removeChild(row);
+                    });
+                    row.appendChild(remove);
+                    return row;
+                }
+
+                function invitesRenderTemplates(templates) {
+                    var container = document.querySelector("#InvitesTemplates");
+                    container.textContent = "";
+                    (templates || []).forEach(function (template) {
+                        container.appendChild(invitesTemplateRow(template));
+                    });
+                }
+
+                // The templates as the page shows them, in the shape the setting
+                // holds. An empty number is an absent ceiling and a ticked box is
+                // an open permission; nothing here decides whether the result is a
+                // grant, because the load is what judges the list and a second
+                // judgement on this page would drift from it.
+                function invitesReadTemplates() {
+                    var templates = [];
+                    document
+                        .querySelectorAll("#InvitesTemplates [data-template]")
+                        .forEach(function (row) {
+                            var template = {};
+                            InvitesTemplateMembers.forEach(function (definition) {
+                                var control = row.querySelector(
+                                    '[data-member="' + definition.member + '"]',
+                                );
+                                if (definition.kind === "flag") {
+                                    template[definition.member] = control.checked;
+                                } else if (definition.kind === "libraries") {
+                                    var libraries = [];
+                                    control
+                                        .querySelectorAll("[data-library]")
+                                        .forEach(function (box) {
+                                            if (box.checked) {
+                                                libraries.push(box.getAttribute("data-library"));
+                                            }
+                                        });
+                                    template[definition.member] = libraries;
+                                } else if (definition.kind === "number") {
+                                    template[definition.member] =
+                                        control.value === "" ? null : Number(control.value);
+                                } else {
+                                    template[definition.member] = control.value;
+                                }
+                            });
+                            templates.push(template);
+                        });
+                    return templates;
+                }
+
                 function invitesLoadConfiguration() {
                     return ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                         function (config) {
@@ -277,6 +571,7 @@
                                 var name = field.getAttribute("data-setting");
                                 field.value = config[name] === undefined ? "" : config[name];
                             });
+                            invitesRenderTemplates(config.Templates);
                         },
                     );
                 }
@@ -285,7 +580,15 @@
                     .querySelector("#InvitesConfigPage")
                     .addEventListener("pageshow", function () {
                         Dashboard.showLoadingMsg();
-                        invitesLoadConfiguration().then(invitesList);
+                        invitesLoadLibraries().then(invitesLoadConfiguration).then(invitesList);
+                    });
+
+                document
+                    .querySelector("#InvitesAddTemplate")
+                    .addEventListener("click", function () {
+                        document
+                            .querySelector("#InvitesTemplates")
+                            .appendChild(invitesTemplateRow(null));
                     });
 
                 document.querySelector("#InvitesMintForm").addEventListener("submit", function (e) {
@@ -367,6 +670,7 @@
                                 invitesSettingFields().forEach(function (field) {
                                     config[field.getAttribute("data-setting")] = field.value;
                                 });
+                                config.Templates = invitesReadTemplates();
                                 ApiClient.updatePluginConfiguration(
                                     InvitesConfig.pluginUniqueId,
                                     config,

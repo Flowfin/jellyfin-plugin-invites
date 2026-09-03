@@ -14,7 +14,8 @@ and who would rather not be the one who knows everybody's password.
 >
 > The half an operator drives runs. The half an invited person drives does not.
 > What installs today adds one page to the server dashboard, and on it an
-> operator sets the public address, mints an invitation, reads the outstanding
+> operator sets the public address, writes down the account templates an
+> invitation is minted against, mints an invitation, reads the outstanding
 > ones, revokes one and rotates the key the codes are stored under. **No link
 > can be redeemed and no account is created by this plugin**, so an invitation
 > minted today cannot be spent by anybody. Everything below describes what is

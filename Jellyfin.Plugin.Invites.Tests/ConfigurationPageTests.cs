@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -50,7 +53,27 @@ public class ConfigurationPageTests
         "InvitesCopyCode",
         "InvitesList",
         "InvitesRotateKey",
+        "InvitesTemplates",
+        "InvitesAddTemplate",
     ];
+
+    /// <summary>
+    /// A member of a configured template the page offers a control for, as the
+    /// page's own script names it.
+    /// </summary>
+    private static readonly Regex _templateMember = new(
+        @"member: ""([A-Za-z]+)""",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The spellings a script judging a template entry would use: trimming a
+    /// label, folding its case, comparing a ceiling against zero, or spelling
+    /// the all-zero identifier. Spellings rather than meanings, so the bound is
+    /// the one every such list has: a judgement written some other way is not
+    /// in the population.
+    /// </summary>
+    private static readonly string[] Judging = [".trim(", ".toLowerCase(", ".toUpperCase(", "< 0", "00000000"];
 
     /// <summary>
     /// The identifier the page hands to the dashboard is this plugin's own.
@@ -236,6 +259,108 @@ public class ConfigurationPageTests
 
         Assert.Contains("only time this code is shown", page, StringComparison.Ordinal);
         Assert.Contains("readonly", ElementCarrying(page, "InvitesMintedCodeValue"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The page offers one control per member of a configured template and no
+    /// other, so what it saves is the shape the plugin reads and there is no
+    /// control for anything the setting cannot hold.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Both directions. A member of the type with no control is a value an
+    /// operator cannot see or repair from the page, which is the gap #435 is
+    /// about; a control with no member is a value the server's reader drops on
+    /// the way in, so the page would show a box that saves nothing.
+    /// </para>
+    /// <para>
+    /// The second direction is also how the page cannot ask for an account that
+    /// manages the server. <c>ConfiguredTemplateTests</c> holds the type to
+    /// having no such member, and this holds the page to the type, so the
+    /// absence reaches the page by construction rather than by a sentence. The
+    /// explicit assertion beside it names the clause so a reader finds it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void PageOffersOneControlPerMemberOfAConfiguredTemplateAndNoOther()
+    {
+        var page = ReadPage();
+
+        var offered = _templateMember.Matches(page)
+            .Select(match => match.Groups[1].Value)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        var declared = typeof(ConfiguredTemplate)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.NotEmpty(declared);
+        Assert.Equal(declared, offered);
+        Assert.DoesNotContain("member: \"MayManage\"", page, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The rules an entry is refused on are stated before the template fields,
+    /// the way the setup page states the password rules before the password
+    /// field, and the page's script performs none of them.
+    /// </summary>
+    /// <remarks>
+    /// The load is what judges the list, and a second judgement on the page
+    /// would drift from it the first time either moved. So the page tells the
+    /// operator the rules and lets the server refuse a save that breaks one,
+    /// and this holds the script to spelling no judgement of its own. The
+    /// spellings are listed on the field above with their bound.
+    /// </remarks>
+    [Fact]
+    public void PageStatesTheRulesBeforeTheTemplateFieldsAndJudgesNoneItself()
+    {
+        var page = ReadPage();
+
+        var rules = page.IndexOf("id=\"InvitesTemplateRules\"", StringComparison.Ordinal);
+        var fields = page.IndexOf("id=\"InvitesTemplates\"", StringComparison.Ordinal);
+        Assert.True(
+            rules >= 0 && fields > rules,
+            "The rules are stated at " + rules + " and the template fields begin at " + fields
+            + ". The rules come first, so an operator reads what a save has to satisfy before writing one.");
+
+        var script = page[page.IndexOf("<script", StringComparison.Ordinal)..];
+        foreach (var spelling in Judging)
+        {
+            Assert.DoesNotContain(spelling, script, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// The templates are read into the configuration the page loaded and saved
+    /// through the one call that saves the address, so a template save
+    /// round-trips through the same endpoint and cannot drop a setting the
+    /// page does not show.
+    /// </summary>
+    /// <remarks>
+    /// Read off what the page sends, like the other assertions here. The
+    /// templates are written into the configuration object before the one
+    /// update call, and there is one such call on the page, so there is no
+    /// second route a template could take to the server.
+    /// </remarks>
+    [Fact]
+    public void PageSavesTemplatesWithTheSettingsThroughTheOneEndpoint()
+    {
+        var page = ReadPage();
+
+        Assert.Contains("invitesRenderTemplates(config.Templates)", page, StringComparison.Ordinal);
+
+        var read = page.IndexOf("config.Templates = invitesReadTemplates();", StringComparison.Ordinal);
+        var saved = page.IndexOf("ApiClient.updatePluginConfiguration(", StringComparison.Ordinal);
+        Assert.True(
+            read >= 0 && saved > read,
+            "The templates are read into the configuration at " + read + " and the configuration is saved at " + saved
+            + ". The read comes first, or the save sends the templates as they were loaded.");
+
+        Assert.Equal(
+            1,
+            page.Split("ApiClient.updatePluginConfiguration(", StringSplitOptions.None).Length - 1);
     }
 
     /// <summary>
