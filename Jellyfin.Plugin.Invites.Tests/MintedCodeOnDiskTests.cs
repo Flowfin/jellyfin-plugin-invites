@@ -57,7 +57,7 @@ public class MintedCodeOnDiskTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
             new TestClock(_now),
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var minting = operations.Mint(_operator, "Household", validity: null, uses: null);
 
@@ -96,7 +96,7 @@ public class MintedCodeOnDiskTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
             new TestClock(_now),
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         operations.Mint(_operator, "Household", validity: null, uses: null);
 

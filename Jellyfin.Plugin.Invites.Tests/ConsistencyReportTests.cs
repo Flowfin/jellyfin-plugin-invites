@@ -204,6 +204,7 @@ public class ConsistencyReportTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: [.. accounts]);
     }
 

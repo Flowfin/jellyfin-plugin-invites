@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Globalization;
+using Jellyfin.Plugin.Invites.Accounts;
 
 namespace Jellyfin.Plugin.Invites.Invitations;
 
@@ -84,10 +85,18 @@ public static class InvitationMint
     /// <param name="expiresAt">The instant it stops being usable. Carried, not compared.</param>
     /// <param name="uses">How many accounts it is good for.</param>
     /// <param name="templateLabel">The name of the template the operator picked.</param>
+    /// <param name="template">
+    /// The grant that name stood for at this moment, copied onto the record.
+    /// It is the caller's to resolve, because this routine is handed one record
+    /// and never sees the configuration; what it holds is that no record leaves
+    /// here carrying a name and no grant, which is #61's rule in the one place
+    /// a record comes into existence.
+    /// </param>
     /// <returns>The record, with every use it was granted still on it.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// The count is zero or less, or above <see cref="UsesCeiling"/>.
     /// </exception>
+    /// <exception cref="ArgumentNullException">The template is null.</exception>
     public static Invitation Mint(
         Guid id,
         ImmutableArray<byte> codeHash,
@@ -95,8 +104,11 @@ public static class InvitationMint
         DateTimeOffset mintedAt,
         DateTimeOffset expiresAt,
         int uses,
-        string templateLabel)
+        string templateLabel,
+        AccountTemplate template)
     {
+        ArgumentNullException.ThrowIfNull(template);
+
         // An invitation good for no account is not a stricter invitation, it is
         // a link that refuses everybody who follows it while reading, to the
         // operator who minted it, exactly like one that works.
@@ -131,6 +143,7 @@ public static class InvitationMint
             revokedAt: null,
             revokedBy: null,
             templateLabel: templateLabel,
+            template: template,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 }

@@ -106,7 +106,7 @@ public class MintedCodeIsNotHandedBackTests
 
     private static InvitesController ControllerOver(OwnedDirectory directory)
         => new(
-            new InvitationOperations(new StubStoreDirectory(directory.Path), new TestClock(_now), new StubPublicAddress(Configured)),
+            new InvitationOperations(new StubStoreDirectory(directory.Path), new TestClock(_now), new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new StubOperatorIdentity(_operator),
             new StubServerAccounts(Array.Empty<Guid>()))
         {

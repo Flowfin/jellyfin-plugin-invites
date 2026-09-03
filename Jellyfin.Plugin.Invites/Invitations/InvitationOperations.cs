@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Codes;
 using Jellyfin.Plugin.Invites.Configuration;
 using Jellyfin.Plugin.Invites.Redemption;
@@ -115,6 +116,7 @@ public sealed class InvitationOperations
     private readonly IStoreDirectory _directory;
     private readonly IClock _clock;
     private readonly IPublicAddress _address;
+    private readonly IConfiguredTemplates _templates;
     private readonly object _gate = new();
 
     /// <summary>
@@ -129,16 +131,24 @@ public sealed class InvitationOperations
     /// reading it directly could only be tested by a test that arranges a
     /// global.
     /// </param>
+    /// <param name="templates">
+    /// The configured account templates a minted grant is copied out of, and
+    /// the only place the mint reads them from. A seam for the reason the
+    /// address is one, and it is read at the mint and nowhere later: once the
+    /// copy is on the record, nothing here looks a template up again.
+    /// </param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
-    public InvitationOperations(IStoreDirectory directory, IClock clock, IPublicAddress address)
+    public InvitationOperations(IStoreDirectory directory, IClock clock, IPublicAddress address, IConfiguredTemplates templates)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(templates);
 
         _directory = directory;
         _clock = clock;
         _address = address;
+        _templates = templates;
     }
 
     /// <summary>
@@ -165,7 +175,12 @@ public sealed class InvitationOperations
     /// Mints one invitation, writes it, and hands back the code once.
     /// </summary>
     /// <param name="mintedBy">The operator answerable for it.</param>
-    /// <param name="templateLabel">The name of the template it carries.</param>
+    /// <param name="templateLabel">
+    /// The name of the configured template it carries. The grant behind that
+    /// name is copied onto the record here and now, which is #61's rule: what
+    /// the record holds afterwards is the copy, and an edit to the named
+    /// template changes the next invitation and not this one.
+    /// </param>
     /// <param name="validity">
     /// How long the link lasts, or <c>null</c> for <see cref="DefaultValidity"/>.
     /// </param>
@@ -176,10 +191,17 @@ public sealed class InvitationOperations
     /// The code, the record that was stored, and the link the two of them make
     /// against the configured public address.
     /// </returns>
-    /// <exception cref="ArgumentException">The template label is null or blank.</exception>
+    /// <exception cref="ArgumentException">
+    /// The template label is null or blank, or no configured template carries
+    /// it. Nothing is written.
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// The validity is zero or negative or above <see cref="MaximumValidityDays"/>,
     /// or the use count is outside what <see cref="InvitationMint"/> allows.
+    /// </exception>
+    /// <exception cref="ConfiguredTemplatesRefusedException">
+    /// The configured templates are a list <see cref="TemplateSettings"/>
+    /// refuses, so no name in it can be copied from. Nothing is written.
     /// </exception>
     /// <exception cref="LiveCeilingReachedException">
     /// The store already holds <see cref="LiveCeiling"/> live invitations.
@@ -192,6 +214,39 @@ public sealed class InvitationOperations
         {
             throw new ArgumentException(
                 "An invitation carries the name of the template it grants, and a blank one names no grant.",
+                nameof(templateLabel));
+        }
+
+        // Resolved before the clock is read, before a code is minted and
+        // before the store is opened, so a name that finds no grant costs
+        // nothing and leaves nothing. This is the one moment a label becomes a
+        // grant. The list is judged whole first, by the routine that judges it
+        // at load, so the mint and the load cannot disagree about which lists
+        // are usable.
+        AccountTemplate? template;
+        try
+        {
+            template = TemplateSettings.Named(_templates.Templates, templateLabel);
+        }
+        catch (ArgumentException refused)
+        {
+            throw new ConfiguredTemplatesRefusedException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The account templates this plugin is configured with cannot be used as they stand, so no grant can be copied onto an invitation and nothing was minted. The setting is {0} on this plugin's own configuration page. {1}",
+                    TemplateSettings.SettingName,
+                    refused.Message),
+                refused);
+        }
+
+        if (template is null)
+        {
+            throw new ArgumentException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "No configured template is named {0}, so there is no grant to copy onto the invitation and nothing was minted. Names are compared ignoring case, and the templates are the {1} setting on this plugin's own configuration page.",
+                    templateLabel,
+                    TemplateSettings.SettingName),
                 nameof(templateLabel));
         }
 
@@ -259,7 +314,8 @@ public sealed class InvitationOperations
                 mintedAt: now,
                 expiresAt: now + lasts,
                 uses: uses ?? 1,
-                templateLabel: templateLabel);
+                templateLabel: templateLabel,
+                template: template);
 
             store.Write(contents.Invitations.Add(minted));
 

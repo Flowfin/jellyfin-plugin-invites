@@ -15,10 +15,12 @@ public sealed class MintRequest
     /// Gets or sets which grant the invitation carries, by the template's name.
     /// </summary>
     /// <remarks>
-    /// Required. The record stores the label, which is what
-    /// <see cref="Invitations.Invitation.TemplateLabel"/> holds today. #61 is
-    /// where the grant itself is copied into the invitation rather than
-    /// referenced by name, and this field is the name until it is.
+    /// Required, and it has to name a configured template, compared ignoring
+    /// case. The record stores the label, which is
+    /// <see cref="Invitations.Invitation.TemplateLabel"/>, and beside it the
+    /// grant that label stood for at the moment of minting, which is
+    /// <see cref="Invitations.Invitation.Template"/> and is #61's copy. A name
+    /// that matches nothing is refused before anything is written.
     /// </remarks>
     public string? Template { get; set; }
 

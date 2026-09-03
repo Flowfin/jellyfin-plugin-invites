@@ -81,7 +81,7 @@ public class ASecondRevocationWritesNothingTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
             clock,
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
 
@@ -123,7 +123,7 @@ public class ASecondRevocationWritesNothingTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(directory.Path),
             new TestClock(_minted),
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         operations.Mint(_operator, "Household", _validity, uses: 1);
 

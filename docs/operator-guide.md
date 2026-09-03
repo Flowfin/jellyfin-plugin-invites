@@ -14,10 +14,14 @@ exist costs more than the paragraph it saved.
 
 Two steps of the seven have nothing to point at.
 
-**Defining an account template.** The mint form takes a template by name, as free
-text, and no screen defines what that name grants. The grant itself is a type in
-the source and is not yet copied into an invitation, so today the name is a label
-the record carries and an operator's own note to themselves.
+**Defining an account template on the configuration page.** A template is an
+entry in the `Templates` setting, and the page has no field for that setting
+yet, which is #435. Writing one today means the plugin configuration endpoint or
+the file on disk, in the shape [docs/configuration.md](configuration.md) gives
+under `## The named templates`. What the mint form takes is the name of such an
+entry; a name that matches none is refused, and the grant behind a name that
+matches is copied onto the invitation at that moment, so editing the entry
+afterwards changes the next invitation and not the ones already sent.
 
 **Watching an invitation get redeemed.** The redemption address serves the setup
 page and nothing posts back to it, so nobody can complete a setup and no account
@@ -94,22 +98,33 @@ badly, is in [docs/configuration.md](configuration.md).
 
 ## Step 3: decide what the invitation grants
 
-There is no screen for this yet, and the section above says why. What the mint
-form asks for is a template name, and what the record keeps is that name.
+There is no screen for this yet, and the section above says where a template is
+written instead. What the mint form asks for is the name of a configured
+template, and what the record keeps is that name and, beside it, a copy of the
+grant the name stood for when you minted: the libraries, the permissions and the
+ceilings, in the shape [docs/configuration.md](configuration.md) describes.
 
-Until a template surface exists, treat the name as your own note about what you
-intended, and keep the list short enough that you recognise it in the table
-afterwards. Nothing in the plugin reads it, and nothing yet uses it to decide
-what an account may see.
+The copy is the part to know about before you edit a template. Changing an entry
+changes what the next invitation minted against it grants and leaves every
+invitation already sent exactly as it was, so a link you handed out last week
+is worth what the template said last week. To take a grant back from somebody
+who has not redeemed yet, revoke the invitation rather than editing the template.
+
+A name that matches no entry is refused at minting, compared ignoring case, and
+nothing is written. A template list with a fault in one entry refuses every
+mint, with the same sentence the log carries from the last start, until the
+entry is repaired.
 
 **The empty template case, which is the one to get wrong on purpose once rather
 than by accident later.** A template that grants no libraries produces an account
 that signs in and sees nothing. The plugin's own rule is that a template holds a
-resolved list of libraries rather than a grant-everything flag, and that minting
-refuses an empty list with a message rather than handing somebody an account with
-nothing in it. That refusal is not built, because the template is not built. When
-it arrives, an invitation that grants nothing will be refused at minting; today
-there is no list to be empty.
+resolved list of libraries rather than a grant-everything flag. An entry with an
+empty library list is a usable template rather than a fault, because it is a
+choice somebody wrote down, and today the mint copies it as written; whether a
+mint against it should be refused with a message instead is #63's and is not
+built. What is built is the copy, so the account such an invitation would create
+is decided by the entry as it stood at minting rather than by whatever the entry
+says on the day somebody redeems.
 
 **An access schedule is not something an invitation grants, and that is not the
 same as not being able to have one.** If you want an invited account limited to
@@ -130,7 +145,9 @@ lets you edit an account rather than for the spelling above.
 
 The Invite somebody form at the top of the page takes three things.
 
-**Template.** Required. Blank is refused.
+**Template.** Required. Blank is refused, and so is a name no configured
+template carries. The name is matched ignoring case, and the grant behind it is
+copied onto the invitation as you mint.
 
 **Valid for, in days.** Optional. Left empty, the invitation lasts seven days.
 The largest an operator may set is ninety. Zero, a negative number and an

@@ -38,8 +38,9 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// library the server has, which is #70's, and where each ceiling may sit
 /// inside the non-negative numbers, which is #65's. Both are decided where the
 /// grant meets a server rather than where it is written down. Nothing here
-/// reads the mint or the record: what copies a template out of this list into
-/// an invitation is #61's, and this is what it copies from.
+/// reads the mint or the record: <see cref="Invitations.InvitationOperations"/>
+/// copies a template out of this list onto an invitation through
+/// <see cref="Named"/>, which is #61's copy, and this is what it copies from.
 /// </para>
 /// </remarks>
 public static class TemplateSettings

@@ -61,7 +61,7 @@ public class LiveCeilingTests
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_now);
         var operations = new InvitationOperations(
-            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         Seed(directory.Path, InvitationOperations.LiveCeiling - 1);
 
@@ -91,7 +91,7 @@ public class LiveCeilingTests
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_now);
         var operations = new InvitationOperations(
-            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         Seed(directory.Path, InvitationOperations.LiveCeiling);
         var before = File.ReadAllBytes(new InvitationStore(directory.Path).Path);
@@ -118,7 +118,7 @@ public class LiveCeilingTests
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_now);
         var operations = new InvitationOperations(
-            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         Seed(directory.Path, InvitationOperations.LiveCeiling);
         Assert.Throws<LiveCeilingReachedException>(
@@ -147,7 +147,7 @@ public class LiveCeilingTests
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_now);
         var operations = new InvitationOperations(
-            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         Seed(directory.Path, InvitationOperations.LiveCeiling);
         Assert.Throws<LiveCeilingReachedException>(
@@ -177,7 +177,7 @@ public class LiveCeilingTests
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_now);
         var operations = new InvitationOperations(
-            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+            new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var honoured = operations.Mint(_operator, "Household", TimeSpan.FromDays(7), uses: 1);
         var revoked = operations.Mint(_operator, "Household", TimeSpan.FromDays(7), uses: 1);
@@ -232,7 +232,7 @@ public class LiveCeilingTests
             new InvitationOperations(
                 new StubStoreDirectory(directory.Path),
                 new TestClock(_now),
-                new StubPublicAddress(Configured)),
+                new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new StubOperatorIdentity(_operator),
             new StubServerAccounts(Array.Empty<Guid>()))
         {
@@ -281,7 +281,8 @@ public class LiveCeilingTests
                 mintedAt: _now,
                 expiresAt: _now.AddDays(7),
                 uses: 1,
-                templateLabel: "Household"));
+                templateLabel: "Household",
+                template: TestTemplates.Household));
         }
 
         new InvitationStore(directory).Write(records.ToImmutable());

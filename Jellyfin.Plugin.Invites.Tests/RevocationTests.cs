@@ -184,6 +184,7 @@ public class RevocationTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")));
     }
 }

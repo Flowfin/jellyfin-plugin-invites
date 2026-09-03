@@ -106,6 +106,7 @@ public class StoredInstantTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 }

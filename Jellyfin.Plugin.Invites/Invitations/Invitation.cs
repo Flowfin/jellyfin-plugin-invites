@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Security.Cryptography;
+using Jellyfin.Plugin.Invites.Accounts;
 
 namespace Jellyfin.Plugin.Invites.Invitations;
 
@@ -58,6 +59,7 @@ public sealed class Invitation : IEquatable<Invitation>
     /// <param name="revokedAt">When it was revoked, or <c>null</c>. See <see cref="RevokedAt"/>.</param>
     /// <param name="revokedBy">Who revoked it, or <c>null</c>. See <see cref="RevokedBy"/>.</param>
     /// <param name="templateLabel">The template name the operator picked. See <see cref="TemplateLabel"/>.</param>
+    /// <param name="template">The copy of the grant taken at minting, or <c>null</c> where none was. See <see cref="Template"/>.</param>
     /// <param name="accountsProduced">The accounts it created. See <see cref="AccountsProduced"/>.</param>
     /// <exception cref="ArgumentException">
     /// The keyed hash is absent, the remaining count is outside the granted
@@ -76,6 +78,7 @@ public sealed class Invitation : IEquatable<Invitation>
         DateTimeOffset? revokedAt,
         Guid? revokedBy,
         string templateLabel,
+        AccountTemplate? template,
         ImmutableArray<Guid> accountsProduced)
     {
         // An invitation with no stored hash is one no presented code can ever
@@ -123,6 +126,7 @@ public sealed class Invitation : IEquatable<Invitation>
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
         TemplateLabel = templateLabel ?? throw new ArgumentNullException(nameof(templateLabel));
+        Template = template;
         AccountsProduced = accountsProduced.IsDefault ? ImmutableArray<Guid>.Empty : accountsProduced;
     }
 
@@ -263,22 +267,46 @@ public sealed class Invitation : IEquatable<Invitation>
     /// it is worth recording only as what was chosen.
     /// </para>
     /// <para>
-    /// The copied template itself is not a field of this type yet, and what is
-    /// missing is not the type. <see cref="Accounts.AccountTemplate"/> landed
-    /// under #61 and carries every grant a template names. What is missing is a
-    /// value to copy: minting takes this label as a string and refuses only a
-    /// blank one, every construction of that type is in the suite, and
-    /// <see cref="Configuration.PluginConfiguration"/> holds one setting which is
-    /// not a template. The named templates a label names are #86's, so the copy
-    /// waits on that schema rather than on anything this type is short of.
-    /// </para>
-    /// <para>
-    /// Nothing may read this label to work out a grant in the meantime. Somebody
-    /// holding a label and needing a template reaches for a lookup first, and a
-    /// lookup is the shape the rule above forbids.
+    /// The copy is <see cref="Template"/>, one member along. The one moment a
+    /// label is turned into a grant is the mint, which reads the configured
+    /// templates through <see cref="Accounts.TemplateSettings"/> and writes what
+    /// it found here. Nothing may read this label to work out a grant after
+    /// that: somebody holding a label and needing a template reaches for a
+    /// lookup first, and a lookup is the shape the rule above forbids.
     /// </para>
     /// </remarks>
     public string TemplateLabel { get; }
+
+    /// <summary>
+    /// Gets the grant this invitation carries, as it was copied out of the
+    /// configured template at minting, or <c>null</c> where no copy was taken.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the copy #61 asks for, and it is what an account is created
+    /// from.</b> It is taken once, by the mint, and never refreshed: an operator
+    /// who edits the named template afterwards changes what the next invitation
+    /// grants and leaves this one exactly as it was minted. The value has no
+    /// setter and the type it is made of is immutable, so nothing after the
+    /// mint can move it, and <c>TemplateCopyTests</c> asserts the record's copy
+    /// against an edit made to the configured entry it came from.
+    /// </para>
+    /// <para>
+    /// <b><c>null</c> is a record minted before the copy existed and nothing
+    /// else.</b> The mint refuses to write one: <see cref="InvitationMint"/>
+    /// takes the grant as an argument and refuses its absence. What produces
+    /// one is <see cref="Storage.InvitationStore"/> reading a version one
+    /// document, whose records carried the label and no grant, and there is no
+    /// honest value to migrate that into. Resolving the label at read time is
+    /// the lookup the rule above forbids, and a grant invented for it would be
+    /// one nobody decided, which is the silent widening #92 refuses in a
+    /// migration. So such a record keeps its name, keeps its count, and can
+    /// create nothing: a redemption that reaches for this and finds nothing has
+    /// no template to hand to the creation routine, and that is the strict
+    /// answer rather than a guess.
+    /// </para>
+    /// </remarks>
+    public AccountTemplate? Template { get; }
 
     /// <summary>
     /// Gets the accounts this invitation has created.
@@ -344,6 +372,7 @@ public sealed class Invitation : IEquatable<Invitation>
             && Nullable.Equals(RevokedAt, other.RevokedAt)
             && Nullable.Equals(RevokedBy, other.RevokedBy)
             && string.Equals(TemplateLabel, other.TemplateLabel, StringComparison.Ordinal)
+            && Equals(Template, other.Template)
             && AccountsProduced.AsSpan().SequenceEqual(other.AccountsProduced.AsSpan());
     }
 
@@ -356,11 +385,12 @@ public sealed class Invitation : IEquatable<Invitation>
     /// contents. Every field that decides equality has to be visible to this,
     /// and a length is visible to it; hashing the bytes of the keyed hash into
     /// a value that ends up in a dictionary somebody dumps is the opposite of
-    /// what the hash is here for.
+    /// what the hash is here for. The template enters through its own hash,
+    /// which <see cref="AccountTemplate"/> builds from every grant it carries.
     /// </remarks>
     public override int GetHashCode()
     {
         var first = HashCode.Combine(Id, MintedBy, MintedAt, ExpiresAt, UsesGranted, UsesRemaining, RevokedAt, RevokedBy);
-        return HashCode.Combine(first, TemplateLabel, CodeHash.Length, AccountsProduced.Length);
+        return HashCode.Combine(first, TemplateLabel, Template, CodeHash.Length, AccountsProduced.Length);
     }
 }

@@ -143,19 +143,26 @@ from one, and the rule it missed. It quotes no label, for the reason
 the inventory, and a setting is not one. Repair the entry, load again, and the
 next fault, if there is one, is named the same way.
 
-**What reads this setting today, and what does not yet.** The load the server
-makes when it starts reads it and writes the refusal above. Nothing else reads
-it. The mint takes a template by name and writes that name into the record, and
-does not yet copy a grant out of this list against it:
+**What reads this setting.** The load the server makes when it starts reads it
+and writes the refusal above. The mint reads it too, and it is the one moment a
+name becomes a grant: the name typed on the mint form is looked up in this list,
+compared ignoring case, and the grant behind it is copied onto the record as
+the invitation is written, which is #61's second clause and the reason editing
+an entry afterwards changes the next invitation and none already minted.
 
-    git grep -n 'public Minting Mint' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:189:    public Minting Mint(Guid mintedBy, string templateLabel, TimeSpan? validity, int? uses)
+THIS PARAGRAPH SAID THE MINT DID NOT YET COPY A GRANT OUT OF THIS LIST, AND IT
+DOES. What stood here pasted the mint's signature and said a name that matches
+no entry was not refused at minting. Both halves moved with #61:
 
-So a name that matches no entry is not refused at minting yet, and the record
-carries the name rather than the grant. The copy is #61's second clause, and
-this setting is what that copy is taken from; until it lands, the value an
-entry carries reaches no account, because nothing redeems. That sentence is
-the one to re-read first when #61 lands.
+    git grep -n 'TemplateSettings.Named(_templates.Templates, templateLabel)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:229:            template = TemplateSettings.Named(_templates.Templates, templateLabel);
+
+A name that matches no entry is refused at minting as a bad request naming this
+setting, and a list with a fault in it refuses every mint with a conflict
+carrying the sentence above, in both cases before a code is minted and with
+nothing written. What an entry carries still reaches no account, because
+nothing redeems: the copy sits on the record waiting for the post in #399, which
+takes the grant from the record and never from this list.
 
 ## A fresh install
 
@@ -186,11 +193,11 @@ ceiling in the same sense, so it belongs beside them rather than in a section of
 its own:
 
     git grep -n 'public const int UsesCeiling' -- Jellyfin.Plugin.Invites/Invitations/InvitationMint.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationMint.cs:71:    public const int UsesCeiling = 10;
+    Jellyfin.Plugin.Invites/Invitations/InvitationMint.cs:72:    public const int UsesCeiling = 10;
 
     git grep -n 'public const int LiveCeiling\|public const int MaximumValidityDays' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:66:    public const int MaximumValidityDays = 90;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:113:    public const int LiveCeiling = 500;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:67:    public const int MaximumValidityDays = 90;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:114:    public const int LiveCeiling = 500;
 
 At most ten accounts on one invitation, at most ninety days of validity, and at
 most five hundred live invitations in the store at once. The reasoning for each
@@ -201,7 +208,11 @@ The default validity is a fourth number and is not a ceiling. Seven days, and it
 is what a mint that names no validity gets:
 
     git grep -n 'public static TimeSpan DefaultValidity' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:152:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:162:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
+
+The three constants and the default each moved down under #61, by one, one
+and ten lines, as the mint gained the template seam above them. None of the
+four values changed.
 
 **Nothing is clamped.** A request outside any of them is refused with the limit
 and the value in the message, and nothing is written. A use count or a validity

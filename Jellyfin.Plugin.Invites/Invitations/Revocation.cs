@@ -101,6 +101,7 @@ public static class Revocation
             revokedAt: at,
             revokedBy: revokedBy,
             templateLabel: invitation.TemplateLabel,
+            template: invitation.Template,
             accountsProduced: invitation.AccountsProduced);
     }
 }
