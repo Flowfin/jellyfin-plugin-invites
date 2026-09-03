@@ -283,6 +283,7 @@ public class StoreLoadTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: [.. accounts]);
     }
 

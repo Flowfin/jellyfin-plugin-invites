@@ -164,7 +164,8 @@ public class InvitationMintTests
             mintedAt: _minted,
             expiresAt: _expires,
             uses: uses,
-            templateLabel: "Household");
+            templateLabel: "Household",
+            template: TestTemplates.Household);
     }
 
     /// <summary>
@@ -188,6 +189,7 @@ public class InvitationMintTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: minted.TemplateLabel,
+            template: minted.Template,
             accountsProduced: [.. accounts]);
     }
 
@@ -214,6 +216,7 @@ public class InvitationMintTests
             revokedAt: record.RevokedAt,
             revokedBy: record.RevokedBy,
             templateLabel: record.TemplateLabel,
+            template: record.Template,
             accountsProduced: [.. record.AccountsProduced.Where(account => !gone.Contains(account))]);
     }
 }

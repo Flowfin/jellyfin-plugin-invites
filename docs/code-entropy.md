@@ -59,8 +59,12 @@ argues about the number. Minting refuses at five hundred live invitations, and
 the refusal is a branch rather than a comment:
 
     $ git grep -n 'public const int LiveCeiling = \|if (live >= LiveCeiling)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:113:    public const int LiveCeiling = 500;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:247:            if (live >= LiveCeiling)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:114:    public const int LiveCeiling = 500;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:302:            if (live >= LiveCeiling)
+
+Both lines moved under #61, the first by one and the second by fifty-five,
+because the mint resolves the template's grant above the ceiling check now.
+Neither line changed.
 
 The input stays at ten thousand rather than moving to five hundred, and that is
 a decision rather than an oversight. The requirement on this page is what a

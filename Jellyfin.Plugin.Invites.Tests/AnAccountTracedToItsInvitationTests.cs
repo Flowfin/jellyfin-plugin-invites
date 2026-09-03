@@ -199,6 +199,7 @@ public class AnAccountTracedToItsInvitationTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: template,
+            template: TestTemplates.Household,
             accountsProduced: accounts);
 
     private static InvitesController ControllerOver(OwnedDirectory directory, IServerAccounts accounts)
@@ -206,7 +207,7 @@ public class AnAccountTracedToItsInvitationTests
             new InvitationOperations(
                 new StubStoreDirectory(directory.Path),
                 new TestClock(_now),
-                new StubPublicAddress(Configured)),
+                new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new StubOperatorIdentity(_operator),
             accounts)
         {

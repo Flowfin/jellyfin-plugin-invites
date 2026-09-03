@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Invitations;
 
 namespace Jellyfin.Plugin.Invites.Storage;
@@ -61,10 +62,20 @@ namespace Jellyfin.Plugin.Invites.Storage;
 /// here serialises two writers. The lock covering read, decide and write is the
 /// other half of the issue that made the write survive a kill, and it belongs
 /// to whoever redeems rather than to the file. The document carries a version
-/// and refuses one it does not know, and it carries no migration: no second
-/// shape has ever existed, so there is no transition for one to be written
-/// against, and a migration written before the shape it migrates from is a
-/// guess.
+/// and refuses one it does not know.
+/// </para>
+/// <para>
+/// <b>Two shapes have existed and one migration is written, forward only.</b>
+/// Version one carried the template's name and no grant; version two carries
+/// the grant #61 copies at minting beside the name. A version one document is
+/// read through the shape it was written in, kept here as its own class rather
+/// than as the current one with a member left optional, and each record is
+/// migrated into a record whose grant is absent. That is the strict answer
+/// #92 asks a migration for: the label cannot be resolved into a grant at read
+/// time without being the lookup #61 forbids, and a grant invented for it
+/// would widen what a record minted under version one is worth from nothing
+/// to something nobody decided. The migration writes nothing back; the next
+/// write, whatever causes it, is in the current shape.
 /// </para>
 /// </remarks>
 public sealed class InvitationStore
@@ -109,8 +120,19 @@ public sealed class InvitationStore
     /// newer file's records arrives too late to refuse anything, and by then the
     /// fields it did not understand are already defaults.
     /// </para>
+    /// <para>
+    /// Two is the shape that carries the copied grant on every record, under
+    /// #61. One is the shape before it, which carried the template's name and
+    /// nothing else, and is still read: see <see cref="StoredInvitationOfVersionOne"/>.
+    /// </para>
     /// </remarks>
-    public const int Version = 1;
+    public const int Version = 2;
+
+    /// <summary>
+    /// The version before <see cref="Version"/>, which this build reads and
+    /// never writes.
+    /// </summary>
+    public const int VersionWithoutAGrant = 1;
 
     /// <summary>
     /// The mode the store file is created with on a platform that has file
@@ -240,26 +262,29 @@ public sealed class InvitationStore
         }
 
         var text = File.ReadAllText(Path);
-        RefuseAVersionThisBuildDoesNotRead(text);
+        var declared = RefuseAVersionThisBuildDoesNotRead(text);
 
+        // The shape is chosen by the version the document declares and by
+        // nothing in the records, because the version is the one field read
+        // before any record is parsed. A document declaring the older shape
+        // while carrying a member from the newer one is read as the shape it
+        // declares, which loses the member rather than trusting it.
+        var invitations = declared <= VersionWithoutAGrant
+            ? MigrateFromVersionOne(text)
+            : ReadTheCurrentShape(text);
+
+        return new StoreContents(invitations, permissions);
+    }
+
+    /// <summary>
+    /// Reads a document in the shape this build writes.
+    /// </summary>
+    /// <param name="text">The document as it was read off disk.</param>
+    /// <returns>The records it holds.</returns>
+    private ImmutableArray<Invitation> ReadTheCurrentShape(string text)
+    {
         var document = JsonSerializer.Deserialize<StoredDocument>(text, _format);
-        var stored = document?.Invitations;
-        if (stored is null)
-        {
-            // A file that parses as JSON and carries no invitation list is not
-            // this store's document, whether it came out as a bare null or as
-            // an object whose one member is spelled some other way. Answering
-            // that as no invitations is the quiet form of the failure the
-            // paragraph above refuses loudly: nothing is missing from the
-            // store, the store is simply gone, and every redemption after it is
-            // a refusal nobody can explain. A store holding nothing is written
-            // as an empty list and still reads as one.
-            throw new JsonException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0} is there and carries no invitation list, so it is not this store's document. A store that holds no invitations carries an empty list.",
-                    Path));
-        }
+        var stored = document?.Invitations ?? throw NoInvitationList();
 
         var invitations = ImmutableArray.CreateBuilder<Invitation>(stored.Count);
         foreach (var record in stored)
@@ -267,7 +292,67 @@ public sealed class InvitationStore
             invitations.Add(record.ToInvitation());
         }
 
-        return new StoreContents(invitations.ToImmutable(), permissions);
+        return invitations.ToImmutable();
+    }
+
+    /// <summary>
+    /// Reads a version one document and migrates every record forward.
+    /// </summary>
+    /// <param name="text">The document as it was read off disk.</param>
+    /// <returns>The records it holds, each with its grant absent.</returns>
+    /// <remarks>
+    /// <para>
+    /// The one migration this store has. Version one carried the template's
+    /// name and no grant, and there is no honest value to migrate that into:
+    /// resolving the name against the configuration now would be the lookup at
+    /// read time that #61 forbids, and any grant written in without a name to
+    /// resolve would be one nobody decided, which #92 refuses a migration to
+    /// do. So the record comes back with every field it had and
+    /// <see cref="Invitation.Template"/> absent, which is what that member says
+    /// an absence means: minted before the copy existed, and able to create
+    /// nothing.
+    /// </para>
+    /// <para>
+    /// The two revocation members are as required here as in the current
+    /// shape, for #93's reason, and the same fixture proves it against this
+    /// reader rather than only against the other.
+    /// </para>
+    /// </remarks>
+    private ImmutableArray<Invitation> MigrateFromVersionOne(string text)
+    {
+        var document = JsonSerializer.Deserialize<StoredDocumentOfVersionOne>(text, _format);
+        var stored = document?.Invitations ?? throw NoInvitationList();
+
+        var invitations = ImmutableArray.CreateBuilder<Invitation>(stored.Count);
+        foreach (var record in stored)
+        {
+            invitations.Add(record.ToInvitationWithNoGrant());
+        }
+
+        return invitations.ToImmutable();
+    }
+
+    /// <summary>
+    /// The refusal for a file that parses as JSON and carries no invitation
+    /// list.
+    /// </summary>
+    /// <returns>The exception to throw.</returns>
+    /// <remarks>
+    /// Such a file is not this store's document, whether it came out as a bare
+    /// null or as an object whose one member is spelled some other way.
+    /// Answering that as no invitations is the quiet form of the failure the
+    /// read refuses loudly: nothing is missing from the store, the store is
+    /// simply gone, and every redemption after it is a refusal nobody can
+    /// explain. A store holding nothing is written as an empty list and still
+    /// reads as one.
+    /// </remarks>
+    private JsonException NoInvitationList()
+    {
+        return new JsonException(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} is there and carries no invitation list, so it is not this store's document. A store that holds no invitations carries an empty list.",
+                Path));
     }
 
     /// <summary>
@@ -394,11 +479,12 @@ public sealed class InvitationStore
     /// </para>
     /// <para>
     /// A document with no version at all is read as version 1. Exactly one
-    /// shape has ever been written, because nothing has been released, so an
-    /// absent version is not ambiguous here and reading it as the shape it
-    /// certainly is costs nobody a store. That answer is only correct while
-    /// that is true, and a second shape makes it a migration rather than a
-    /// default.
+    /// shape had been written when the version arrived, because nothing had
+    /// been released, so an absent version was not ambiguous and reading it as
+    /// the shape it certainly was cost nobody a store. A second shape exists
+    /// now, so that reading is a migration rather than a default, and it is
+    /// the version one migration the caller makes: a document with no version
+    /// carries no grant, whatever else it carries.
     /// </para>
     /// <para>
     /// It refuses and never writes. A plugin that will not load has to leave the
@@ -406,16 +492,20 @@ public sealed class InvitationStore
     /// by putting the newer plugin back becomes one they cannot.
     /// </para>
     /// <para>
-    /// An older version is not refused and has nowhere to go yet, because there
-    /// is no older shape. When one exists it is migrated here, and a version
-    /// this build does not read is the only refusal.
+    /// An older version is not refused. It is handed back so the caller reads
+    /// the document through the shape it declares, and a version this build
+    /// does not read is the only refusal.
     /// </para>
     /// </remarks>
     /// <param name="text">The document as it was read off disk.</param>
+    /// <returns>
+    /// The version the document declares, or <see cref="VersionWithoutAGrant"/>
+    /// where it declares none this can read.
+    /// </returns>
     /// <exception cref="StoreVersionRefusedException">
     /// The document declares a version newer than <see cref="Version"/>.
     /// </exception>
-    private void RefuseAVersionThisBuildDoesNotRead(string text)
+    private int RefuseAVersionThisBuildDoesNotRead(string text)
     {
         int declared;
 
@@ -430,7 +520,7 @@ public sealed class InvitationStore
                 // all is the next step's question, and it says so with the file
                 // named; answering it here would give two different messages for
                 // one broken file depending on which check noticed first.
-                return;
+                return VersionWithoutAGrant;
             }
         }
         catch (JsonException)
@@ -440,13 +530,15 @@ public sealed class InvitationStore
             // of the caller parses the same text and raises on it, so the file
             // is refused either way and with one message rather than two that
             // depend on which pass noticed first.
-            return;
+            return VersionWithoutAGrant;
         }
 
         if (declared > Version)
         {
             throw new StoreVersionRefusedException(Path, declared, Version);
         }
+
+        return declared;
     }
 
     private void CreateDirectory()
@@ -629,6 +721,27 @@ public sealed class InvitationStore
         /// <summary>Gets or sets the template the operator picked.</summary>
         public string? TemplateLabel { get; set; }
 
+        /// <summary>Gets or sets the grant copied at minting, or null.</summary>
+        /// <remarks>
+        /// <para>
+        /// Required to be present, and allowed to be null. A document written
+        /// by this build always carries the member: the mint refuses to write
+        /// a record without a grant, and a record migrated out of version one
+        /// carries the member as null, which is what an absent grant looks like
+        /// once such a record is written back by a revocation or a sweep.
+        /// </para>
+        /// <para>
+        /// Absent rather than null is refused, by #93's per-member rule read
+        /// from the other side. An absent grant is not more permissive than the
+        /// value it stands in for, because nothing is created from a record
+        /// with none; what it is, is a document this build did not write, and
+        /// a document in the current shape that leaves out a member the writer
+        /// always emits is one somebody edited.
+        /// </para>
+        /// </remarks>
+        [JsonRequired]
+        public StoredTemplate? Template { get; set; }
+
         /// <summary>Gets or sets the accounts it created.</summary>
         public List<Guid>? AccountsProduced { get; set; }
 
@@ -646,6 +759,7 @@ public sealed class InvitationStore
                 RevokedAt = invitation.RevokedAt,
                 RevokedBy = invitation.RevokedBy,
                 TemplateLabel = invitation.TemplateLabel,
+                Template = invitation.Template is null ? null : StoredTemplate.From(invitation.Template),
                 AccountsProduced = new List<Guid>(invitation.AccountsProduced),
             };
         }
@@ -663,6 +777,226 @@ public sealed class InvitationStore
                 RevokedAt,
                 RevokedBy,
                 TemplateLabel ?? string.Empty,
+                Template?.ToTemplate(),
+                AccountsProduced is null ? ImmutableArray<Guid>.Empty : ImmutableArray.CreateRange(AccountsProduced));
+        }
+    }
+
+    /// <summary>
+    /// The grant an invitation carries, as it sits on disk.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One member per grant of <see cref="AccountTemplate"/>, under the store's
+    /// own names, so the record type's spelling can move without rewriting
+    /// every file on every server.
+    /// </para>
+    /// <para>
+    /// <b>Every member is required, and that is #93's rule applied to a nested
+    /// shape.</b> A permission left out of the file would read as closed, which
+    /// loses nothing, and a ceiling left out would read as no ceiling, which
+    /// grants an account more than the template it was minted from allowed.
+    /// Rather than decide member by member which absences widen, the whole
+    /// grant is read whole or refused: this build writes every member on every
+    /// record, so a document missing one is a document this build did not
+    /// write, and a grant read out of such a document is a grant somebody
+    /// else wrote.
+    /// </para>
+    /// </remarks>
+    private sealed class StoredTemplate
+    {
+        /// <summary>Gets or sets the libraries the account may see.</summary>
+        [JsonRequired]
+        public List<Guid>? Libraries { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may download.</summary>
+        [JsonRequired]
+        public bool MayDownload { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may play from outside the network.</summary>
+        [JsonRequired]
+        public bool MayPlayFromOutsideTheNetwork { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may manage anything at all.</summary>
+        [JsonRequired]
+        public bool MayManage { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may drive somebody else's session.</summary>
+        [JsonRequired]
+        public bool MayControlOtherSessions { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may watch live television.</summary>
+        [JsonRequired]
+        public bool MayWatchLiveTelevision { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may schedule and remove recordings.</summary>
+        [JsonRequired]
+        public bool MayManageLiveTelevision { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may delete media from the server.</summary>
+        [JsonRequired]
+        public bool MayDeleteContent { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may edit collections.</summary>
+        [JsonRequired]
+        public bool MayManageCollections { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may fetch and remove subtitles.</summary>
+        [JsonRequired]
+        public bool MayManageSubtitles { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may fetch and remove lyrics.</summary>
+        [JsonRequired]
+        public bool MayManageLyrics { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it may change its own display preferences.</summary>
+        [JsonRequired]
+        public bool MayChangeItsOwnPreferences { get; set; }
+
+        /// <summary>Gets or sets the remote bitrate ceiling, or null for none.</summary>
+        [JsonRequired]
+        public int? RemoteBitrateCeiling { get; set; }
+
+        /// <summary>Gets or sets how many streams at once, or null for no ceiling.</summary>
+        [JsonRequired]
+        public int? SimultaneousStreamCeiling { get; set; }
+
+        /// <summary>Gets or sets the parental rating ceiling, or null for none.</summary>
+        [JsonRequired]
+        public int? ParentalRatingCeiling { get; set; }
+
+        /// <summary>Gets or sets the server's policy fields the template leaves alone.</summary>
+        [JsonRequired]
+        public List<string>? ServerDefaultsLeftAlone { get; set; }
+
+        public static StoredTemplate From(AccountTemplate template)
+        {
+            return new StoredTemplate
+            {
+                Libraries = new List<Guid>(template.Libraries),
+                MayDownload = template.MayDownload,
+                MayPlayFromOutsideTheNetwork = template.MayPlayFromOutsideTheNetwork,
+                MayManage = template.MayManage,
+                MayControlOtherSessions = template.MayControlOtherSessions,
+                MayWatchLiveTelevision = template.MayWatchLiveTelevision,
+                MayManageLiveTelevision = template.MayManageLiveTelevision,
+                MayDeleteContent = template.MayDeleteContent,
+                MayManageCollections = template.MayManageCollections,
+                MayManageSubtitles = template.MayManageSubtitles,
+                MayManageLyrics = template.MayManageLyrics,
+                MayChangeItsOwnPreferences = template.MayChangeItsOwnPreferences,
+                RemoteBitrateCeiling = template.RemoteBitrateCeiling,
+                SimultaneousStreamCeiling = template.SimultaneousStreamCeiling,
+                ParentalRatingCeiling = template.ParentalRatingCeiling,
+                ServerDefaultsLeftAlone = new List<string>(template.ServerDefaultsLeftAlone),
+            };
+        }
+
+        public AccountTemplate ToTemplate()
+        {
+            // The two lists are required members, so a null here is a member
+            // that was present and carried null, which the record type refuses
+            // as nobody having decided. It is handed on as the uninitialized
+            // list for exactly that refusal rather than being read as empty.
+            return new AccountTemplate(
+                libraries: Libraries is null ? default : ImmutableArray.CreateRange(Libraries),
+                mayDownload: MayDownload,
+                mayPlayFromOutsideTheNetwork: MayPlayFromOutsideTheNetwork,
+                mayManage: MayManage,
+                mayControlOtherSessions: MayControlOtherSessions,
+                mayWatchLiveTelevision: MayWatchLiveTelevision,
+                mayManageLiveTelevision: MayManageLiveTelevision,
+                mayDeleteContent: MayDeleteContent,
+                mayManageCollections: MayManageCollections,
+                mayManageSubtitles: MayManageSubtitles,
+                mayManageLyrics: MayManageLyrics,
+                mayChangeItsOwnPreferences: MayChangeItsOwnPreferences,
+                remoteBitrateCeiling: RemoteBitrateCeiling,
+                simultaneousStreamCeiling: SimultaneousStreamCeiling,
+                parentalRatingCeiling: ParentalRatingCeiling,
+                serverDefaultsLeftAlone: ServerDefaultsLeftAlone is null ? default : ImmutableArray.CreateRange(ServerDefaultsLeftAlone));
+        }
+    }
+
+    /// <summary>
+    /// The document as version one wrote it.
+    /// </summary>
+    /// <remarks>
+    /// Kept as its own class rather than read through the current one with the
+    /// grant left optional, so the current shape can require the member and
+    /// this one can lack it, and so a member added to the current shape later
+    /// does not silently become readable out of a version one file.
+    /// </remarks>
+    private sealed class StoredDocumentOfVersionOne
+    {
+        /// <summary>Gets or sets the shape this document is in.</summary>
+        public int? Version { get; set; }
+
+        /// <summary>Gets or sets the invitations the file holds.</summary>
+        public List<StoredInvitationOfVersionOne>? Invitations { get; set; }
+    }
+
+    /// <summary>
+    /// One invitation as version one wrote it: the template's name and no
+    /// grant.
+    /// </summary>
+    /// <remarks>
+    /// The members are the ones that shape carried and no other. The two
+    /// revocation members are required for the reason
+    /// <see cref="StoredInvitation.RevokedAt"/> gives, which held for this
+    /// shape before it held for the current one.
+    /// </remarks>
+    private sealed class StoredInvitationOfVersionOne
+    {
+        /// <summary>Gets or sets the identifier.</summary>
+        public Guid Id { get; set; }
+
+        /// <summary>Gets or sets the keyed hash, base64.</summary>
+        public string? CodeHash { get; set; }
+
+        /// <summary>Gets or sets the operator who minted it.</summary>
+        public Guid MintedBy { get; set; }
+
+        /// <summary>Gets or sets when it was minted.</summary>
+        public DateTimeOffset MintedAt { get; set; }
+
+        /// <summary>Gets or sets when it stops being usable.</summary>
+        public DateTimeOffset ExpiresAt { get; set; }
+
+        /// <summary>Gets or sets how many accounts it was good for.</summary>
+        public int UsesGranted { get; set; }
+
+        /// <summary>Gets or sets how many are left.</summary>
+        public int UsesRemaining { get; set; }
+
+        /// <summary>Gets or sets when it was revoked, or null.</summary>
+        [JsonRequired]
+        public DateTimeOffset? RevokedAt { get; set; }
+
+        /// <summary>Gets or sets the operator who revoked it, or null.</summary>
+        [JsonRequired]
+        public Guid? RevokedBy { get; set; }
+
+        /// <summary>Gets or sets the template the operator picked.</summary>
+        public string? TemplateLabel { get; set; }
+
+        /// <summary>Gets or sets the accounts it created.</summary>
+        public List<Guid>? AccountsProduced { get; set; }
+
+        public Invitation ToInvitationWithNoGrant()
+        {
+            return new Invitation(
+                Id,
+                ImmutableArray.Create(Convert.FromBase64String(CodeHash ?? string.Empty)),
+                MintedBy,
+                MintedAt,
+                ExpiresAt,
+                UsesGranted,
+                UsesRemaining,
+                RevokedAt,
+                RevokedBy,
+                TemplateLabel ?? string.Empty,
+                template: null,
                 AccountsProduced is null ? ImmutableArray<Guid>.Empty : ImmutableArray.CreateRange(AccountsProduced));
         }
     }

@@ -111,7 +111,8 @@ public class InvitationModelTests
             mintedAt: _minted,
             expiresAt: _expires,
             uses: 3,
-            templateLabel: templateLabel);
+            templateLabel: templateLabel,
+            template: TestTemplates.Household);
     }
 
     /// <summary>

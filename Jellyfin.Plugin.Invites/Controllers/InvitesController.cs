@@ -105,8 +105,8 @@ public sealed class InvitesController : ControllerBase
     /// </summary>
     /// <param name="request">The template, the validity and the use count.</param>
     /// <response code="200">Minted. The body carries the code, and nothing returns it again.</response>
-    /// <response code="400">The template is missing, or the validity or the use count is outside its ceiling.</response>
-    /// <response code="409">This server already holds as many live invitations as the plugin allows. Nothing was written.</response>
+    /// <response code="400">The template is missing or names no configured template, or the validity or the use count is outside its ceiling.</response>
+    /// <response code="409">This server already holds as many live invitations as the plugin allows, or the configured templates cannot be used as they stand. Nothing was written.</response>
     /// <response code="503">This plugin has no data directory, so there is no store to write to.</response>
     /// <returns>The code and the record.</returns>
     [Authorize(Policy = "RequiresElevation")]
@@ -150,6 +150,14 @@ public sealed class InvitesController : ControllerBase
             // request was acceptable and the store's state was not, so the
             // operator's repair is to revoke an invitation rather than to change
             // what they asked for, and 400 would send them at the wrong one.
+            return Conflict(refused.Message);
+        }
+        catch (ConfiguredTemplatesRefusedException refused)
+        {
+            // The same shape one setting over: what was asked may be fine and
+            // the plugin's own configuration is not, so the repair is on the
+            // configuration page rather than in the request. The message is the
+            // load's own sentence, so the log and this answer agree.
             return Conflict(refused.Message);
         }
     }

@@ -48,18 +48,21 @@ made here rather than the paragraph deleted. A mint, a revocation and the
 retention sweep all write the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:264:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:381:            store.Write(contents.Invitations.Replace(found, revoked));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:437:            store.Write(kept);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:320:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:437:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:493:            store.Write(kept);
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:357:            writer.Write(json);
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:442:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
 
 Six lines rather than five, and the two that were already there each moved by
 one. The third caller is the sweep from #59, which removes a record by writing
 back the ones it kept, and the two above it moved because that method was added
 between them. The line-reference check refused the old numbers before this branch
-was pushed, which is how they came to be re-run rather than noticed.
+was pushed, which is how they came to be re-run rather than noticed. Re-run
+once more under #61: the three callers in the operations each moved down by
+fifty-six as the mint gained the template seam, and the store's by eighty-five
+as the store gained its second shape. The six lines are the same six.
 
 The second of those five was pasted at line 336 and the paste is re-run here
 rather than the number edited on its own. What moved it was the reverse lookup
@@ -253,11 +256,15 @@ what they answer:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
     Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:113:    [HttpPost]
-    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:164:    [HttpGet]
-    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:192:    [HttpGet("{id}")]
-    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:240:    [HttpGet("Accounts/{accountId}")]
-    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:269:    [HttpPost("{id}/Revoke")]
-    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:324:    [HttpPost("HashSecret/Rotate")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:172:    [HttpGet]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:200:    [HttpGet("{id}")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:248:    [HttpGet("Accounts/{accountId}")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:277:    [HttpPost("{id}/Revoke")]
+    Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:332:    [HttpPost("HashSecret/Rotate")]
+
+The five actions after the mint each moved down by eight under #61, which gave
+the mint a second refusal to catch below them; the mint's own line and the set
+of six did not move.
 
 `GET /Invites` hands back every record with the accounts it produced, and each
 of those says whether the server still has it. Copying the store file is still

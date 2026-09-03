@@ -76,6 +76,7 @@ public class MutationSurvivorTests
             revokedAt,
             revokedBy,
             "the template an operator picked",
+            TestTemplates.Household,
             accountsProduced ?? ImmutableArray<Guid>.Empty);
 
     /// <summary>
@@ -378,21 +379,24 @@ public class MutationSurvivorTests
     /// Three statement removals survived here, one per <c>ThrowIfNull</c>. They
     /// are the class this file was opened for, a refusal that throws nothing,
     /// and the reason they survived is that every test in this suite builds the
-    /// type with all three arguments present. Removing one leaves a type that
+    /// type with all its arguments present. Removing one leaves a type that
     /// accepts a null and fails later, somewhere the failure no longer names
-    /// which of the three the caller forgot.
+    /// which of them the caller forgot. The fourth argument arrived with #61
+    /// and is asked the same question from the start rather than after a run.
     /// </remarks>
     /// <param name="missing">The argument this case leaves out.</param>
     [Theory]
     [InlineData("directory")]
     [InlineData("clock")]
     [InlineData("address")]
+    [InlineData("templates")]
     public void TheOperationsRefuseEachArgumentOnItsOwn(string missing)
     {
         var refusal = Assert.Throws<ArgumentNullException>(() => new InvitationOperations(
             missing == "directory" ? null! : new StubStoreDirectory("nowhere"),
             missing == "clock" ? null! : new TestClock(_minted),
-            missing == "address" ? null! : new StubPublicAddress("https://films.example/")));
+            missing == "address" ? null! : new StubPublicAddress("https://films.example/"),
+            missing == "templates" ? null! : TestTemplates.AsConfigured));
 
         Assert.Equal(missing, refusal.ParamName);
     }
@@ -462,7 +466,7 @@ public class MutationSurvivorTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(path),
             new TestClock(_minted),
-            new StubPublicAddress("https://films.example/"));
+            new StubPublicAddress("https://films.example/"), TestTemplates.AsConfigured);
 
         Assert.False(operations.StoreIsAvailable);
 

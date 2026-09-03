@@ -180,7 +180,7 @@ Mints one invitation and returns the code exactly once.
 
 | Parameter | In | Required | What it is |
 | --- | --- | --- | --- |
-| template | body | yes | Which grant the invitation carries. #61 copies the template into the invitation rather than referencing it by name |
+| template | body | yes | Which grant the invitation carries, by the name of a configured template, compared ignoring case. The grant behind that name is copied onto the record at this moment, which is #61's rule, and a name matching no configured template is refused as a bad request with nothing written |
 | validity | body | no | How long the link lasts. Bounded by the maximum in [docs/expiry-rules.md](expiry-rules.md), and an invitation with no expiry at all is refused |
 | uses | body | no | How many accounts the invitation is good for. Refused at zero and above the ceiling, which is #52 and #33 |
 
@@ -210,6 +210,18 @@ The table above names the use-count ceiling and not this one because that one
 bounds a parameter of the request. This one bounds the store, belongs to no
 parameter, and had no row to go missing from, which is how it came to be absent
 from this page.
+
+A configured template list with a fault in it refuses every mint the same way,
+with a conflict and nothing written, whatever name was asked for. The list is
+judged whole rather than thinned to the entries that pass, for the reason
+[docs/configuration.md](configuration.md) gives under `## The named templates`,
+and the message is the sentence the load writes when the plugin starts: the
+setting, the position of the entry counted from one, and the rule it missed,
+with no label quoted. It is a conflict for the reason the ceiling above is one.
+What was asked for may be acceptable and the plugin's own configuration is not,
+so the repair is on the configuration page rather than in the request. A name
+that matches no entry is the other case and stays a bad request, because that
+repair is in what was asked.
 
 The response carries the code. It is the only response in this API that ever
 does, it carries it once, and no later call to any route returns it again. #85

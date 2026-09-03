@@ -307,6 +307,7 @@ public class RedemptionDecisionTableTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
 
@@ -367,6 +368,7 @@ public class RedemptionDecisionTableTests
             revokedAt: revoked ? _minted : null,
             revokedBy: revoked ? _revoker : null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 }

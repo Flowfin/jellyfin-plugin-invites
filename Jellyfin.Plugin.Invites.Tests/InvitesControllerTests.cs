@@ -187,6 +187,52 @@ public class InvitesControllerTests
     }
 
     /// <summary>
+    /// A template name no configured entry carries is refused as a bad request
+    /// before anything is written, and the answer names the setting.
+    /// </summary>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task AMintingAgainstANameNoTemplateCarriesIsRefused()
+    {
+        using var directory = new OwnedDirectory();
+        var controller = ControllerOver(directory, _minted);
+
+        var refused = Assert.IsType<BadRequestObjectResult>(
+            (await controller.Mint(new MintRequest { Template = "Family" })).Result);
+
+        Assert.Contains(nameof(PluginConfiguration.Templates), (string)refused.Value!, StringComparison.Ordinal);
+        Assert.Empty(new InvitationStore(directory.Path).Read().Invitations);
+    }
+
+    /// <summary>
+    /// A configured template list with a fault in it refuses every mint as a
+    /// conflict rather than a bad request, because the repair is on the
+    /// configuration page and not in the request, and nothing is written.
+    /// </summary>
+    /// <remarks>
+    /// The name asked for is one the list does carry and carries correctly.
+    /// That is the case that separates a conflict from a bad request: a caller
+    /// told their request was wrong would change the one thing that is not.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task AMintingAgainstAListWithAFaultIsAConflictAndWritesNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var entries = TestTemplates.Configured();
+        entries[1]!.ParentalRatingCeiling = -1;
+        var controller = ControllerOver(directory, new TestClock(_minted), Configured, new DefaultHttpContext(), entries);
+
+        var refused = Assert.IsType<ConflictObjectResult>(
+            (await controller.Mint(new MintRequest { Template = "Household" })).Result);
+
+        Assert.Equal(StatusCodes.Status409Conflict, refused.StatusCode);
+        Assert.Contains("position 2", (string)refused.Value!, StringComparison.Ordinal);
+        Assert.Contains(nameof(PluginConfiguration.Templates), (string)refused.Value!, StringComparison.Ordinal);
+        Assert.Empty(new InvitationStore(directory.Path).Read().Invitations);
+    }
+
+    /// <summary>
     /// Listing returns what was minted, and the shape it returns has no field a
     /// code or a hash could travel in.
     /// </summary>
@@ -321,7 +367,7 @@ public class InvitesControllerTests
     public async Task WithNoDataDirectoryEveryRouteSaysSoRatherThanFailing()
     {
         var controller = new InvitesController(
-            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured)),
+            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new StubOperatorIdentity(_operator),
             new StubServerAccounts(Array.Empty<Guid>()))
         {
@@ -568,11 +614,20 @@ public class InvitesControllerTests
         TestClock clock,
         string? configured,
         HttpContext context)
+        => ControllerOver(directory, clock, configured, context, TestTemplates.Configured());
+
+    private static InvitesController ControllerOver(
+        OwnedDirectory directory,
+        TestClock clock,
+        string? configured,
+        HttpContext context,
+        ConfiguredTemplate?[]? templates)
         => new(
             new InvitationOperations(
                 new StubStoreDirectory(directory.Path),
                 clock,
-                new StubPublicAddress(configured)),
+                new StubPublicAddress(configured),
+                new StubConfiguredTemplates(templates)),
             new StubOperatorIdentity(_operator),
             new StubServerAccounts(Array.Empty<Guid>()))
         {

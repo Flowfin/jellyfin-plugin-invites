@@ -240,7 +240,7 @@ public class RetentionSweepTests
         var operations = new InvitationOperations(
             new StubStoreDirectory(null),
             new TestClock(_minted),
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var logger = new RecordingLogger<RetentionSweep>();
         var progress = new RecordingProgress();
@@ -261,7 +261,7 @@ public class RetentionSweepTests
     public void TheTaskDeclaresADailyScheduleUnderAFixedIdentifier()
     {
         var task = new RetentionSweep(
-            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured)),
+            new InvitationOperations(new StubStoreDirectory(null), new TestClock(_minted), new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new RecordingLogger<RetentionSweep>());
 
         Assert.Equal("InvitesRetentionSweep", task.Key);
@@ -369,7 +369,7 @@ public class RetentionSweepTests
         return new InvitationOperations(
             new StubStoreDirectory(directory.Path),
             clock,
-            new StubPublicAddress(Configured));
+            new StubPublicAddress(Configured), TestTemplates.AsConfigured);
     }
 }
 

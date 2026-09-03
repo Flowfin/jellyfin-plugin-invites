@@ -32,11 +32,11 @@ Both writes are in `InvitationOperations` and both have a route above them:
 
 So a server whose operator has minted once holds an invitations file, and the
 rows of the record table below that are filled in on that file are the
-identifier, the keyed hash, minted by, minted at, expires at, the use count and
-the template name, plus revoked at and revoked by once somebody revokes. `Minted
-by` and `Revoked by` are personal data about the operator, and they are held
-under the `record-retention` parameter named below, which a scheduled sweep
-applies.
+identifier, the keyed hash, minted by, minted at, expires at, the use count, the
+template name and the template grant, plus revoked at and revoked by once
+somebody revokes. `Minted by` and `Revoked by` are personal data about the
+operator, and they are held under the `record-retention` parameter named below,
+which a scheduled sweep applies.
 
 What is still not written is anything about the invited person. That waits on a
 redemption that commits, and the rows it would fill are `Accounts produced` and
@@ -99,7 +99,8 @@ address a redemption arrived from.
 | Uses granted, uses remaining | The count #52 makes authoritative. | The record |
 | Revoked, revoked at | Revocation is #54, and the time is what tells an operator a restore undid it. | The record |
 | Revoked by | The operator account answerable for the revocation, which #54 asks be recorded beside the time. Personal data about the operator on the same footing as minted by, and it exists for the same reason: an invitation that stopped working is answerable to whoever stopped it or to nobody. Only the first revocation is kept, so this is one identifier and not a history. | The record |
-| Template name | Which grant this invitation carries, from #61. | The record |
+| Template name | Which grant this invitation carries, by the name the operator picked at minting. Kept as something an operator reads, and resolved by nothing afterwards, which is #61's rule. | The record |
+| Template grant | The grant itself, copied out of the configured template at minting under #61: the libraries, the permissions and the ceilings the account it creates gets. A copy rather than a reference, so an operator editing the named template afterwards changes the next invitation and not this one. Not data about a person; listed so the inventory is the whole record. Absent on a record minted before the copy existed, and such a record creates nothing. | The record |
 | Accounts produced | The link between an invitation and the accounts it created. This is the most identifying row here, and it is also the one an operator needs when an account they do not recognise appears. | The record |
 | Operator label | Failed the test. See below. | Not stored |
 | Contact address | Failed the test. See below. | Not stored |
@@ -400,7 +401,9 @@ use count and nothing an operator would type a person's name into.
     Jellyfin.Plugin.Invites/Controllers/MintRequest.cs:    public int? Uses { get; set; }
 
 `Template` is not that field. It is the operator picking which grant to hand out,
-and the record keeps it as the template name, which is its own row above.
+and the record keeps it as the template name, which is its own row above, beside
+the grant that name stood for when the invitation was minted, which is the
+`Template grant` row.
 
 So the recommendation this page made is what the tree took, and the row stays
 because the recommendation is the thing being recorded and because nothing

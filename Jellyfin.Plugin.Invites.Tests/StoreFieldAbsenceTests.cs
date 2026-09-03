@@ -97,6 +97,7 @@ public class StoreFieldAbsenceTests
                 ? Guid.Parse("44445555-6666-7777-8888-99990000aaaa")
                 : null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 

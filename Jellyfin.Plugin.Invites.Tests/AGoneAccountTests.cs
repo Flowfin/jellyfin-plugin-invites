@@ -230,6 +230,7 @@ public class AGoneAccountTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(_stillThere, _deleted));
 
         new InvitationStore(directory).Write(ImmutableArray.Create(record));
@@ -258,7 +259,7 @@ public class AGoneAccountTests
             new InvitationOperations(
                 new StubStoreDirectory(directory.Path),
                 new TestClock(_now),
-                new StubPublicAddress(Configured)),
+                new StubPublicAddress(Configured), TestTemplates.AsConfigured),
             new StubOperatorIdentity(_operator),
             accounts)
         {

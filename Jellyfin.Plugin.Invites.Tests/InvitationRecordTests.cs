@@ -46,6 +46,12 @@ public class InvitationRecordTests
         ["RevokedBy"] = "Revoked by",
 
         ["TemplateLabel"] = "Template name",
+
+        // The copy #61 asks for, beside the name. Two rows and two members,
+        // because they answer different questions: the name is what the
+        // operator picked, and the grant is what the account gets, frozen at
+        // minting so an edit to the named template reaches no live record.
+        ["Template"] = "Template grant",
         ["AccountsProduced"] = "Accounts produced",
     };
 
@@ -73,6 +79,7 @@ public class InvitationRecordTests
         revokedAt: null,
         revokedBy: null,
         templateLabel: "Household",
+        template: TestTemplates.Household,
         accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
 
     /// <summary>
@@ -158,6 +165,7 @@ public class InvitationRecordTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
 
@@ -186,6 +194,7 @@ public class InvitationRecordTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty));
     }
 
@@ -212,6 +221,7 @@ public class InvitationRecordTests
             revokedAt: new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero),
             revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(accounts));
 
         var readBack = new Invitation(
@@ -225,6 +235,7 @@ public class InvitationRecordTests
             revokedAt: new DateTimeOffset(2026, 3, 4, 12, 0, 0, TimeSpan.Zero),
             revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(accounts));
 
         Assert.Equal(written, readBack);
@@ -254,6 +265,7 @@ public class InvitationRecordTests
     [InlineData("UsesGranted")]
     [InlineData("UsesRemaining")]
     [InlineData("TemplateLabel")]
+    [InlineData("Template")]
     [InlineData("AccountsProduced")]
     public void ARecordDifferingInOneFieldIsNotEqual(string field)
     {
@@ -271,6 +283,10 @@ public class InvitationRecordTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: field == "TemplateLabel" ? "Friends" : "Household",
+            // A grant differing in one library from the baseline's, so an
+            // equality comparing templates by anything short of their contents
+            // fails here instead of passing.
+            template: field == "Template" ? TestTemplates.Guest : TestTemplates.Household,
             // Same length as the baseline's and a different value in it, so an
             // equality comparing these two fields by their length rather than
             // by their contents fails here instead of passing.
@@ -306,6 +322,7 @@ public class InvitationRecordTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
 
         Assert.NotEqual(Baseline(), truncated);
@@ -335,6 +352,7 @@ public class InvitationRecordTests
             revokedAt: revokedAt,
             revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: live.TemplateLabel,
+            template: live.Template,
             accountsProduced: live.AccountsProduced);
 
         Assert.False(live.IsRevoked);
@@ -401,6 +419,7 @@ public class InvitationRecordTests
             revokedAt: at,
             revokedBy: by,
             templateLabel: live.TemplateLabel,
+            template: live.Template,
             accountsProduced: live.AccountsProduced);
     }
 }

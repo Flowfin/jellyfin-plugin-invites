@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text.Json.Nodes;
+using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Xunit;
@@ -18,8 +19,8 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// <para>
 /// #105 asks for a fixture per shipped store version, migrated forward and
 /// asserted field by field. Which set that means was open, and the answer taken
-/// here is one document per version the store has ever declared, which today is
-/// one:
+/// here is one document per version the store has ever declared, which is read
+/// off the store rather than counted here:
 /// </para>
 /// <para>
 /// <c>git grep -n 'public const int Version' -- Jellyfin.Plugin.Invites/Storage/InvitationStore.cs</c>
@@ -47,16 +48,27 @@ namespace Jellyfin.Plugin.Invites.Tests;
 public class StoreShapeTests
 {
     /// <summary>
-    /// The committed document for the shape the store declares today.
+    /// The committed document for the first shape, which carried the
+    /// template's name and no grant. This build reads it and never writes it.
     /// </summary>
     private const string VersionOne = "version-1.json";
 
     /// <summary>
-    /// The first record in the committed document: never revoked, with uses
+    /// The committed document for the shape the store declares today, which
+    /// carries the grant #61 copies at minting.
+    /// </summary>
+    private const string VersionTwo = "version-2.json";
+
+    /// <summary>
+    /// The first record in a committed document: never revoked, with uses
     /// left.
     /// </summary>
+    /// <param name="template">
+    /// The grant it carries: the household grant in the current shape, and
+    /// nothing in the first shape, which had no member to carry one.
+    /// </param>
     /// <returns>One invitation.</returns>
-    private static Invitation TheLiveRecord()
+    private static Invitation TheLiveRecord(AccountTemplate? template)
     {
         return new Invitation(
             id: Guid.Parse("0f1e2d3c-4b5a-4968-8776-65544332211a"),
@@ -69,22 +81,26 @@ public class StoreShapeTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: template,
             accountsProduced: ImmutableArray.Create(
                 Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
                 Guid.Parse("99999999-8888-7777-6666-555555555555")));
     }
 
     /// <summary>
-    /// The second record in the committed document: revoked, spent, and holding
+    /// The second record in a committed document: revoked, spent, and holding
     /// the account it produced.
     /// </summary>
     /// <remarks>
     /// The document carries both because the two exercise different halves of
     /// the shape. A file of live records alone would say nothing about whether
-    /// a revocation survives being read.
+    /// a revocation survives being read. In the current shape it carries the
+    /// guest grant, so the two records carry two different grants and a reader
+    /// that handed every record the first grant it met would be caught.
     /// </remarks>
+    /// <param name="template">The grant it carries, or nothing in the first shape.</param>
     /// <returns>One invitation.</returns>
-    private static Invitation TheRevokedRecord()
+    private static Invitation TheRevokedRecord(AccountTemplate? template)
     {
         return new Invitation(
             id: Guid.Parse("2c9f7b41-0d5e-4a63-8b12-7e4d3f6a9c05"),
@@ -97,6 +113,7 @@ public class StoreShapeTests
             revokedAt: new DateTimeOffset(2026, 4, 2, 9, 30, 0, TimeSpan.Zero),
             revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Friends",
+            template: template,
             accountsProduced: ImmutableArray.Create(
                 Guid.Parse("12345678-90ab-cdef-1234-567890abcdef")));
     }
@@ -151,17 +168,51 @@ public class StoreShapeTests
     }
 
     /// <summary>
-    /// The committed version one document reads, and every field of every
-    /// record in it comes back as it was written.
+    /// The committed version two document reads, and every field of every
+    /// record in it, the grant included, comes back as it was written.
     /// </summary>
     /// <remarks>
     /// The equality this leans on is the record type's own, which compares the
-    /// keyed hash and the accounts by their contents rather than by the
-    /// identity of the arrays behind them, so this is a field-by-field
+    /// keyed hash, the accounts and the grant by their contents rather than by
+    /// the identity of the arrays behind them, so this is a field-by-field
     /// assertion and not a reference one.
     /// </remarks>
     [Fact]
-    public void TheCommittedVersionOneDocumentReadsFieldByField()
+    public void TheCommittedVersionTwoDocumentReadsFieldByField()
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, VersionTwo);
+
+        var contents = store.Read();
+
+        Assert.Equal(
+            new[] { TheLiveRecord(TestTemplates.Household), TheRevokedRecord(TestTemplates.Guest) },
+            contents.Invitations);
+    }
+
+    /// <summary>
+    /// The committed version one document is migrated forward: every field it
+    /// carried comes back as it was written, and the grant, which that shape
+    /// never carried, comes back absent.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the test #42 handed on to whoever shipped the second shape: a
+    /// committed fixture of the older shape, migrated and asserted field by
+    /// field. The bytes were written under version one and are not
+    /// regenerated, so a reader that stopped understanding that shape
+    /// disagrees with them out loud.
+    /// </para>
+    /// <para>
+    /// Absent is asserted rather than left to the equality, because the
+    /// equality would also pass for a migration that invented a grant equal to
+    /// the one the fixture builder happened to pass. Nothing is invented: a
+    /// record minted under version one can create nothing, which is the strict
+    /// direction #92 asks a migration to take.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheCommittedVersionOneDocumentMigratesForwardWithNoGrant()
     {
         using var directory = new OwnedDirectory();
         var store = AStoreHolding(directory, VersionOne);
@@ -169,24 +220,28 @@ public class StoreShapeTests
         var contents = store.Read();
 
         Assert.Equal(
-            new[] { TheLiveRecord(), TheRevokedRecord() },
+            new[] { TheLiveRecord(template: null), TheRevokedRecord(template: null) },
             contents.Invitations);
+        Assert.All(contents.Invitations, record => Assert.Null(record.Template));
     }
 
     /// <summary>
     /// A revocation in a committed document is still a revocation after it has
-    /// been read.
+    /// been read, in either shape.
     /// </summary>
     /// <remarks>
     /// Asserted separately from the field comparison above because it is the
     /// property #93 is about and the one an upgrade silently loses. The record
     /// type answers it rather than a comparison made here.
     /// </remarks>
-    [Fact]
-    public void ARevocationInTheCommittedDocumentSurvivesBeingRead()
+    /// <param name="shape">Which committed document.</param>
+    [Theory]
+    [InlineData(VersionOne)]
+    [InlineData(VersionTwo)]
+    public void ARevocationInTheCommittedDocumentSurvivesBeingRead(string shape)
     {
         using var directory = new OwnedDirectory();
-        var store = AStoreHolding(directory, VersionOne);
+        var store = AStoreHolding(directory, shape);
 
         var contents = store.Read();
 
@@ -195,8 +250,8 @@ public class StoreShapeTests
     }
 
     /// <summary>
-    /// What this build writes for the same records is the committed document,
-    /// byte for byte apart from line endings.
+    /// What this build writes for the same records is the committed version
+    /// two document, byte for byte apart from line endings.
     /// </summary>
     /// <remarks>
     /// This is the direction that catches a rename. A member renamed in the
@@ -206,21 +261,51 @@ public class StoreShapeTests
     /// something to disagree with.
     /// </remarks>
     [Fact]
-    public void ThisBuildStillWritesTheCommittedVersionOneShape()
+    public void ThisBuildStillWritesTheCommittedVersionTwoShape()
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
 
-        store.Write(new[] { TheLiveRecord(), TheRevokedRecord() });
+        store.Write(new[] { TheLiveRecord(TestTemplates.Household), TheRevokedRecord(TestTemplates.Guest) });
 
         Assert.Equal(
-            WithOneKindOfLineEnding(TheCommitted(VersionOne)),
+            WithOneKindOfLineEnding(TheCommitted(VersionTwo)),
             WithOneKindOfLineEnding(File.ReadAllText(store.Path)));
     }
 
     /// <summary>
-    /// The committed document declares the version this build writes, so the
-    /// directory owes a second file the day that number moves.
+    /// A version one document is never written back as version one. Reading
+    /// one and writing what was read produces the current shape, with the
+    /// grant member present and null on every migrated record.
+    /// </summary>
+    /// <remarks>
+    /// The migration runs forward and only forward, which is #92's rule. A
+    /// store that wrote the older shape back would leave a file that the next
+    /// read migrates again, and a record that had gained a grant in the
+    /// meantime would lose it on the way.
+    /// </remarks>
+    [Fact]
+    public void AMigratedDocumentIsWrittenBackInTheCurrentShape()
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, VersionOne);
+
+        store.Write(store.Read().Invitations);
+
+        var document = JsonNode.Parse(File.ReadAllText(store.Path));
+        Assert.NotNull(document);
+        Assert.Equal(InvitationStore.Version, document!["version"]!.GetValue<int>());
+        foreach (var record in document["invitations"]!.AsArray())
+        {
+            Assert.True(record!.AsObject().ContainsKey("template"));
+            Assert.Null(record["template"]);
+        }
+    }
+
+    /// <summary>
+    /// Each committed document declares the version its name carries, and
+    /// there is one for every version the store has ever declared, so the
+    /// directory owes a further file the day that number moves.
     /// </summary>
     /// <remarks>
     /// The count of committed shapes is derived from the store rather than kept
@@ -244,9 +329,12 @@ public class StoreShapeTests
             declared,
             shapes.Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal).ToArray());
 
-        var document = JsonNode.Parse(TheCommitted(VersionOne));
-        Assert.NotNull(document);
-        Assert.Equal(1, document!["version"]!.GetValue<int>());
+        foreach (var version in Enumerable.Range(1, InvitationStore.Version))
+        {
+            var document = JsonNode.Parse(TheCommitted(FormattableString.Invariant($"version-{version}.json")));
+            Assert.NotNull(document);
+            Assert.Equal(version, document!["version"]!.GetValue<int>());
+        }
     }
 
     /// <summary>

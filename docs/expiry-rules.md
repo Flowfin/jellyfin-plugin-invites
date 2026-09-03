@@ -17,13 +17,21 @@ because the count in this paragraph is the thing that went stale twice:
 
     git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:65:    public DateTimeOffset ExpiresAt { get; }
-    Jellyfin.Plugin.Invites/Invitations/Invitation.cs:188:    public DateTimeOffset ExpiresAt { get; }
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:198:        var lasts = validity ?? DefaultValidity;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:205:        if (lasts <= TimeSpan.Zero)
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:213:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:260:                expiresAt: now + lasts,
+    Jellyfin.Plugin.Invites/Invitations/Invitation.cs:192:    public DateTimeOffset ExpiresAt { get; }
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:        var lasts = validity ?? DefaultValidity;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:260:        if (lasts <= TimeSpan.Zero)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:268:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:315:                expiresAt: now + lasts,
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:235:        if (now >= record.ExpiresAt)
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:573:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:665:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:964:        public DateTimeOffset ExpiresAt { get; set; }
+
+Nine lines rather than eight since #61. The store's stored record moved down by
+ninety-two as the store gained its second shape, and the ninth line is that
+older shape's own copy of the member, kept so a version one document still
+reads; neither is a rule and neither acts. The four lines in the mint moved down
+by fifty-five as the mint gained the template seam above them, and the record
+type's member by four. None of the rules changed.
 
 The clock starting at minting is the addition, `expiresAt: now + lasts`. The
 default validity acting is `validity ?? DefaultValidity`, and what waits on #86

@@ -638,6 +638,7 @@ public class LoadOnStartTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: [.. accounts]);
     }
 }

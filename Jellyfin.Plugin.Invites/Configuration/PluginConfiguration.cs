@@ -54,7 +54,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </para>
     /// <para>
     /// Empty on a fresh install. No template is the closed answer: a template
-    /// the plugin invented would be a grant nobody decided, and once the mint
+    /// the plugin invented would be a grant nobody decided, and since the mint
     /// copies a template out of this list, nothing can be minted until an
     /// operator has written one down.
     /// </para>

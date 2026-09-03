@@ -69,7 +69,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
         Assert.Single(operations.All());
@@ -95,7 +95,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
 
@@ -116,7 +116,7 @@ public class ExpiryIsNotDeletionTests
     {
         using var directory = new OwnedDirectory();
         var clock = new TestClock(_minted);
-        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured));
+        var operations = new InvitationOperations(new StubStoreDirectory(directory.Path), clock, new StubPublicAddress(Configured), TestTemplates.AsConfigured);
 
         var minted = operations.Mint(_operator, "Household", _validity, uses: 1);
         var afterMinting = File.ReadAllBytes(new InvitationStore(directory.Path).Path);

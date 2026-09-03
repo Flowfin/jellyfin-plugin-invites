@@ -108,6 +108,7 @@ public class InvitationStoreTests
             revokedAt: new DateTimeOffset(2026, 3, 5, 8, 9, 10, TimeSpan.Zero),
             revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray.Create(
                 Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
                 Guid.Parse("99999999-8888-7777-6666-555555555555")));
@@ -134,6 +135,7 @@ public class InvitationStoreTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Friends",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 
@@ -503,6 +505,7 @@ public class InvitationStoreTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Guest",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
 
         store.Write(new List<Invitation> { first, second });
@@ -612,17 +615,17 @@ public class InvitationStoreTests
         var store = new InvitationStore(directory.Path);
         store.Write(new[] { AnInvitation() });
         var newer = File.ReadAllText(store.Path).Replace(
-            "\"version\": 1",
-            "\"version\": 2",
+            Declaring(InvitationStore.Version),
+            Declaring(InvitationStore.Version + 1),
             StringComparison.Ordinal);
         File.WriteAllText(store.Path, newer);
 
         var refused = Assert.Throws<StoreVersionRefusedException>(() => store.Read());
 
-        Assert.Equal(2, refused.Found);
+        Assert.Equal(InvitationStore.Version + 1, refused.Found);
         Assert.Equal(InvitationStore.Version, refused.Understood);
-        Assert.Contains("version 2", refused.Message, StringComparison.Ordinal);
-        Assert.Contains("version 1", refused.Message, StringComparison.Ordinal);
+        Assert.Contains(FormattableString.Invariant($"version {InvitationStore.Version + 1}"), refused.Message, StringComparison.Ordinal);
+        Assert.Contains(FormattableString.Invariant($"version {InvitationStore.Version}"), refused.Message, StringComparison.Ordinal);
         Assert.Contains(store.Path, refused.Message, StringComparison.Ordinal);
     }
 
@@ -638,8 +641,8 @@ public class InvitationStoreTests
         var store = new InvitationStore(directory.Path);
         store.Write(new[] { AnInvitation() });
         var newer = File.ReadAllText(store.Path).Replace(
-            "\"version\": 1",
-            "\"version\": 2",
+            Declaring(InvitationStore.Version),
+            Declaring(InvitationStore.Version + 1),
             StringComparison.Ordinal);
         File.WriteAllText(store.Path, newer);
 
@@ -652,17 +655,46 @@ public class InvitationStoreTests
     }
 
     /// <summary>
-    /// A document declaring a version this build knows is read, and one
-    /// declaring an older one would be too. There is no older shape to build a
-    /// fixture from, because nothing has been released, so what this covers is
-    /// that the refusal is of a newer version rather than of any version that
-    /// is not exactly this one.
+    /// A document declaring the version this build writes is read back as it
+    /// was written, so the refusal above is of a newer version rather than of
+    /// any version that is not exactly this one.
     /// </summary>
+    [Fact]
+    public void AVersionThisBuildKnowsIsRead()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var written = AnInvitation();
+        store.Write(new[] { written });
+
+        Assert.Contains(Declaring(InvitationStore.Version), File.ReadAllText(store.Path), StringComparison.Ordinal);
+        Assert.Equal(written, Assert.Single(store.Read().Invitations));
+    }
+
+    /// <summary>
+    /// A document declaring the older shape is read through that shape,
+    /// whatever else it carries, and comes back without a grant.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The version is the one field read before any record is parsed, so it is
+    /// the authority for what the records mean. A document declaring version
+    /// one while carrying the grant member is a document somebody assembled by
+    /// hand, and reading the member anyway would let a declared version be
+    /// overridden by whatever a record happens to contain. Losing the member is
+    /// the strict direction: nothing is created from a record with no grant.
+    /// </para>
+    /// <para>
+    /// Zero is read the same way. Nothing ever wrote it, and a version below
+    /// the first shape is treated as that shape rather than refused, because
+    /// refusing it would leave a file on disk that no build can read.
+    /// </para>
+    /// </remarks>
     /// <param name="declared">The version the document declares.</param>
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    public void AVersionThisBuildKnowsIsRead(int declared)
+    public void ADocumentDeclaringTheOlderShapeIsReadThroughItAndCarriesNoGrant(int declared)
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
@@ -671,33 +703,76 @@ public class InvitationStoreTests
         File.WriteAllText(
             store.Path,
             File.ReadAllText(store.Path).Replace(
-                "\"version\": 1",
-                FormattableString.Invariant($"\"version\": {declared}"),
+                Declaring(InvitationStore.Version),
+                Declaring(declared),
                 StringComparison.Ordinal));
 
-        Assert.Equal(written, Assert.Single(store.Read().Invitations));
+        var read = Assert.Single(store.Read().Invitations);
+
+        Assert.NotNull(written.Template);
+        Assert.Null(read.Template);
+        Assert.Equal(WithoutAGrant(written), read);
     }
 
     /// <summary>
-    /// A document with no version at all is read as the shape it certainly is.
-    /// Exactly one has ever been written, because nothing has been released, so
-    /// an absent version is not ambiguous yet. It becomes a migration the day a
-    /// second shape exists, and this test is where that day is noticed.
+    /// A document with no version at all is read as the first shape, which is
+    /// the only shape a document written before the version existed can be in,
+    /// and comes back without a grant.
     /// </summary>
+    /// <remarks>
+    /// This was a default while one shape existed and it is a migration now,
+    /// which is the day the earlier version of this test said it would notice.
+    /// The record keeps every field the first shape carried; what it cannot
+    /// carry is a grant, because that shape never held one.
+    /// </remarks>
     [Fact]
-    public void ADocumentWrittenBeforeTheVersionExistedIsStillRead()
+    public void ADocumentWrittenBeforeTheVersionExistedIsReadAsTheFirstShape()
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
         var written = AnInvitation();
         store.Write(new[] { written });
         var withoutAVersion = File.ReadAllText(store.Path).Replace(
-            "\"version\": 1,",
+            Declaring(InvitationStore.Version) + ",",
             string.Empty,
             StringComparison.Ordinal);
         File.WriteAllText(store.Path, withoutAVersion);
 
         Assert.DoesNotContain("version", withoutAVersion, StringComparison.Ordinal);
-        Assert.Equal(written, Assert.Single(store.Read().Invitations));
+        Assert.Equal(WithoutAGrant(written), Assert.Single(store.Read().Invitations));
+    }
+
+    /// <summary>
+    /// The version member as the writer spells it, so the tests above find the
+    /// declaration rather than a number that happens to match.
+    /// </summary>
+    /// <param name="version">The version.</param>
+    /// <returns>The member as written.</returns>
+    private static string Declaring(int version)
+    {
+        return FormattableString.Invariant($"\"version\": {version}");
+    }
+
+    /// <summary>
+    /// The same record with its grant taken off, which is what the first shape
+    /// can carry of it.
+    /// </summary>
+    /// <param name="record">The record.</param>
+    /// <returns>The record without a grant.</returns>
+    private static Invitation WithoutAGrant(Invitation record)
+    {
+        return new Invitation(
+            id: record.Id,
+            codeHash: record.CodeHash,
+            mintedBy: record.MintedBy,
+            mintedAt: record.MintedAt,
+            expiresAt: record.ExpiresAt,
+            usesGranted: record.UsesGranted,
+            usesRemaining: record.UsesRemaining,
+            revokedAt: record.RevokedAt,
+            revokedBy: record.RevokedBy,
+            templateLabel: record.TemplateLabel,
+            template: null,
+            accountsProduced: record.AccountsProduced);
     }
 }

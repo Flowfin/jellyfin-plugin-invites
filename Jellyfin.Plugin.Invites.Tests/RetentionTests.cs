@@ -93,6 +93,7 @@ public class RetentionTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
 
         Assert.False(Retention.MayBeRemoved(longLived, _minted + _period - TimeSpan.FromTicks(1)));
@@ -207,6 +208,7 @@ public class RetentionTests
             revokedAt: revokedAt,
             revokedBy: revokedAt is null ? null : _operator,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 }

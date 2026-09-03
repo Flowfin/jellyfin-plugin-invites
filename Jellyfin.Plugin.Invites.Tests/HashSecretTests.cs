@@ -360,6 +360,7 @@ public class HashSecretTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Household",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 
@@ -376,6 +377,7 @@ public class HashSecretTests
             revokedAt: null,
             revokedBy: null,
             templateLabel: "Friends",
+            template: TestTemplates.Household,
             accountsProduced: ImmutableArray<Guid>.Empty);
     }
 }
