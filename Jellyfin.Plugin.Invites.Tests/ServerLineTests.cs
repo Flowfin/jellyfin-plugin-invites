@@ -95,7 +95,7 @@ public class ServerLineTests
     [Fact]
     public void TheDeclaredLineIsTheOneTargetAbiNames()
     {
-        var line = string.Join('.', TargetAbi().Split('.').Take(2));
+        var line = string.Join('.', PluginManifest.TargetAbi().Split('.').Take(2));
 
         Assert.Equal(line, DeclaredLine.Value);
     }
@@ -435,40 +435,5 @@ public class ServerLineTests
         }
 
         return application;
-    }
-
-    /// <summary>
-    /// The targetAbi build.yaml declares, read off the manifest itself.
-    /// </summary>
-    /// <remarks>
-    /// The file is found by walking up from the test binary until a directory
-    /// holds both the solution and the manifest, which is what the rest of this
-    /// suite does for a document. Nothing is written and nothing outside the
-    /// repository is read.
-    /// </remarks>
-    /// <returns>The declared value, without its quotation marks.</returns>
-    private static string TargetAbi()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var manifest = Path.Combine(directory.FullName, "build.yaml");
-            var solution = Path.Combine(directory.FullName, "Jellyfin.Plugin.Invites.sln");
-            if (File.Exists(manifest) && File.Exists(solution))
-            {
-                var declared = File.ReadAllLines(manifest)
-                    .FirstOrDefault(text => text.StartsWith("targetAbi:", StringComparison.Ordinal));
-
-                Assert.NotNull(declared);
-                return declared!["targetAbi:".Length..].Trim().Trim('"');
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new FileNotFoundException(
-            "No ancestor of "
-            + AppContext.BaseDirectory
-            + " holds both Jellyfin.Plugin.Invites.sln and build.yaml, so this comparison read nothing. Failing rather than passing over an absent manifest.");
     }
 }

@@ -85,9 +85,10 @@ build.yaml:6:targetAbi: "10.11.0.0"
 build.yaml:7:framework: "net9.0"
 ```
 
-`Directory.Build.props` derives the floor build from that same line, so the
-claim in the manifest is what the plugin is compiled against rather than a
-second number somebody keeps in step by hand.
+`Directory.Build.props` derives the version the plugin is compiled against from
+that same line, so the claim in the manifest is what the plugin is compiled
+against rather than a second number somebody keeps in step by hand, and the
+assembly a server binds names the floor rather than a newer release of the line.
 
 `targetAbi` is a floor and no field beside it names a ceiling, so a server on a
 later line still installs this plugin and the packaging does not refuse it. The

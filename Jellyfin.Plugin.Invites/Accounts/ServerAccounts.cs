@@ -15,8 +15,8 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// <b>This is the one place in the plugin that binds late, and the reason is
 /// measured rather than defensive.</b> The member that answers this question
 /// changed shape inside the server line this plugin claims to load on. On the
-/// floor the manifest declares it is a property, and on the version the plugin
-/// compiles against it is a method:
+/// floor the manifest declares, which the plugin compiles against, it is a
+/// property, and on the newest release of the line it is a method:
 /// </para>
 /// <para>
 /// <c>IEnumerable&lt;Guid&gt; UsersIds { get; }</c> on 10.11.0, against
@@ -25,10 +25,10 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// <para>
 /// There is no source form that compiles against both, and a call compiled
 /// against either one throws on the other at run time rather than at build time.
-/// The ABI floor build is what found this: a direct call built clean against the
-/// shipping package and failed against the floor, which is exactly the failure
-/// that check exists to catch before a manifest invites somebody to install on a
-/// server the plugin cannot run on.
+/// The ABI floor build found this while the plugin still compiled against the
+/// newest release of the line: a direct call built clean against that package
+/// and failed against the floor. The plugin compiles against the floor since
+/// #155, so a direct call would now throw on the newest server instead.
 /// </para>
 /// <para>
 /// <b>What this does not become.</b> It reads two names and nothing else. It is

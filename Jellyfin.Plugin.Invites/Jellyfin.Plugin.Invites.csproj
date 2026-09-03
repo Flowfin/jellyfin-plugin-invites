@@ -14,8 +14,9 @@
   <ItemGroup>
     <!--
       The version comes from JellyfinPackageVersion in Directory.Build.props, which is the
-      shipping version ordinarily and the floor read out of build.yaml's targetAbi when
-      BuildAgainstAbiFloor is set.
+      floor read out of build.yaml's targetAbi: the oldest server this plugin claims to
+      load on is the one it is compiled against, for the reason written beside that
+      property.
     -->
     <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" >
       <ExcludeAssets>runtime</ExcludeAssets>
