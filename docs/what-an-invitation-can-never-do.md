@@ -254,11 +254,37 @@ caught by one of the two runs rather than by neither.
 asserts which fields moved with it, which is what refuses a grant handed to the
 wrong field; a swap of two of them passes the run above and reddens this one.
 
-Not refused on the account. What no test here reaches is still the account, and
-the reason is narrower than it was: there is no creation path and the write side
-of the seam a test would drive it through is #103. So the line is defended on
-the value and on the policy a template produces, and not on the account that
-policy would be written to.
+Not refused on the account, AND ON THE ACCOUNT THE LIBRARY HALF OF THIS LINE IS
+FALSE ON EVERY SERVER THE PLUGIN LOADS ON. THIS PARAGRAPH SAID THERE IS NO
+CREATION PATH AND THAT THE WRITE SIDE OF THE SEAM IS #103'S. Both landed under
+#398, and the routine that applies a template writes through them:
+
+    git grep -n 'GetUserDto(created)?.Policy\|ApplyTo(granted, template)\|UpdatePolicyAsync(account, granted)' -- Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:162:        var granted = _users.GetUserDto(created)?.Policy
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:165:        AccountTemplateApplication.ApplyTo(granted, template);
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:167:        await _users.UpdatePolicyAsync(account, granted).ConfigureAwait(false);
+
+The policy at 162 is the one the server made, and the server makes every one
+with the all-libraries flag on, at both ends of the supported line. That is read
+off the server's own source at the two tags this build resolves, because the
+server's user manager is in no package this tree restores:
+
+    gh api "repos/jellyfin/jellyfin/contents/Jellyfin.Data/UserEntityExtensions.cs?ref=v10.11.0" --jq .content | base64 -d | grep -n 'EnableAllFolders'
+    177:        entity.Permissions.Add(new Permission(PermissionKind.EnableAllFolders, true));
+    gh api "repos/jellyfin/jellyfin/contents/Jellyfin.Data/UserEntityExtensions.cs?ref=v10.11.11" --jq .content | base64 -d | grep -n 'EnableAllFolders'
+    177:        entity.Permissions.Add(new Permission(PermissionKind.EnableAllFolders, true));
+
+`server-wide-grant-flag-set` refuses this plugin writing that field in either
+direction and exempts no file, so the routine hands the policy back with the
+flag as it arrived and the server writes it onto the account. An account this
+plugin creates therefore sees every library whatever `Libraries` names, and
+every test above is green over a policy whose flag a test set rather than one
+the server made. Whether the way out is a named exemption for the one routine
+that applies a template, or a disclosure that the list does not bound what an
+account sees, is #63's, where the reading is written in full, and this page
+takes neither. Nothing reaches the routine from a request yet, which is #399,
+so no account has been created this way; the sentence above is about what the
+first one will carry.
 
 ### An invitation can never be redeemed after expiry, after revocation, or with no uses left
 
@@ -400,7 +426,7 @@ sections:
 | --- | --- | --- |
 | Never create an administrator | Account creation, and the decision that a grant may not manage | #62 |
 | Never modify an existing account | Account creation, and the write side of the seam a test would drive it through | #103 |
-| Never grant beyond the template | The account the policy is written to | #103 |
+| Never grant beyond the template | The account the policy is written to, on which the all-libraries flag the server sets stays on because this plugin may not clear it | #63, #399 |
 | Never be recovered, for a backup | A check somebody makes by hand. The register it would be recorded in is in the tree and carries no row for it | #100 |
 | Never be recovered, for an error message | The refusal response | #77 |
 | Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
