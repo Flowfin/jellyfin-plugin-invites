@@ -133,9 +133,10 @@ gh api repos/iderex/jellyfin-plugin-invites/rulesets/20465179 \
 Several have a local route, and running those before you push is cheaper than
 reading a red square afterwards:
 
-- the build and the suite, with the three commands above
-- the oldest server this plugin claims to load on:
-  `dotnet build Jellyfin.Plugin.Invites.sln -p:BuildAgainstAbiFloor=true`
+- the build and the suite, with the three commands above; the build compiles
+  against the oldest server this plugin claims to load on, because
+  `Directory.Build.props` derives the package version from `targetAbi` in
+  `build.yaml`, and `AbiFloorBindingTests` holds the built assembly to it
 - the invariant lint, with the two commands above
 - the pull-request hygiene legs: `bash .github/lint/pr-hygiene.sh selftest`
 - the sign-off, by committing with `git commit -s` in the first place

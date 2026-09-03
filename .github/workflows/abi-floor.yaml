@@ -1,14 +1,28 @@
-# The shipping build compiles against a package from the middle of the server
-# line while build.yaml invites people to install on the oldest version of it.
-# Nothing in the ordinary build notices the gap: a call into a server member that
-# arrived after the floor compiles clean, packages clean, installs clean, and
-# throws on the older server at the moment somebody redeems an invitation.
+# build.yaml invites people to install on the oldest server of the line it names
+# in targetAbi, and the plugin is compiled against exactly that version. It was
+# not always: until #155 the ordinary build compiled against the newest release
+# of the line and only this leg compiled against the floor, behind a switch. That
+# leg was green and the package still did not load at the floor. An assembly
+# names the version of every server assembly it was compiled against, a server
+# binds such a reference only to a version at or above the one named, and what
+# a server binds is the SHIPPED assembly, which was the other one. The archive
+# built against 10.11.11 was NotSupported on jellyfin/jellyfin:10.11.0 and Active
+# on 10.11.11, with the server's log naming the assembly it could not load.
 #
-# This leg compiles the plugin against the package version the manifest's
-# targetAbi names. The version is not typed here. Directory.Build.props derives
-# it from targetAbi and refuses a build.yaml it cannot read one out of, so
-# raising the claim in the manifest is what moves the version this leg compiles
-# against, and the two cannot disagree.
+# So this workflow holds the claim at both ends. The first job builds the plugin
+# the way every build now does, against the package version Directory.Build.props
+# derives from targetAbi, with the committed lock file, so a package version that
+# drifted from the manifest fails the restore rather than compiling clean. The
+# second installs the packaged plugin on the published image of the floor itself
+# and asks the server whether it loaded, because the first job is a claim about
+# what the compiler saw and the second is the reading an operator gets.
+#
+# The version is not typed here. Directory.Build.props derives it from targetAbi
+# and refuses a build.yaml it cannot read one out of, so raising the claim in the
+# manifest is what moves the version this builds against, and the two cannot
+# disagree. AbiFloorBindingTests holds the built assembly's reference table to
+# the same field, so the suite reds on the day the two drift for a reason
+# neither the property nor this file can see.
 #
 # This is not in the branch ruleset's required set. Raising that set is #24.
 name: 'ABI floor build'
@@ -22,7 +36,7 @@ on:
       - master
   workflow_dispatch:
 
-# Deny-all at workflow level; the job below grants only what it needs.
+# Deny-all at workflow level; the jobs below grant only what they need.
 permissions: {}
 
 concurrency:
@@ -56,27 +70,217 @@ jobs:
         # quietly. The build refuses an unreadable targetAbi in any case.
         run: >
           dotnet msbuild Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj
-          -getProperty:JellyfinPackageVersion -p:BuildAgainstAbiFloor=true
+          -getProperty:JellyfinPackageVersion
+
+      - name: Restore against the committed lock file
+        # Locked, because the lock file pins the floor's packages and a restore
+        # that resolved anything else is the drift this workflow exists for.
+        run: dotnet restore --locked-mode
 
       - name: Build against the floor
         # The plugin project only. The test project's dependencies are its own
         # and are covered by the ordinary build.
-        #
-        # No --locked-mode: the committed lock file pins the shipping line, and
-        # this leg resolves a different version of the same two packages on
-        # purpose. Directory.Build.props points the floor restore at a throwaway
-        # lock file under obj/, because NuGet updates an existing lock file
-        # whatever RestorePackagesWithLockFile says.
         #
         # Warnings are errors in the project file, so a clean run here is the
         # analyzers passing against the floor rather than the analyzers being
         # quiet.
         run: >
           dotnet build Jellyfin.Plugin.Invites/Jellyfin.Plugin.Invites.csproj
-          --configuration Release -p:BuildAgainstAbiFloor=true
+          --configuration Release --no-restore
 
-      - name: Refuse a build that left the lock file rewritten
-        # If a later change lets the floor restore touch the committed lock file,
-        # the shipping line's pins would arrive in a commit nobody wrote. Read
-        # back rather than trusted.
-        run: git diff --exit-code -- '**/packages.lock.json'
+  load:
+    name: Load on the declared ABI floor server
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    env:
+      # The published image of the floor itself, pinned by digest for the reason
+      # the other server jobs give: a tag is a name somebody else can move. This
+      # digest is jellyfin/jellyfin:10.11.0, the oldest server of the line
+      # build.yaml names in targetAbi, and it is deliberately NOT the digest the
+      # other five server jobs pin. Those run the newest release of the line, and
+      # every one of them was green while the package did not load here.
+      JELLYFIN_IMAGE: 'jellyfin/jellyfin@sha256:59417f441213e236a9f907d4e71a13472042409d85f9e9310dbdd87ee33d7bd4'
+      JELLYFIN_URL: 'http://127.0.0.1:8096'
+      # This plugin's identifier, written out rather than read from build.yaml,
+      # for the reason the identity job gives at its own pair: what this job
+      # looks for has to be THIS plugin, and reading the value from the tree
+      # under test would let a change that pointed it elsewhere pass by moving
+      # the expectation with it.
+      PLUGIN_ID: '7565756d-8964-49fd-a2c6-f2a878d5001a'
+      # An address the route matches and no invitation could ever be. A plugin
+      # the server failed to load answers 404 at every one of its addresses, so
+      # the route is the cheapest reading of the load and the plugin list is
+      # the authoritative one.
+      REDEEM_PATH: '/redeem/ABCD-EFGH-JKLM'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore against the committed lock file
+        run: |
+          set -euo pipefail
+          dotnet restore --locked-mode
+
+      - name: Build the plugin package
+        id: jprm
+        # The packaged plugin rather than a loose build output, so what the server
+        # loads is the shape a release would put in front of an operator.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          dotnet-target: 'net9.0'
+
+      - name: Install it into a server data directory
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::No archive at ${ARTIFACT}, so this job would be asking a server about a plugin that was never installed."
+            exit 1
+          fi
+          mkdir -p "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          unzip -o "${ARTIFACT}" -d "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins/invites"
+          ls -lR "${GITHUB_WORKSPACE}/jellyfin-data/config/plugins"
+
+      - name: Start the server
+        run: |
+          set -euo pipefail
+          docker pull "${JELLYFIN_IMAGE}"
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/config:/config" \
+            --volume "${GITHUB_WORKSPACE}/jellyfin-data/cache:/cache" \
+            "${JELLYFIN_IMAGE}"
+
+      - name: Wait for the server to finish starting
+        # The public information route answers while the database migrations are
+        # still running and everything else answers 503 until they finish, so the
+        # wait ends on this plugin's own public route leaving 503 rather than on
+        # the first 200 anywhere. It ends on the route ANSWERING rather than on it
+        # answering 200, because 404 is the outcome this job exists to measure and
+        # a wait that never ended on it would report a timeout instead of the
+        # reading.
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 90); do
+            public="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}/System/Info/Public" || true)"
+            if [ "${public}" = "200" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}" || true)"
+              if [ "${code}" != "503" ] && [ "${code}" != "000" ]; then
+                echo "The server has finished starting. /System/Info/Public answers ${public} and ${REDEEM_PATH} answers ${code}."
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::The server did not finish starting within three minutes."
+          docker logs jellyfin || true
+          exit 1
+
+      - name: Complete the startup wizard and take a token
+        # The plugin list is an administrator route, so this is the cheapest
+        # credential that can reach it. The account exists only inside a container
+        # this job destroys, and the password is in the file for the same reason
+        # the address is: there is nothing here to keep.
+        run: |
+          set -euo pipefail
+          auth='MediaBrowser Client="abi-floor-job", Device="ci", DeviceId="abi-floor-job", Version="1"'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Configuration" \
+            -H 'Content-Type: application/json' \
+            -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
+          curl -fsS "${JELLYFIN_URL}/Startup/User" > /dev/null
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/User" \
+            -H 'Content-Type: application/json' \
+            -d '{"Name":"operator","Password":"abi-floor-job-throwaway"}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/RemoteAccess" \
+            -H 'Content-Type: application/json' \
+            -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}'
+          curl -fsS -X POST "${JELLYFIN_URL}/Startup/Complete"
+          # The response is written to a file and read back from it rather than
+          # piped into python3, for the reason the other server jobs give at the
+          # same step: a download piped into an interpreter reads as the shape
+          # Scorecard names downloadThenRun. The file holds the token, so it is
+          # removed as soon as the value is out of it.
+          curl -fsS -X POST "${JELLYFIN_URL}/Users/AuthenticateByName" \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: ${auth}" \
+            -d '{"Username":"operator","Pw":"abi-floor-job-throwaway"}' > auth.json
+          token="$(python3 -c 'import json; print(json.load(open("auth.json"))["AccessToken"])')"
+          rm -f auth.json
+          if [ -z "${token}" ]; then
+            echo "::error::The wizard completed but no access token came back, so nothing here could read the plugin list."
+            docker logs jellyfin || true
+            exit 1
+          fi
+          echo "::add-mask::${token}"
+          echo "JELLYFIN_TOKEN=${token}" >> "$GITHUB_ENV"
+          echo "The wizard is complete and a token was issued."
+
+      - name: The server on the floor holds this plugin as Active
+        # The reading this workflow exists for. The server's own plugin list
+        # carries a status per plugin, and NotSupported is what it said of the
+        # archive compiled against 10.11.11. The whole list is printed first so
+        # a red run shows what the server holds, and the server log's own
+        # sentence about an assembly it could not load is printed beside the
+        # refusal, because that sentence names the version that was bound.
+        run: |
+          set -euo pipefail
+          curl -fsS "${JELLYFIN_URL}/Plugins" \
+            -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" > plugins.json
+          if ! python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          wanted = os.environ["PLUGIN_ID"].replace("-", "").lower()
+          plugins = json.load(open("plugins.json", encoding="utf-8"))
+          for plugin in plugins:
+              print(
+                  "{0}  {1}  {2}  {3}".format(
+                      plugin.get("Id"),
+                      plugin.get("Version"),
+                      plugin.get("Status"),
+                      plugin.get("Name"),
+                  )
+              )
+
+          ours = [p for p in plugins if (p.get("Id") or "").replace("-", "").lower() == wanted]
+          if not ours:
+              print(
+                  "::error::The server's plugin list does not carry {0}, so the archive was not "
+                  "installed where the server reads plugins from and nothing here has measured "
+                  "the load.".format(wanted)
+              )
+              sys.exit(1)
+          status = ours[0].get("Status")
+          if status != "Active":
+              print(
+                  "::error::The server on the declared ABI floor holds this plugin as {0} rather "
+                  "than Active. The package binds the server's assemblies at a version this "
+                  "server does not have, which is what targetAbi promises an operator it does "
+                  "not do. The server's own words follow.".format(status)
+              )
+              sys.exit(1)
+          print("The server on the declared ABI floor holds this plugin as Active.")
+          PY
+          then
+            docker logs jellyfin 2>&1 | grep -iE 'could not load|failed to load|not supported|NotSupported' || true
+            exit 1
+          fi
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${JELLYFIN_URL}${REDEEM_PATH}")"
+          echo "GET ${REDEEM_PATH} answers ${code} on the floor."
+
+      - name: Stop the server
+        if: always()
+        run: docker rm --force jellyfin || true

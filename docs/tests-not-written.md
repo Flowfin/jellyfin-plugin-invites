@@ -105,10 +105,14 @@ them. That distinction was left implicit while it cost nothing, and it stopped
 being free the day two such jobs landed, because this row went on describing a
 plugin nobody had seen load anywhere.
 
-Replaced by four things that each cover part of it. The ABI floor build in
-`.github/workflows/abi-floor.yaml` compiles the plugin against the package
-version the manifest's `targetAbi` names, so a call into a server member that
-arrived after the floor is caught at build time rather than at redemption time.
+Replaced by four things that each cover part of it. Every build compiles the
+plugin against the package version the manifest's `targetAbi` names, which
+`Directory.Build.props` derives from that field, so a call into a server member
+that arrived after the floor is caught at build time rather than at redemption
+time, and the assembly a server binds names the floor rather than a newer
+release of the line; `.github/workflows/abi-floor.yaml` builds it that way on
+every pull request and `AbiFloorBindingTests` holds the built assembly's
+reference table to the same field.
 The packaging job in `.github/workflows/package.yaml` builds the artefact the
 manifest lists. Then a runner installs that artefact into an unmodified
 published server image and puts the question to the server itself. And one
@@ -132,7 +136,11 @@ server's own administrator route and reads the public redemption address twice,
 once with the server still running and once after a restart, because those are
 two moments an operator meets and #47 asks about both. It answers 200 at the
 first and 404 at the second, which is the half of that issue no reading of this
-tree could reach.
+tree could reach. `.github/workflows/abi-floor.yaml` installs the packaged
+plugin on the published image of the floor itself, 10.11.0, and reads the
+server's plugin list back for a status of Active, because the archive compiled
+against 10.11.11 was NotSupported there while every job above, pinned to
+10.11.11, was green; that reading is on #155.
 
 That block said two jobs and named two while four had landed, which is the
 drift this page is least able to afford: it is the map somebody reads to find
@@ -150,9 +158,13 @@ server failed to load answers 404 at every one of its addresses, so a job that
 reads 200 there has read the loading, and `e2e-authorization.yaml` gives that as
 its own reason for asserting the anonymous route before anything else.
 
-Status: the ABI floor build, the packaging job and five server jobs exist, and
-every one of the five is green on the default branch, read at
-`00854ccde17a625781cdc8e9dcf76bae0ee0faef`:
+Status: the ABI floor build, the packaging job and six server jobs exist, and
+every one of the six is green where it has run. Five of them on the default
+branch, read at `00854ccde17a625781cdc8e9dcf76bae0ee0faef`; the sixth, the load
+on the floor in `abi-floor.yaml`, at the head of the change that landed it under
+#155, where its run is quoted, because a job runs on the default branch for the
+first time at the merge that lands it, which is what the paragraph after the
+transcript says of the fifth:
 
 ```
 $ for w in e2e-authorization e2e-identity e2e-no-web-client e2e-plugin-disabled e2e-scheduled-task; do
@@ -178,10 +190,12 @@ than by reading the paragraph.
 
 The manual install has a place to be recorded and nothing recorded in it, and
 that is the half of this row which has not moved. What those jobs answer for is
-one server line on one image pinned by digest, the shipping version of the line
-`build.yaml` names in `targetAbi`. Per supported line is what the manual install
-is for, and a job pinned to one digest says nothing about the line above or
-below it.
+one server line on two images pinned by digest: the newest release of the line
+`build.yaml` names in `targetAbi`, and since #155 the floor of it, 10.11.0, which
+is the version the package is compiled against and the one on which the archive
+compiled against 10.11.11 did not load. Per supported line is what the manual
+install is for, and a job pinned to a digest says nothing about the line above
+or below it.
 
 ### A test of the plugin behind a real reverse proxy with real certificates
 

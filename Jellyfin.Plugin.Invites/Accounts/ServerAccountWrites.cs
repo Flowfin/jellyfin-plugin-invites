@@ -12,9 +12,9 @@ namespace Jellyfin.Plugin.Invites.Accounts;
 /// <remarks>
 /// <para>
 /// <b>One of the arms binds late and the others do not, and that was measured
-/// rather than decided.</b> Read off the two packages this build already
-/// resolves, the floor in the plugin manifest's target ABI and the shipping
-/// version in <c>Directory.Build.props</c>.
+/// rather than decided.</b> Read off both ends of the line: the floor the
+/// plugin manifest's target ABI names, which this build resolves, and the
+/// newest release, which it resolved too until #155 moved it to the floor.
 /// </para>
 /// <para>
 /// <c>CreateUserAsync(name)</c>, <c>GetUserById(identifier)</c>,

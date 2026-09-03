@@ -56,5 +56,9 @@ outstanding ones, revokes one and rotates the key the codes are stored under.
 No link can be redeemed and no account is created by this plugin, so an
 invitation minted from this version cannot be spent by anybody.
 
+It is compiled against 10.11.0, the oldest server of the line the manifest
+claims, so a server at the floor of that line loads it rather than refusing the
+assembly.
+
 Nothing changes about what an invitation can create, because an invitation
 cannot create anything.
