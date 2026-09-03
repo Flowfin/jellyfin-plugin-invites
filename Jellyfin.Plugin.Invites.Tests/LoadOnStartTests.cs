@@ -51,6 +51,20 @@ internal sealed class StubPublicAddress : IPublicAddress
 }
 
 /// <summary>
+/// The configured account templates, as the test sets them, standing in for
+/// the setting an operator writes on the plugin's own configuration page.
+/// </summary>
+internal sealed class StubConfiguredTemplates : IConfiguredTemplates
+{
+    public StubConfiguredTemplates(ConfiguredTemplate?[]? templates)
+    {
+        Templates = templates;
+    }
+
+    public IReadOnlyList<ConfiguredTemplate?>? Templates { get; }
+}
+
+/// <summary>
 /// An account list the test holds, standing in for the server's own.
 /// </summary>
 internal sealed class StubServerAccounts : IServerAccounts
@@ -217,6 +231,7 @@ public class LoadOnStartTests
             OnTheDeclaredLine(),
             new StubStoreDirectory(null),
             new StubPublicAddress(null),
+            new StubConfiguredTemplates([]),
             new StubServerAccounts([]),
             new TestClock(_started),
             logger);
@@ -244,6 +259,7 @@ public class LoadOnStartTests
             OnTheDeclaredLine(),
             new StubStoreDirectory(directory.Path),
             new StubPublicAddress(null),
+            new StubConfiguredTemplates([]),
             new StubServerAccounts(null),
             new TestClock(_started),
             logger);
@@ -378,6 +394,97 @@ public class LoadOnStartTests
     }
 
     /// <summary>
+    /// A template list that cannot be used is met when the server starts, and
+    /// the line names the setting, the position and the rule.
+    /// </summary>
+    [Fact]
+    public async Task ATemplateListThatCannotBeUsedIsNamedWhenTheServerStarts()
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(
+            directory.Path,
+            logger,
+            [new ConfiguredTemplate { Label = "Household" }, new ConfiguredTemplate { Label = " " }]);
+
+        await load.StartAsync(CancellationToken.None);
+
+        var named = Assert.Single(
+            logger.Lines,
+            line => line.Message.Contains("Templates", StringComparison.Ordinal));
+        Assert.Equal(LogLevel.Error, named.Level);
+        Assert.Contains("position 2", named.Message, StringComparison.Ordinal);
+        Assert.Contains("has no label", named.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The line carries no label. A label is a value an operator typed, a
+    /// server setting is not a row in the inventory docs/logging.md holds every
+    /// logged value to, and the position is what the line names instead.
+    /// </summary>
+    [Fact]
+    public async Task TheTemplateLineDoesNotCarryWhatWasConfigured()
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(
+            directory.Path,
+            logger,
+            [new ConfiguredTemplate { Label = "Kitchen guests" }, new ConfiguredTemplate { Label = "kitchen guests" }]);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.Single(
+            logger.Lines,
+            line => line.Message.Contains("Templates", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("kitchen", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// No template is a fresh install rather than a fault, and so is a plugin
+    /// whose configuration is not loaded at all.
+    /// </summary>
+    /// <param name="loaded">Whether a configuration is loaded.</param>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task NoTemplateIsNotReportedAsAFault(bool loaded)
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        ConfiguredTemplate?[]? templates = loaded ? [] : null;
+        using var load = ALoadConfiguredWith(directory.Path, logger, templates);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("Templates", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A template list that can be used is not remarked on.
+    /// </summary>
+    [Fact]
+    public async Task ATemplateListThatCanBeUsedIsNotRemarkedOn()
+    {
+        using var directory = new OwnedDirectory();
+        var logger = new RecordingLogger<LoadOnStart>();
+        using var load = ALoadConfiguredWith(
+            directory.Path,
+            logger,
+            [new ConfiguredTemplate { Label = "Household" }, new ConfiguredTemplate { Label = "Guest" }]);
+
+        await load.StartAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(
+            logger.Lines,
+            line => line.Message.Contains("Templates", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// A start on a server that is not on the line this plugin was built for
     /// claims nothing and reads nothing.
     /// </summary>
@@ -406,6 +513,7 @@ public class LoadOnStartTests
             new ServerLineGate("42.7", new StubRunningServer(new Version(9, 3, 1))),
             new StubStoreDirectory(directory.Path),
             new StubPublicAddress(null),
+            new StubConfiguredTemplates([]),
             new StubServerAccounts([]),
             new TestClock(_started),
             logger);
@@ -443,6 +551,7 @@ public class LoadOnStartTests
             OnTheDeclaredLine(),
             new StubStoreDirectory(directory),
             new StubPublicAddress(null),
+            new StubConfiguredTemplates([]),
             new StubServerAccounts(accounts),
             new TestClock(_started),
             logger);
@@ -465,6 +574,30 @@ public class LoadOnStartTests
             OnTheDeclaredLine(),
             new StubStoreDirectory(directory),
             new StubPublicAddress(publicBaseUrl),
+            new StubConfiguredTemplates([]),
+            new StubServerAccounts([]),
+            new TestClock(_started),
+            logger);
+    }
+
+    /// <summary>
+    /// A load whose configured templates are the ones the test names, over a
+    /// store directory nobody holds.
+    /// </summary>
+    /// <param name="directory">The store directory.</param>
+    /// <param name="logger">Where the lines are kept.</param>
+    /// <param name="templates">The configured templates, or null for no configuration loaded.</param>
+    /// <returns>The load, not yet started.</returns>
+    private static LoadOnStart ALoadConfiguredWith(
+        string directory,
+        RecordingLogger<LoadOnStart> logger,
+        ConfiguredTemplate?[]? templates)
+    {
+        return new LoadOnStart(
+            OnTheDeclaredLine(),
+            new StubStoreDirectory(directory),
+            new StubPublicAddress(null),
+            new StubConfiguredTemplates(templates),
             new StubServerAccounts([]),
             new TestClock(_started),
             logger);

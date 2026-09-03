@@ -79,10 +79,10 @@ public class FreshInstallConfigurationTests
     /// install is worth and why that is the closed answer.
     /// </summary>
     /// <remarks>
-    /// One row, since #50 landed the first setting. The table was landed empty
-    /// before that on purpose, so the first setting to arrive turned this red
-    /// and its author had to state the fresh-install value and the reason it is
-    /// the closed one in the same change.
+    /// Two rows. The table was landed empty before #50 on purpose, so the first
+    /// setting to arrive turned this red and its author had to state the
+    /// fresh-install value and the reason it is the closed one in the same
+    /// change, and the second setting arrived the same way under #86.
     /// </remarks>
     private static readonly IReadOnlyDictionary<string, FreshInstallValue> FreshInstall =
         new Dictionary<string, FreshInstallValue>(StringComparer.Ordinal)
@@ -90,6 +90,9 @@ public class FreshInstallConfigurationTests
             [nameof(PluginConfiguration.PublicBaseUrl)] = new FreshInstallValue(
                 string.Empty,
                 "Empty, which builds no invitation link at all. The closed answer here is not a safe address, it is no address: anything this plugin could pick without being told would be right on some networks and wrong on the operator's, and a link that resolves somewhere unintended is the failure #50 exists against. An unset address refuses at the moment a link is asked for, naming the setting, which is a support question with an answer."),
+            [nameof(PluginConfiguration.Templates)] = new FreshInstallValue(
+                Array.Empty<ConfiguredTemplate>(),
+                "No template at all. The closed answer here is not a safe template, it is none: a template the plugin invented would be a grant nobody decided, carried onto every account minted against it, and the posture #64 decided is that every permission is closed unless an operator opens it with a sentence saying why. With no template written down, nothing can be minted against a name once the mint copies its grant out of this list, which is a refusal naming the setting rather than an account with a grant nobody chose."),
         };
 
     /// <summary>

@@ -46,6 +46,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IClock, SystemClock>();
         serviceCollection.AddSingleton<IStoreDirectory, PluginStoreDirectory>();
         serviceCollection.AddSingleton<IPublicAddress, PluginPublicAddress>();
+        serviceCollection.AddSingleton<IConfiguredTemplates, PluginConfiguredTemplates>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
         serviceCollection.AddSingleton<IRunningServer, RunningServer>();
         serviceCollection.AddSingleton<ServerLineGate>();

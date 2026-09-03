@@ -12,13 +12,15 @@ The routines in this plugin that write log lines today are `LoadOnStart` and
 run off and it has already been wrong about it once. The load the server makes
 when it starts writes what the store claims about the accounts it created,
 against the accounts the server has, plus the refusal when another process
-already holds the store directory, plus the one setting that load reads. The
+already holds the store directory, plus the two settings that load reads. The
 retention sweep writes whether it ran at all, and how many records it removed
 and which. Those lines carry invitation identifiers, account identifiers and a
-count, and nothing else out of a record. The setting is named and its value is
+count, and nothing else out of a record. A setting is named and its value is
 not, which is this document's rule rather than a courtesy: a value may be
 written only where it is a row in the inventory, and a server setting is not
-one. Everything else below is a constraint on code that #43 and the routes in
+one. The line about the configured templates names the position of an entry
+and the rule it missed, and never the label an operator typed, for that
+reason. Everything else below is a constraint on code that #43 and the routes in
 M8 have yet to write, and the one greppable half of it is in
 `.github/lint/invariants.sh`.
 

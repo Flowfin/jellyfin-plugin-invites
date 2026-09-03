@@ -160,8 +160,8 @@ reads. It is not a type waiting for a caller: it is registered, and the hosted
 service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:49:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:58:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:50:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:59:        serviceCollection.AddHostedService<LoadOnStart>();
 
 Both numbers moved twice in one night and this paste is the second re-run: first
 by two, when the retention sweep from #59 was registered and its namespace
@@ -175,6 +175,10 @@ they support did not. Four registrations landed between them, the server-line
 comparison from #97 and the refusal it attaches to this plugin's controllers.
 Neither line is a different line of code; each is the same call further down the
 same method.
+
+And both moved once more, by one each, when the seam over the configured
+account templates from #86 was registered above them. The two calls are
+unchanged and so is what this page says about them.
 
 That narrows the reason this line is undefended without moving it. An identifier
 is not an account: the READ seam hands back no user object to modify and has no

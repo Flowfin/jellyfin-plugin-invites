@@ -37,4 +37,27 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </para>
     /// </remarks>
     public string PublicBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the named account templates an operator can mint an
+    /// invitation against.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Decision 6 in #11 keeps several named templates, and this is where they
+    /// are written down. Each is the stored shape of what an invitation minted
+    /// against it grants, and <see cref="ConfiguredTemplate"/> says what a
+    /// member left out is worth. The whole list is judged when the plugin
+    /// loads, by <see cref="Accounts.TemplateSettings"/>, and a list that
+    /// breaks a rule is refused whole with the position and the rule named,
+    /// rather than corrected or thinned to the entries that pass.
+    /// </para>
+    /// <para>
+    /// Empty on a fresh install. No template is the closed answer: a template
+    /// the plugin invented would be a grant nobody decided, and once the mint
+    /// copies a template out of this list, nothing can be minted until an
+    /// operator has written one down.
+    /// </para>
+    /// </remarks>
+    public ConfiguredTemplate[]? Templates { get; set; } = [];
 }
