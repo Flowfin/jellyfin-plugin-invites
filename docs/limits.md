@@ -52,7 +52,7 @@ retention sweep all write the records file now:
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:437:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:493:            store.Write(kept);
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:442:            writer.Write(json);
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:445:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
 
 Six lines rather than five, and the two that were already there each moved by
@@ -78,13 +78,20 @@ the ceiling bounds what the outstanding set can authorise and not the size of th
 file, because the entry below on expiry not being deletion is what happens to the
 record instead. What bounds the file is retention, which is #59 and is a
 scheduled sweep in the tree now: a record that stopped being usable more than
-ninety days ago is removed, and one that could still be redeemed never is. What
-still does not exist is a redemption, so nothing grows the
-file from the public side: the routine that decides a presented code has no
-caller.
+ninety days ago is removed, and one that could still be redeemed never is. THIS PARAGRAPH SAID NO REDEMPTION EXISTS, SO NOTHING GROWS THE FILE FROM THE
+PUBLIC SIDE. A redemption exists, and it writes to the file twice per honoured
+code: once to take the use and once to record the account it produced.
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
+
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+What that does not change is the bound. Neither write adds a record, so the
+public side moves the values inside records an operator already minted and cannot
+add one; what adds a record is minting, which is an administrator route, and what
+removes one is retention.
 
 `InvitationStore.Read` answers a directory with no file as no invitations rather
 than creating one, so reading at startup does not bring the file into being.

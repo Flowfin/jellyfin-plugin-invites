@@ -16,18 +16,24 @@ refused by, and the routine that creates the account in the one safe order:
     origin/master:Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
     origin/master:Jellyfin.Plugin.Invites/Setup/PasswordRules.cs
 
-What none of them has is a caller, because the post this flow turns on does not
-exist:
+THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
+TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
-    git grep -nE '\[Http(Get|Post)' origin/master -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:127:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
 
-So every transition below is still a promise and the sentence was right about
-the flow. What it was wrong about is the distance: four of these promises have
-their routine written and their wiring missing, and a reader deciding what to
-build from a page that says none of it exists writes a second one of something
-that is already there. The setup page at that route is served, which the same
-sentence also denied.
+The post asks the limiter, asks the decision and calls the creation routine. The
+fourth, the password rules, is reached by nothing: validating an answer is #75's
+and #76's and the post does none of it.
+
+So this document is no longer a page of promises, and the states below are worth
+reading with that in mind. What a reader should not take from the landing is that
+the flow is walked end to end. Which transitions act and which are still promises
+is written at the branch table rather than counted here, and three of the states
+below name work no route does: the anti-forgery token in `Form` and `Posted` is
+#78, the `Validated` state is #75 and #76, and `Done` is #79 and is served by
+nothing, so a finished redemption ends at the server's own not-found page.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written
@@ -177,9 +183,12 @@ WHICH OF THE TWO IS WRONG IS NOT DECIDED HERE. Either this flow gives up its
 only compensating action and says what the residual is, or the refusal is
 revisited with the delete held to the narrowest surface that serves it. The
 first is what the tree already does and the second is a change to #91's answer.
-The direction of a residual left by a failure part-way is #53's clause, the
-routine that would carry it is #399's, and this paragraph names both rather than
-choosing for them.
+The direction of a residual left by a failure part-way is #53's clause. The
+routine is written now, and what it does is the first of the two: it leaves the
+account where the failure left it, answers the person with the single refusal,
+and keeps the use taken. So the flow gives up its compensating action in
+practice, this paragraph is what says so, and revisiting #91's answer is still
+the other way out rather than a settled one.
 
 What was already right and stays right is where the unwind would live: in the
 same routine as the create rather than in a background sweep.

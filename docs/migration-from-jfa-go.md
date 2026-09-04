@@ -7,16 +7,22 @@ directions and does not pretend the other tool is not there. jfa-go is well
 established, it does more than this plugin plans to do, and for several of the
 things it does this plugin has no answer at all.
 
-Nothing here can be redeemed yet, and that is the sentence to read before any
-row below. An operator can mint an invitation and revoke one, and the plugin is
-seventy-one source files rather than the seven this paragraph used to count.
-What nobody can do is turn a link into an account: the redemption route serves a
-page and has no post behind it.
+THIS PARAGRAPH SAID NOTHING HERE CAN BE REDEEMED, AND IT WAS THE SENTENCE A
+READER WAS TOLD TO READ BEFORE ANY ROW BELOW. A link can be turned into an
+account now: the redemption route carries a post, it judges the presented code
+and it creates the account the invitation grants.
 
     git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
-    71
+    80
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:127:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
+
+What is still missing around it is worth having in front of a reader comparing
+this plugin with the one they are leaving: the form is not validated on the
+server, which is #75 and #76, it carries no anti-forgery token, which is #78, and
+the page a finished redemption is sent to is served by nothing, which is #79. No
+server has run any of it.
 
 THIS PARAGRAPH ALSO SAID NO ROUTINE HERE CREATES AN ACCOUNT, AND ONE DOES. #398
 landed it, and the command that stood beside the two above as evidence exits 0
@@ -33,9 +39,10 @@ saying what the seam calls directly:
     Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:143:        var created = await _users.CreateUserAsync(username).ConfigureAwait(false);
     Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:146:            ? throw ServerAccountWriteRefusedException.AnsweredNothingUsable("CreateUserAsync", "an account")
 
-What that does not change is the sentence the paragraph opens with. The routine
-is reached from the suite and from nothing else, and the missing post is #399,
-so an operator holding a link still cannot become an account.
+THAT PARAGRAPH ENDED BY SAYING THE ROUTINE IS REACHED FROM THE SUITE AND FROM
+NOTHING ELSE. The post reaches it now, so somebody holding a link can become an
+account, and the sentence at the head of this page moved with it rather than this
+one being corrected alone.
 
 The counting command changed with it, and the change is not cosmetic. It read
 `origin/master`, which is the mainline rather than the change being read, so it

@@ -316,10 +316,11 @@ public class SetupPageTests
     private static (string? Content, string? ContentType, IHeaderDictionary Headers) Serve()
     {
         var context = new DefaultHttpContext();
-        var controller = new RedeemController
-        {
-            ControllerContext = new ControllerContext { HttpContext = context },
-        };
+        var controller = RedeemRoute.Over(
+            store: null,
+            new TestClock(DateTimeOffset.UnixEpoch),
+            new ARecordingWriteSeam(),
+            context);
 
         var result = controller.Page();
 

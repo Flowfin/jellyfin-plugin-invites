@@ -20,16 +20,17 @@ what nothing serves, `ApiDocumentTests` holds it against the assembly on every
 run, and a count in a sentence is read by nobody.
 
 The administrator operations landed under #82, and the fifth of them, rotation
-of the hash secret, under #30. One of the three redemption routes answers and it
-landed under #74; the post is #399 and the completion address is #79.
+of the hash secret, under #30. Two of the three redemption routes answer: the
+page landed under #74 and the post that receives its form landed after it. The
+completion address is #79 and is served by nothing.
 
-THIS SENTENCE SAID THE REDEMPTION ROUTES ARE #74 AND #75. It was written on
-2026-08-21, ten days before #71 split the post out of #74 into #399, so it named
-an issue that has landed no route and left the post and the completion address
-attributed to nobody. The paragraph is about what landed, which is what made the
-wrong half read as settled. Which of the three answer is held against the
-assembly under `## What no controller serves yet` below rather than by this
-sentence.
+THIS SENTENCE SAID THE REDEMPTION ROUTES ARE #74 AND #75, AND THEN THAT ONE OF
+THE THREE ANSWERS. The first was written on 2026-08-21, ten days before #71 split
+the post out of #74, so it named an issue that had landed no route and left the
+post and the completion address attributed to nobody. The second stopped being
+true when the post landed. Which of the three answer is held against the assembly
+under `## What no controller serves yet` below rather than by this sentence,
+which is why the sentence is worth correcting and not worth trusting.
 
 ## What is promised
 
@@ -90,22 +91,24 @@ response carries no anti-forgery token. So the refusal half is undelivered, and
 the route discloses nothing about a code because it does not read one. #75 and
 #77 own the refusal and #78 owns the token.
 
-THIS PARAGRAPH SAID THE LOOKUP BY CODE THAT BOTH HALVES NEED DOES NOT EXIST IN
-THIS PLUGIN. It exists, and what is absent is a caller for it. `Decide` takes
-what somebody presented, canonicalises it, hashes it with the store's keyed hash
-and matches it against the records it was handed, and no route calls it:
+THIS PARAGRAPH SAID THE LOOKUP BY CODE EXISTS AND HAS NO CALLER. It has one: the
+post below reaches it through the operation that reads the records, asks for the
+verdict and takes the use inside one monitor.
 
     git grep -n 'var match = Lookup(codeHash.Of(canonical), records);' -- Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:99:        var match = Lookup(codeHash.Of(canonical), records);
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs' ; echo "exit=$?"
-    exit=1
+    exit=0
 
-A wrong absence costs more here than it does in most places, because this
-paragraph is read by whoever writes the route it describes, and it sends them at
-the one mistake the invariant lint exists against. Somebody told the lookup is
-missing writes a second one beside the route, and a second comparison of a
-presented code against the store is a second authority for what a match means.
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+What the paragraph was FOR still holds and is worth keeping in front of whoever
+extends this route. It costs more here than in most places, because it is read by
+whoever writes against the route it describes, and a reader told the lookup is
+missing writes a second one beside it, which is a second authority for what a
+match means.
 `code-canonicalised-outside-one-function` and
 `expiry-or-use-count-judged-outside-the-decision` in `.github/lint/invariants.sh`
 refuse two spellings of that shape, and neither refuses the third, which is a
@@ -430,7 +433,6 @@ the plugin assembly does not register, so a route that starts answering while
 its line is still here reds, and so does a heading with neither a controller nor
 a line behind it.
 
-- `POST /redeem/{code}`
 - `GET /redeem/done`
 
 A line leaves in the change that lands its route, and the last one to leave
@@ -445,8 +447,8 @@ Nothing here has been measured against a running server. That much is unchanged
 and it is the sentence worth keeping.
 
 The reason given for it was that none of these routes exists, and that stopped
-being true without the sentence moving. Five of the seven headings above are
-served by the assembly now, and the two that are not are the two the section
+being true without the sentence moving. Six of the seven headings above are
+served by the assembly now, and the one that is not is the one the section
 above lists, which the suite holds rather than a reader. So the claim is
 narrowed rather than dropped: what has not been measured is this page against a
 server, and what is now source rather than intention is whatever the register

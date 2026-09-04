@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>This invitation link cannot be used</title>
+        <!--
+      One page for every refusal. docs/refusal-response.md fixes the wording and
+      the case list, and the whole security property is that these bytes are the
+      same whether the code was never real, expired last week, was spent this
+      morning, was revoked a minute ago, or arrived after a limit was reached.
+      Nothing on this page is interpolated from the case, because a body
+      assembled per case differs by its length even where a reader sees the same
+      text, and a length is the cheapest thing in a response to measure.
+
+      One stylesheet, in the page, for the reason the setup page gives: a second
+      file would be a second route. The content security policy carries the hash
+      of exactly this element, computed from these bytes at the moment they are
+      served, so a change here that nobody carried into a header is a page whose
+      own style the browser refuses rather than one that quietly loosened its
+      policy.
+
+      There is no script element and there is no address of any other host, and
+      the page carries no code, no invitation identifier and nothing that varies
+      between the cases. RefusalPageTests asserts each of those rather than
+      leaving it to a reader.
+    -->
+        <style>
+            :root {
+                color-scheme: light dark;
+            }
+
+            body {
+                margin: 0;
+                padding: 2rem 1rem;
+                font-family: system-ui, sans-serif;
+                line-height: 1.5;
+            }
+
+            main {
+                max-width: 26rem;
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>This invitation link cannot be used</h1>
+            <p>
+                The link you followed is no longer usable. This can happen for several reasons, and
+                this page cannot tell you which one applies.
+            </p>
+            <p>
+                If you were expecting to set up an account, contact the person who sent you the
+                link. They can issue a new invitation.
+            </p>
+        </main>
+    </body>
+</html>

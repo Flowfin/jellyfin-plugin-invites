@@ -12,12 +12,19 @@ the page is written carelessly, a dead end that tells an invited person nothing
 and turns into a message to the operator. Both halves are settled here, because
 they are settled in the same sentence.
 
-Nothing serves this page today. The setup page is #74 and it landed; the post
-that receives the form is #399, which #71 split out of #74 on 2026-08-31; the
-refusal half of `GET /redeem/{code}` is #75 and #77, which is what
-[docs/api.md](api.md) says at that route; the decision behind the refusal is #56;
-and the route-level comparison is #107. This document is what those are built
-against, and it is a decision rather than a description of behaviour.
+THIS PARAGRAPH SAID NOTHING SERVES THIS PAGE. The post that receives the form
+landed, and it answers every case below with these bytes. What is still not
+served is the refusal half of `GET /redeem/{code}`, which is #75 and #77 and is
+what [docs/api.md](api.md) says at that route: the setup page is served there for
+every code, because that route reads no invitation.
+
+    git grep -n 'var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:246:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
+
+This document is still what the rest is built against, and it is a decision
+rather than a description of behaviour: the wording, the case list and the
+compared-on list were written before the route existed and the route was built
+to them.
 
 ## The wording
 
@@ -57,10 +64,10 @@ member.
 
 | Case | Owned by | Trail outcome |
 | --- | --- | --- |
-| The presented code matched no record | #399 | `NoSuchInvitation` |
-| The record's expiry had passed | #51, #399 | `Expired` |
-| The record had no uses left | #55, #399 | `Spent` |
-| The operator had revoked the record | #54, #399 | `Revoked` |
+| The presented code matched no record | #28 | `NoSuchInvitation` |
+| The record's expiry had passed | #51 | `Expired` |
+| The record had no uses left | #55 | `Spent` |
+| The operator had revoked the record | #54 | `Revoked` |
 | A rate limit or lockout refused the attempt | #31 | `RefusedByRateLimit` |
 | A ceiling on what the plugin may create refused it | #33 | `RefusedByCeiling` |
 
@@ -70,10 +77,23 @@ for the same states.
 
 `Owned by` named #56 on four rows and #52 on one, and both are closed, so the
 column sent a reader after a case's owner to work that was done. What #56 built
-is the routine that tells the first four apart; what nothing has built is the
-route that serves the one response for all of them, and that is the post in #399.
-The rule issues stay beside it because each still owns what its row says
-happened.
+is the routine that tells the first four apart. What had built nothing was the
+route that serves the one response for all of them, and that was the post in
+#399.
+
+THE POST HAS LANDED AND THE COLUMN NO LONGER NAMES IT. Four rows carried #399
+beside their rule issue and the first carried it alone, and a reader following
+the column after this change would arrive at closed work, which is this page's
+own subject happening on this page for the third time. What is left on each row
+is the rule that owns what the row says happened, so that is what the cells hold:
+#28 for a code that matched nothing, because the rule that a code which never
+existed is answered exactly as one that was spent is #28's rather than the
+route's, and #51, #55 and #54 for the three states of a record that did exist.
+
+The post is named in this prose instead, where it can be written in the past
+tense. `.github/lint/issue-pointer.sh` reads this column against the tracker and
+refuses a cell naming a closed issue; it reads no prose, and a past-tense
+sentence is a claim about a moment rather than about this commit.
 
 THE COLUMN NAMED #74 ON THOSE FOUR ROWS AND THE POST HAS NOT BEEN #74 SINCE
 2026-08-31. #71 split the act in two that day, the post became #399 and the
@@ -133,11 +153,18 @@ description of one:
   are read off the route rather than listed from memory:
 
       git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:64:        headers.ContentSecurityPolicy = SetupPage.ContentSecurityPolicy;
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:65:        headers.XFrameOptions = "DENY";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:66:        headers.XContentTypeOptions = "nosniff";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:67:        headers.CacheControl = "no-store";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:68:        headers[ReferrerPolicy] = "no-referrer";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:278:        headers.ContentSecurityPolicy = policy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:279:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:280:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:281:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:282:        headers[ReferrerPolicy] = "no-referrer";
+
+  THE FIRST OF THE FIVE READS A PARAMETER NOW AND USED TO NAME THE SETUP PAGE.
+  When the route served one page the policy could be written where it was set; a
+  route serving two pages under one set of headers has to be handed the policy of
+  the page it is serving. The move is stated rather than renumbered quietly,
+  because a reader comparing this paste against an older copy would otherwise see
+  a value change with no reason beside it.
 
   Whether that is the right set is #78's. That it is the set a refusal has to
   match is this page's, and the paste above is judged by
@@ -185,11 +212,25 @@ both green, while the responses differ by a header only one of them looked at.
 That is the oracle all four exist to close, reintroduced by the way they were
 tested.
 
-The comparison lives once, at the route level, which is #107, because that is
-the only one of the four that sees the response the server actually sends. The
-other three add their case to it. This document is where the case list and the
-compared-on list are kept, so adding a case is an edit here and a row there
-rather than a new test.
+The comparison lives once, at the route level, because that is the only place
+that sees the response the server actually sends. It exists:
+
+    git grep -n 'public async Task EveryRefusalThisRouteServesIsTheSameResponse' -- Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs
+    Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs:167:    public async Task EveryRefusalThisRouteServesIsTheSameResponse()
+
+It drives five of the six cases through the action and compares what came back on
+everything the list above names, reading the headers off the response rather than
+naming them, so a header the route starts setting joins the comparison without
+anybody adding it. #107 widens it rather than writing a second one, and the other
+three issues add their case to it.
+
+The sixth case is not reached, and that is stated rather than left to be inferred
+from a count: nothing in this tree refuses a redemption for a ceiling on what the
+plugin may create, so there is no such response to compare. That is #33's third
+ceiling.
+
+This document is where the case list and the compared-on list are kept, so adding
+a case is an edit here and a case there rather than a new test.
 
 ## The page is served by this plugin and nothing else
 
@@ -213,12 +254,24 @@ of them by name and value and the policy by the hash of the page's own style, so
 a reader who came here to find out what a refusal has to carry was told nobody
 had chosen while the tree had chosen. The list above carries them now.
 
-What that does not settle is whether the set is right or complete, which is
-#78's and is where its clauses live rather than here.
+What that does not settle is whether the set of headers is right or complete,
+which is #78's and is where its clauses live rather than here.
 
-Not settled here: the status code, which belongs to the route that first serves a
-refusal and is therefore the post in #399 rather than #74. A status code is part
-of what the responses are compared on, so the choice binds all six cases at once
-and binds the refusal half of the GET with them; it is named here as owed rather
-than picked from a document with no route behind it, and moving whose it is picks
-nothing.
+THE STATUS CODE WAS THE ONE THING THIS SECTION LEFT UNSETTLED AND IT IS SETTLED.
+It belonged to the route that first serves a refusal, that route is the post, and
+the post picked `403 Forbidden`:
+
+    git grep -n 'refusal.StatusCode = StatusCodes.Status403Forbidden;' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:247:        refusal.StatusCode = StatusCodes.Status403Forbidden;
+
+Why that one, in the terms this page argues everything else in. It is true of
+every case in the table without narrowing any of them: the server understood the
+request and will not act on it, which is as true of a code that never existed as
+of one a limit refused. It is not a redirect, so nothing about it suggests that
+somewhere else would work. And it says nothing about whether the address ever
+named an invitation, which `404 Not Found` would: that address is served, so a
+not-found there would be a claim about the address rather than about the
+invitation, and a stranger would read it as the more useful of the two answers.
+
+The choice binds all six cases at once and binds the refusal half of the GET with
+them, which is what #75 and #77 build against rather than choose again.

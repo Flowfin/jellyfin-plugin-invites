@@ -48,6 +48,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IPublicAddress, PluginPublicAddress>();
         serviceCollection.AddSingleton<IConfiguredTemplates, PluginConfiguredTemplates>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+        serviceCollection.AddSingleton<IServerAccountWrites, ServerAccountWrites>();
         serviceCollection.AddSingleton<IRunningServer, RunningServer>();
         serviceCollection.AddSingleton<ServerLineGate>();
         serviceCollection.AddSingleton<RefuseOnAServerLineMismatch>();

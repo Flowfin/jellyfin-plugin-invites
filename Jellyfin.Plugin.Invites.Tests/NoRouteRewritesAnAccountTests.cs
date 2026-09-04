@@ -109,17 +109,38 @@ public class NoRouteRewritesAnAccountTests
     };
 
     /// <summary>
-    /// Every write this plugin offers, with what it changes. None of them names
-    /// an account, and a fourth entry here is a decision rather than an
-    /// addition: it is a second thing an operator's click can alter, and #94's
-    /// restraint is that the plugin alters nothing about an account it did not
-    /// just create.
+    /// Every write this plugin offers, with what it changes. A further entry here
+    /// is a decision rather than an addition: it is one more thing a click can
+    /// alter, and #94's restraint is that the plugin alters nothing about an
+    /// account it did not just create.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Three of the four are administrator routes and the fourth is the
+    /// public one.</b> The redemption post is the only entry that reaches an
+    /// account at all, and reading it as the restraint being given up is the
+    /// mistake this comment exists against. #94 forbids rewriting an account
+    /// that already exists; that post creates one and touches no other, which is
+    /// the same sentence read from the side where an account is allowed to come
+    /// into existence at all. What holds the difference is not this list: the
+    /// write seam declares three acts and none of them names an account
+    /// identifier a caller chose, which <c>AccountsAreNeverWrittenTests</c>
+    /// refuses a fourth of.
+    /// </para>
+    /// <para>
+    /// <b>It is not an operator's button.</b> The three above are reached with
+    /// an administrator's credential; this one is reached by a stranger holding
+    /// a link, which is why every other guard on that route exists. It is in the
+    /// list because the leg reads what a request can change and not who may make
+    /// the request.
+    /// </para>
+    /// </remarks>
     private static readonly Dictionary<string, string> DeclaredWrites = new(StringComparer.Ordinal)
     {
         ["Jellyfin.Plugin.Invites.Controllers.InvitesController.Mint"] = "writes one invitation record",
         ["Jellyfin.Plugin.Invites.Controllers.InvitesController.Revoke"] = "writes the revocation onto one invitation record",
         ["Jellyfin.Plugin.Invites.Controllers.InvitesController.Rotate"] = "writes the secret the stored hashes are keyed with",
+        ["Jellyfin.Plugin.Invites.Controllers.RedeemController.Submit"] = "takes one use off an invitation record, creates the account that use paid for, and writes that account onto the record",
     };
 
     /// <summary>

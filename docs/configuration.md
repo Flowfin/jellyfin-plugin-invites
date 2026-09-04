@@ -160,9 +160,19 @@ no entry was not refused at minting. Both halves moved with #61:
 A name that matches no entry is refused at minting as a bad request naming this
 setting, and a list with a fault in it refuses every mint with a conflict
 carrying the sentence above, in both cases before a code is minted and with
-nothing written. What an entry carries still reaches no account, because
-nothing redeems: the copy sits on the record waiting for the post in #399, which
-takes the grant from the record and never from this list.
+nothing written.
+
+THIS PARAGRAPH SAID WHAT AN ENTRY CARRIES REACHES NO ACCOUNT BECAUSE NOTHING
+REDEEMS. Something redeems. The post on the redemption route takes the grant off
+the record and hands it to the routine that creates the account, and it never
+reads this list:
+
+    git grep -n 'reserved.Template!' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:222:                reserved.Template!).ConfigureAwait(false);
+
+That is #61's rule reaching an account for the first time: editing an entry here
+changes what the next invitation grants and leaves every live one exactly as it
+was minted.
 
 ## A fresh install
 
@@ -247,10 +257,14 @@ counting matches here would otherwise read three call sites:
 
 The ceiling is no less absent for that and the gap is wider, not narrower: what
 kept it harmless was that the act it would bound could not happen, and the act
-exists now. Nothing calls the routine from a request yet, which is #399, so the
-rate a ceiling would bound is still zero per hour on a running server. That is a
-statement about the caller rather than about this configuration, and it stops
-being true on the day the post lands.
+exists now.
+
+THIS PARAGRAPH SAID NOTHING CALLS THE ROUTINE FROM A REQUEST, AND SAID THAT
+WOULD STOP BEING TRUE ON THE DAY THE POST LANDED. The post landed. A request from
+a stranger holding a live link reaches the creation routine, so the rate a
+ceiling would bound is no longer zero per hour on a running server, and the only
+numbers standing between a leaked link and a run of accounts are the use count on
+the record and the redemption limiter's two.
 
 So five hundred live invitations at ten uses each is what the standing set can
 authorise with no further operator action, and no number bounds what arrives from

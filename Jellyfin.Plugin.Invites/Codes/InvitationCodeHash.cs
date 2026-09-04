@@ -53,12 +53,16 @@ namespace Jellyfin.Plugin.Invites.Codes;
 /// is about, so it is corrected here rather than deleted.
 /// </para>
 /// <para>
-/// The construction is in <see cref="Invitations.InvitationOperations"/>, where a
-/// mint hashes the code it has just drawn so the record carries the keyed form and
-/// never the code. Deciding a presented code is the other direction and is #56's
-/// routine, which has no caller, so nothing here has yet compared a hash of
-/// something a stranger typed. docs/threat-model.md carries the commands for both
-/// halves; they are not pasted here, because a command written into source is a
+/// The construction is in <see cref="Invitations.InvitationOperations"/>, twice:
+/// a mint hashes the code it has just drawn so the record carries the keyed form
+/// and never the code, and a redemption hashes what somebody presented so it can
+/// be compared with a stored value.
+/// </para>
+/// <para>
+/// THIS REMARK SAID NOTHING HERE HAS YET COMPARED A HASH OF SOMETHING A STRANGER
+/// TYPED, ON THE GROUND THAT #56'S ROUTINE HAD NO CALLER. It has one, and the
+/// second construction above is that caller's. docs/threat-model.md carries the
+/// commands; they are not pasted here, because a command written into source is a
 /// line the same command then finds. The suite also constructs this directly.
 /// </para>
 /// </remarks>
