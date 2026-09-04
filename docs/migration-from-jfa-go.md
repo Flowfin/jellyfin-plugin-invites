@@ -15,14 +15,23 @@ and it creates the account the invitation grants.
     git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
     80
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
 
 What is still missing around it is worth having in front of a reader comparing
 this plugin with the one they are leaving: the form is not validated on the
-server, which is #75 and #76, it carries no anti-forgery token, which is #78, and
-the page a finished redemption is sent to is served by nothing, which is #79. No
-server has run any of it.
+server, which is #75 and #76, and the page a finished redemption is sent to is
+served by nothing, which is #79. No server has run any of it.
+
+THIS PARAGRAPH SAID THE FORM CARRIES NO ANTI-FORGERY TOKEN, AND THE COUNT ABOVE
+WAS ALREADY FOUR OUT BEFORE THIS EDIT. #78 landed the token, so that clause is
+gone rather than corrected in place. The file count is re-made from the command
+rather than adjusted, and it had drifted on its own before anything here touched
+it, which is worth saying because a number that moves twice for two reasons
+looks like one number that moved once:
+
+    git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
+    85
 
 THIS PARAGRAPH ALSO SAID NO ROUTINE HERE CREATES AN ACCOUNT, AND ONE DOES. #398
 landed it, and the command that stood beside the two above as evidence exits 0

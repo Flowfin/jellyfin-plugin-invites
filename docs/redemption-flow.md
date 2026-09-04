@@ -20,8 +20,8 @@ THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
 TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
 
 The post asks the limiter, asks the decision and calls the creation routine, and
 it reaches the password rules too, through the judgement it makes about the
@@ -36,9 +36,10 @@ So this document is no longer a page of promises, and the states below are worth
 reading with that in mind. What a reader should not take from the landing is that
 the flow is walked end to end. Which transitions act and which are still promises
 is written at the branch table rather than counted here, and three of the states
-below name work no route does: the anti-forgery token in `Form` and `Posted` is
-#78, and `Done` is #79 and is served by nothing, so a finished redemption ends
-at the server's own not-found page. The `Validated` state is reached: the post
+below name work no route does: `Done` is #79 and is served by nothing, so a
+finished redemption ends at the server's own not-found page. The anti-forgery
+token in `Form` and `Posted` was named here as one of them and is not one any
+more; #78 landed it, and `AntiForgeryTests` drives both states. The `Validated` state is reached: the post
 judges the answers it was sent before it judges the code, and the one answer it
 cannot fully judge is the username, whose shape it refuses against the server's
 own expression and whose collision with an existing account it cannot see. That
@@ -140,8 +141,8 @@ exist before.
 | 5 | Account created, setting the credential failed | `Created` | The single refusal, plus the operator-facing reason recorded against the invitation's non-secret identifier | Nothing, after the unwind below | #66, #32 |
 | 6 | Applying the template failed | `Credentialed` | As branch 5 | Nothing, after the unwind below | #64, #69 |
 | 7 | Back button after completion | `Done` | The completion page again. The route reads no invitation, so there is nothing to refuse | Nothing beyond the account the completed flow already created | #55 |
-| 8 | Form posted twice | `Posted` | The first post reaches `Done`. The second finds the anti-forgery token spent and is refused, and if it were not, the second read under the lock finds the use already recorded and refuses there | Nothing beyond the account the first post created | #78, #52, #56 |
-| 9 | Post with no valid anti-forgery token | `Posted` | The single refusal | Nothing, and no use is consumed | #78 |
+| 8 | Form posted twice | `Posted` | The first post reaches `Done`. The second is refused by the second read under the lock, which finds the use already recorded. The anti-forgery token is not what refuses it, and the row said it was: the token is not spent on use | Nothing beyond the account the first post created | #52, #56 |
+| 9 | Post with no valid anti-forgery token | `Posted` | The bad request this route already answers a post it read nothing out of with, under the same five headers. Not the single refusal, which the row said and which `docs/refusal-response.md` names this case as being outside of | Nothing, and no use is consumed | #78 |
 | 10 | The store is unreachable at any point | any | The single refusal | Nothing, or the unwind below if `Created` was reached | #40 |
 
 Branches 5 and 6 share one unwind, and it is the only compensating action in the
@@ -223,7 +224,7 @@ count, all inside one monitor, and only then does the route call the creation
 routine:
 
     git grep -n 'var reservation = _operations.Reserve(code);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:228:        var reservation = _operations.Reserve(code);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:264:        var reservation = _operations.Reserve(code);
 
 That is the first of the two answers #53 offers, writing the intent before the
 account exists, and it is chosen for the reason that issue gives: prefer the
@@ -269,6 +270,21 @@ a post that never had a token, which #78 requires be refused without consuming a
 use, and a store that is unreachable, which is the state every store operation
 here can be in. Every row above names a response and a left-behind, and the
 left-behind is `Nothing` in every row that does not reach `Consumed`.
+
+TWO OF THOSE ROWS SAID SOMETHING ABOUT THE TOKEN THAT THE TOKEN DOES NOT DO, and
+both are corrected in the table rather than underneath it. Row 8 said a second
+post finds the token spent. It does not: the token is a value in a cookie and a
+value on the form, compared with each other, and nothing marks one as used.
+Spending it would need a register of live tokens, which is state this plugin
+keeps none of, and it would refuse the person who was sent back to the form by a
+refused password and submitted it again. What refuses a second post is the use
+count under the lock, which the row already named as the fallback and which is
+the whole of it. Row 9 said the refusal is the single indistinguishable one.
+`docs/refusal-response.md` names this case as one of exactly two that are outside
+that set, and the route follows that page: a post with no good token is answered
+out of the request alone, before any code is read, so it is the same bad request
+a post missing a field gets and it discloses nothing that answer did not already
+disclose.
 
 ## What this flow does not cover
 

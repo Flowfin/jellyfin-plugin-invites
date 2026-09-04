@@ -55,17 +55,26 @@ public class SetupFormInventoryTests
         new("name=\"(?<field>[^\"]+)\"", RegexOptions.Compiled);
 
     /// <summary>
-    /// The fields the served form asks for.
+    /// Every named control the served form carries, and whether each one is
+    /// hidden.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Only the form is read, so the viewport declaration in the head is out of
     /// scope rather than exempted by name. The slice is between the form's own
-    /// tags, which is a bounded region of the page and not a parser: a parser
-    /// here would be a dependency the runtime set does not carry for one
-    /// assertion.
+    /// tags, and each control is then the slice from one <c>&lt;input</c> to the
+    /// first <c>&gt;</c> after it. That is a bounded region of a bounded region
+    /// and not a parser: a parser here would be a dependency the runtime set
+    /// does not carry for one assertion.
+    /// </para>
+    /// <para>
+    /// The hidden flag is read per element rather than per line, because the
+    /// controls on this page are written across several lines each and a reading
+    /// per line would call every one of them visible.
+    /// </para>
     /// </remarks>
-    /// <returns>The field names, ordered.</returns>
-    private static IReadOnlyList<string> FieldsOnTheForm()
+    /// <returns>The controls, in the order the page carries them.</returns>
+    private static IReadOnlyList<(string Field, bool Hidden)> ControlsOnTheForm()
     {
         var page = SetupPage.Html;
         var open = page.IndexOf("<form", StringComparison.Ordinal);
@@ -76,12 +85,59 @@ public class SetupFormInventoryTests
                 "The served page has no form region between <form and </form>, so this comparison read no fields. Failing rather than passing over nothing.");
         }
 
-        return NamePattern
-            .Matches(page[open..close])
-            .Select(match => match.Groups["field"].Value)
+        var form = page[open..close];
+        var controls = new List<(string, bool)>();
+        var at = form.IndexOf("<input", StringComparison.Ordinal);
+        while (at >= 0)
+        {
+            var ends = form.IndexOf('>', at);
+            if (ends < 0)
+            {
+                throw new InvalidOperationException(
+                    "The served form opens a control it never closes, so this reading cannot say which attributes belong to it. Failing rather than reading past the end of one element into the next.");
+            }
+
+            var element = form[at..ends];
+            var named = NamePattern.Match(element);
+            if (named.Success)
+            {
+                controls.Add((
+                    named.Groups["field"].Value,
+                    element.Contains("type=\"hidden\"", StringComparison.Ordinal)));
+            }
+
+            at = form.IndexOf("<input", ends, StringComparison.Ordinal);
+        }
+
+        return controls;
+    }
+
+    /// <summary>
+    /// The names of every control on the form, hidden ones included.
+    /// </summary>
+    /// <returns>The field names, ordered.</returns>
+    private static IReadOnlyList<string> FieldsOnTheForm() =>
+        ControlsOnTheForm()
+            .Select(control => control.Field)
             .OrderBy(field => field, StringComparer.Ordinal)
             .ToList();
-    }
+
+    /// <summary>
+    /// The names of the controls a person answers.
+    /// </summary>
+    /// <remarks>
+    /// A hidden control is not a question. docs/setup-never-asks.md decides what
+    /// may be ASKED, and the anti-forgery token is a value this plugin put on the
+    /// form for itself, so counting it among the questions would make that page
+    /// read as asking for four things.
+    /// </remarks>
+    /// <returns>The field names, ordered.</returns>
+    private static IReadOnlyList<string> QuestionsOnTheForm() =>
+        ControlsOnTheForm()
+            .Where(control => !control.Hidden)
+            .Select(control => control.Field)
+            .OrderBy(field => field, StringComparer.Ordinal)
+            .ToList();
 
     /// <summary>
     /// The fields the inventory has a row for.
@@ -177,7 +233,29 @@ public class SetupFormInventoryTests
     {
         Assert.Equal(
             new[] { "confirmation", "password", "username" },
-            FieldsOnTheForm());
+            QuestionsOnTheForm());
+    }
+
+    /// <summary>
+    /// The one control the person does not answer is the anti-forgery token, and
+    /// it is hidden.
+    /// </summary>
+    /// <remarks>
+    /// The two readings above divide the form between questions and everything
+    /// else, and a division nothing states the other half of is one that quietly
+    /// absorbs the next hidden field somebody adds. This is that other half: one
+    /// control, named by the type that decides the name rather than by a second
+    /// spelling of it.
+    /// </remarks>
+    [Fact]
+    public void TheOnlyControlThePersonDoesNotAnswerIsTheAntiForgeryToken()
+    {
+        Assert.Equal(
+            new[] { FormToken.Field },
+            ControlsOnTheForm()
+                .Where(control => control.Hidden)
+                .Select(control => control.Field)
+                .ToArray());
     }
 
     /// <summary>

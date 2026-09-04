@@ -57,10 +57,23 @@ carries, and a reader deciding what is left to build was told the opposite.
 What is absent sits at both ends of that type and neither end is a type. Nothing
 appends an entry, and nothing writes a trail anywhere:
 
-    $ git grep -n 'Append(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*AttemptTrail.cs' ; echo "exit=$?"
+    $ git grep -n 'AttemptEntry' -- 'Jellyfin.Plugin.Invites/*.cs' ':!Jellyfin.Plugin.Invites/Attempts/*' ; echo "exit=$?"
     exit=1
     $ git grep -n 'AttemptTrail' -- 'Jellyfin.Plugin.Invites/*.cs' ':!Jellyfin.Plugin.Invites/Attempts/*' ; echo "exit=$?"
     exit=1
+
+THE FIRST COMMAND USED TO BE A GREP FOR `Append(` AND IT HAS BEEN REPLACED
+RATHER THAN RENUMBERED. It was a spelling standing in for the act, and #78 put a
+cookie on the redemption response, which is a different `Append` on a different
+type. The old command now exits 0 and would have read as this claim being
+refuted rather than as a proxy that had stopped fitting:
+
+    $ git grep -n 'Append(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*AttemptTrail.cs'
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:160:        Response.Cookies.Append(
+
+What the sentence claims did not move. The replacement names the entry type
+rather than a verb, so it answers the question the sentence asks and no other
+call reaching for the same word can make it answer differently.
 
 So no row of that table has been filled on any server, which is what this
 paragraph was saying and is the half of it that still holds. Where a trail is
@@ -123,7 +136,15 @@ the inventory is where what becomes of it is argued rather than assumed.
 [docs/setup-never-asks.md](setup-never-asks.md) decides which questions may be
 asked at all. This is what happens to the three that are.
 
-None of the three is stored by this plugin. That is the answer rather than an
+The table carries a fourth row and it is not a fourth question. The form also
+carries an anti-forgery token, which is a value this plugin generated and put
+there for itself rather than anything a person typed, and it has a row because
+this table is compared against the form control for control: a row missing for a
+field on the form is what the comparison exists to catch, and leaving this one
+out to keep the count at three would take the comparison off the whole form. It
+says nothing about a person and identifies nobody.
+
+None of the four is stored by this plugin. That is the answer rather than an
 omission, and it is why each row below names where the value goes instead of
 naming a deleter here.
 
@@ -132,6 +153,7 @@ naming a deleter here.
 | `username` | Becomes the name of the account the server creates, so it is held in the server's own user database on the same footing as an account an operator made by hand. The record points at an account by identifier and never by name, so this plugin keeps no second copy of it. | Deleting the account, on the server |
 | `password` | The credential of the account being created. It is handed to the server and held here in no form: not in the store, not in a log line, not in the trail. What reads it in this plugin is the length rule in `Jellyfin.Plugin.Invites/Setup/PasswordRules.cs`, which answers why a password is refused and keeps none of it. | Never held here |
 | `confirmation` | Asked so a mistyped credential can be caught before an account exists carrying it. It is compared against the password, ordinally, by the judgement the post makes about its answers before it looks at any code, and it is held in no form afterwards: it never leaves that judgement, so no routine downstream is handed two copies of a password. | Never held here |
+| `token` | Not asked. Thirty-two bytes from a cryptographic source, minted when the page was served, written into the form and into a cookie on that one response, and compared with the cookie when the post arrives so that a form submitted from another site is refused. It is about the request and not about the person: it is derived from nothing anybody typed, it is the same kind of value for everybody, and it is read once and never written anywhere. The cookie it is compared against is a session cookie scoped to the redemption route, which the browser drops when it closes. | Never held here; the cookie ends with the browser session |
 
 THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
 
@@ -139,10 +161,10 @@ THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
     exit=0
 
     $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
 
-So these three rows describe values that reach the plugin on a running server,
-and each row is now a claim about behaviour rather than a plan.
+So these rows describe values that reach the plugin on a running server, and
+each one is now a claim about behaviour rather than a plan.
 
 THIS PARAGRAPH SAID THE THIRD ROW WAS NOT AS IT READ, because the confirmation
 was bound and never read and a mistyped credential was therefore not caught

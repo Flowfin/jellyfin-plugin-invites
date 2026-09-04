@@ -168,7 +168,7 @@ the record and hands it to the routine that creates the account, and it never
 reads this list:
 
     git grep -n 'reserved.Template!' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:243:                reserved.Template!).ConfigureAwait(false);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:279:                reserved.Template!).ConfigureAwait(false);
 
 That is #61's rule reaching an account for the first time: editing an entry here
 changes what the next invitation grants and leaves every live one exactly as it

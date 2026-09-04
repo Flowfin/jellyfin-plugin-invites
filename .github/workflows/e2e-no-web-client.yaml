@@ -152,20 +152,49 @@ jobs:
           echo "GET /web/index.html answered ${code}, so there is no web client on this server."
 
       - name: The setup page is served, whole
-        # Byte for byte against the tracked page, because the route serves the
-        # embedded resource verbatim and a marker written into this file would be
-        # a second copy that could drift from it.
+        # Byte for byte against the tracked page with the one value this plugin
+        # writes into it put back, because a marker written into this file would
+        # be a second copy that could drift from the page.
+        #
+        # THIS STEP COMPARED THE SERVED BYTES DIRECTLY UNTIL #78. The response
+        # carries an anti-forgery token now, which has to differ per page view or
+        # it defends nothing, so a direct comparison would refuse a page that is
+        # exactly right. What replaces it is the reverse substitution: put the
+        # placeholder back where the token went and the tracked page has to come
+        # back byte for byte. That is a STRONGER reading than the one it
+        # replaces, because it says both that nothing else was written in and
+        # that what was written in is a token this plugin would mint.
         run: |
           set -euo pipefail
-          code="$(curl -s -o served.html -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
+          code="$(curl -s -o served.html -D headers.txt -w '%{http_code}' "${JELLYFIN_URL}/redeem/ABCD-EFGH-JKLM" || true)"
           if [ "${code}" != "200" ]; then
             echo "::error::GET /redeem/{code} answered ${code} rather than 200 on a server with no web client. That is the condition #74 chose an embedded page for, so this is the clause failing rather than a detail."
             docker logs jellyfin || true
             exit 1
           fi
-          if ! cmp -s served.html "${SETUP_PAGE}"; then
-            echo "::error::The bytes served differ from ${SETUP_PAGE}. The route serves the embedded resource verbatim, so a difference here is the page arriving altered rather than a formatting question."
-            diff <(head -c 2000 "${SETUP_PAGE}") <(head -c 2000 served.html) || true
+
+          token="$(sed -n 's/.*name="token" type="hidden" value="\([0-9a-f]*\)".*/\1/p' served.html | head -n 1)"
+          if ! printf '%s' "${token}" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "::error::The served form carries no anti-forgery token this plugin would have minted, which is sixty-four hexadecimal characters. A page served with none is a page whose every post is refused, and #78 is the clause failing."
             exit 1
           fi
-          echo "GET /redeem/{code} answered 200 with exactly the bytes of ${SETUP_PAGE} ($(wc -c < served.html) of them), on a server with no web client."
+
+          if ! grep -qi "^set-cookie: invites_setup_token=${token};" headers.txt; then
+            echo "::error::The response set no anti-forgery cookie carrying the token that is on the form. Half a pair defends nothing, and the post compares the two."
+            grep -i '^set-cookie:' headers.txt || echo "  no set-cookie header at all"
+            exit 1
+          fi
+          for attribute in httponly 'samesite=strict' 'path=/redeem'; do
+            if ! grep -i '^set-cookie: invites_setup_token=' headers.txt | grep -qi -- "${attribute}"; then
+              echo "::error::The anti-forgery cookie was set without ${attribute}. What each of the three is for is written at FormToken.OptionsFor."
+              exit 1
+            fi
+          done
+
+          sed "s/${token}/__token__/" served.html > restored.html
+          if ! cmp -s restored.html "${SETUP_PAGE}"; then
+            echo "::error::With the token put back, the bytes served differ from ${SETUP_PAGE}. The route serves the embedded resource with exactly one value written in, so a difference here is the page arriving altered rather than a formatting question."
+            diff <(head -c 2000 "${SETUP_PAGE}") <(head -c 2000 restored.html) || true
+            exit 1
+          fi
+          echo "GET /redeem/{code} answered 200 with the bytes of ${SETUP_PAGE} ($(wc -c < served.html) of them) and one anti-forgery token, matched by the cookie beside it, on a server with no web client."
