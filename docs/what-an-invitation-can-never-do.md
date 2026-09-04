@@ -381,8 +381,21 @@ somebody makes by hand. `docs/manual-checks.md` is the register such a check is
 recorded in and it does not carry this one, and #100 is where what belongs in it
 is decided.
 
-Not refused, for an error message. The single indistinguishable refusal is #77
-and there is no response to inspect.
+THIS SAID NOT REFUSED, FOR AN ERROR MESSAGE, ON THE GROUND THAT THERE IS NO
+RESPONSE TO INSPECT. There is one. The redemption post answers every refusal of a
+presented code with one page, and that page is inspected in two directions:
+`RefusalPageTests.ThePageCarriesNothingThatVariesBetweenTheCases` requires it to
+carry no form, no input and no link, and
+`RedeemPostTests.EveryRefusalThisRouteServesIsTheSameResponse` compares the whole
+of what six cases answer with, body included, so a code appearing in any of them
+would have to appear in all six identically and would then not be a code.
+
+The other answer this route gives is a bad request, and it carries no body at
+all. So nothing a person is shown by the post can carry the code they presented.
+
+What is not inspected is the refusal half of the page route, which serves the
+setup page for every code and refuses nothing; that is #75 and #77 and discloses
+nothing about a code for the opposite reason, which is that it reads none.
 
 ### An invitation can never be extended by anything the redeeming party sends
 
@@ -465,29 +478,50 @@ sections:
 
 | Line | What is missing | Where it lands |
 | --- | --- | --- |
-| Never create an administrator | Account creation, and the decision that a grant may not manage | #62 |
-| Never modify an existing account | Account creation, and the write side of the seam a test would drive it through | #103 |
+| Never modify an existing account | A test that drives a redemption against a server already holding an account and asserts it is untouched. What holds the line meanwhile is the shape: the seam declares three acts, none of them names an account a caller chose, and the identifier the writes are addressed by comes out of the creation | #103 |
 | Never grant beyond the template | The all-libraries flag the server sets on every account it creates stays on, because this plugin may not clear it, so the account a redemption creates sees every library whatever the template names | #63 |
 | Never be recovered, for a backup | A check somebody makes by hand. The register it would be recorded in is in the tree and carries no row for it | #100 |
-| Never be recovered, for an error message | The refusal response | #77 |
-| Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
-| Never create more than one account per use | Account creation, and the redemption path that spends a use under the lock. The count itself is authoritative already | #40, #53 |
+| Never create more than one account per use | The window between the use being taken and the account existing, and a test that makes two redemptions of one code race deterministically. The count is authoritative, the monitor covers read, decide and write, and the use is taken before the account is created | #53, #106 |
 
-Four of the seven lines are undefended in whole or in part, and that is the
-state of the plugin rather than a gap in this page. The rule the page is for is
-the other direction: a line's source arriving with no test for the line is what
-this table exists to make visible, so a change that lands one of the issues
-above lands the line's test in the same change and moves its row out of this
-table.
+THREE ROWS LEFT THIS TABLE WHEN THE REDEMPTION POST LANDED, AND THE COUNT DID
+NOT MOVE. It was four of the seven lines undefended in whole or in part and it
+still is, over a different set, which is why the rows are listed rather than
+counted from memory.
+
+What left: an administrator, because the routine that refuses one is reached from
+a request now and the refusal is asserted inside it; an error message, because
+there is a refusal to inspect and it is compared whole across six cases; and what
+the redeeming party sends, because the post binds three fields and a test reads
+its members against the controls on the served form.
+
+What arrived in their place is nothing. The two rows that changed are the two
+that were partly about account creation, and creation arriving narrowed them
+rather than closing them: what each waits on now is written in its own row rather
+than named as a missing routine.
+
+The rule the page is for is the other direction: a line's source arriving with no
+test for the line is what this table exists to make visible, so a change that
+lands one of the issues above lands the line's test in the same change and moves
+its row out of this table. That happened three times in one change here, which is
+the table working rather than the table being wrong.
 
 #69 LEFT THE THIRD COLUMN OF THREE ROWS AND NO ROW LEFT THE TABLE. That issue is
 closed as completed, so a reader following the column to find where the missing
 thing lands arrived at finished work, which is the defect this page is for
-happening on this page. What the routine it landed does is written in the second
-and third sections above; what none of the three rows was ever about is the
-routine, and each one still names account creation or the seam that would drive
-it. A row leaves this table when the line has a test, not when an issue named
-beside it closes.
+happening on this page. A row leaves this table when the line has a test, not
+when an issue named beside it closes, and the three that left above left because
+each line gained one.
+
+Every number in the third column is open, which is a state a reader can check and
+which this page cannot hold on its own:
+
+    for i in 53 63 100 103 106; do printf '%s=%s ' "$i" "$(gh issue view "$i" --repo Flowfin/jellyfin-plugin-invites --json state --jq .state)"; done
+    53=OPEN 63=OPEN 100=OPEN 103=OPEN 106=OPEN
+
+`.github/lint/issue-pointer.sh` reads columns of exactly this shape against the
+tracker and refuses a cell naming closed work, and this column is not in its
+register. Adding it is a decision about that register rather than an edit here,
+and until somebody takes it this table is checked by whoever reads it.
 
 Nothing in the table moves for the capability refusal added under #91, and that
 is deliberate. What is missing in each row is a routine and the test over it,
