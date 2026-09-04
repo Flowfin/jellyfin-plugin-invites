@@ -19,14 +19,19 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// #59 asks for four things this file can hold and one it cannot. It holds that
-/// the sweep deletes only what the rule allows, that it marks nothing, that it
-/// writes through the one routine that takes the store monitor, and that the task
-/// carries a schedule. What it does not hold is the last clause: a test running
-/// the sweep concurrently with a redemption. Nothing in this tree consumes a use,
-/// so a redemption that writes does not exist to run against, and a test naming
-/// two operations that both only read would look like that clause and prove none
-/// of it.
+/// #59 asks for five things and this file holds four of them: that the sweep
+/// deletes only what the rule allows, that it marks nothing, that it writes
+/// through the one routine that takes the store monitor, and that the task
+/// carries a schedule.
+/// </para>
+/// <para>
+/// THIS REMARK SAID THE FIFTH CANNOT BE HELD, BECAUSE NOTHING CONSUMES A USE AND
+/// A TEST NAMING TWO OPERATIONS THAT BOTH ONLY READ WOULD PROVE NONE OF IT. A
+/// redemption that writes exists, and the clause is held in
+/// <c>TheSweepAndARedemptionTests</c> rather than here: the sweep and a
+/// redemption are two subjects, so a file about one of them is the wrong home
+/// for a test about both, and putting it there would have made this file the
+/// place somebody edits when either moves.
 /// </para>
 /// <para>
 /// The clock is moved rather than the records being written with fabricated
