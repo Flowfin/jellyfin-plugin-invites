@@ -42,11 +42,16 @@ minting, and `ExpiresAt` is not nullable in any of its three spellings, so there
 is no value meaning no expiry for a store to carry. The exclusive boundary is
 `now >= record.ExpiresAt`, asserted at the exact instant.
 
-The two that do not act are the one clock reading and the backwards jump. The
-reading is the argument the routine takes rather than a read it performs, with
-the lint refusing a second read anywhere but the seam, and what is missing is a
-redemption for it to serve. The jump is accepted rather than enforced, which is
-its own section, and what holds the acceptance is three tests rather than a
+THIS PARAGRAPH SAID TWO OF THE SEVEN DO NOT ACT, THE ONE CLOCK READING AND THE
+BACKWARDS JUMP. Six act. The reading is still the argument the routine takes
+rather than a read it performs, with the lint refusing a second read anywhere but
+the seam, and it now has a redemption to serve: the operation that decides and
+writes reads the clock once and hands that reading to every comparison inside the
+unit, which `OneClockReadingTests` drives with a clock that steps past the expiry
+on its second read.
+
+The jump is the one that does not act. It is accepted rather than enforced, which
+is its own section, and what holds the acceptance is three tests rather than a
 refusal.
 
 THIS PARAGRAPH SAID WHAT IS ABSENT IS A CALLER, AND THAT NO ROUTE HANDS THE
@@ -64,8 +69,13 @@ the decision:
     1
 
 So the rule this page argues first, that one clock reading serves a whole
-redemption, is now a property of something that runs rather than a promise. What
-it is not is measured: no server has been run.
+redemption, is now a property of something that runs rather than a promise, and
+it is asserted against a redemption rather than against the clock:
+
+    git grep -n 'public void AnExpiryThatPassesMidRedemptionDoesNotChangeTheVerdict' -- Jellyfin.Plugin.Invites.Tests/OneClockReadingTests.cs
+    Jellyfin.Plugin.Invites.Tests/OneClockReadingTests.cs:102:    public void AnExpiryThatPassesMidRedemptionDoesNotChangeTheVerdict()
+
+What it is not is measured: no server has been run.
 
 THIS SENTENCE SAID THE FIVE RULES THAT ARE NOT THE BOUNDARY AND THE ONE READING
 ARE DECISIONS WITH NOTHING STANDING BEHIND THEM, and four of those five act at
@@ -144,15 +154,28 @@ and then forgotten about.
 
 ## One clock reading serves a whole redemption
 
-The clock is read once at the top of the decision routine, and every comparison
-inside that redemption uses the same value.
+The clock is read once at the top of the unit that decides and writes, and every
+comparison inside that redemption uses the same value.
 
 An invitation whose expiry passes midway through a redemption is otherwise
 decided differently by two comparisons in the same request, and which one wins
-depends on how long the machine took. That is the shape the seam under #41 was
-built for, and its suite already asserts that a controlled clock does not move
-between two reads inside one decision, so the property has a test before it has
-a caller. The routine is #56.
+depends on how long the machine took.
+
+THIS SECTION SAID THE PROPERTY HAS A TEST BEFORE IT HAS A CALLER, AND POINTED AT
+THE SEAM'S OWN SUITE. That suite asserts a controlled clock does not move between
+two reads, which is a property of the clock and not of a redemption: a routine
+reading the seam three times would pass every assertion in it. What the rule
+needs is a clock that DOES move, so that one reading serving the whole redemption
+and two readings happening to agree are different outcomes.
+
+`OneClockReadingTests` is that. It hands the operation a clock stepping a day per
+read, first read a second inside the expiry, and requires the invitation to be
+honoured and its use taken. It counts the reads as well, on an honoured
+redemption and on a refused one, because a refusal costing more clock reads than
+an acceptance is a difference on the one endpoint a stranger can hammer.
+
+The routine that judges is #56 and the unit that reads the clock and writes
+arrived with the redemption post.
 
 ## A backwards clock jump is accepted, and this is what it costs
 
