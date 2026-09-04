@@ -4,6 +4,7 @@ using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Controllers;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Redemption;
+using Jellyfin.Plugin.Invites.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -54,13 +55,17 @@ internal static class RedeemRoute
     /// The controller, over a store directory and a clock the caller owns.
     /// </summary>
     /// <param name="store">Where the store sits, or null for a server that gave the plugin none.</param>
-    /// <param name="clock">The clock every instant in the plugin is read from.</param>
+    /// <param name="clock">
+    /// The clock every instant in the plugin is read from. It is the seam rather
+    /// than <see cref="TestClock"/>, because a test about how many times the
+    /// clock is read hands in a clock that moves.
+    /// </param>
     /// <param name="accounts">The write seam the creation routine is handed.</param>
     /// <param name="context">The request and response the test reads.</param>
     /// <returns>The controller.</returns>
     public static RedeemController Over(
         string? store,
-        TestClock clock,
+        IClock clock,
         IServerAccountWrites accounts,
         HttpContext context) =>
         new(
@@ -87,7 +92,7 @@ internal static class RedeemRoute
     /// <returns>The controller.</returns>
     public static RedeemController Over(
         string? store,
-        TestClock clock,
+        IClock clock,
         AttemptLimiter limiter,
         IServerAccountWrites accounts,
         HttpContext context) =>
@@ -119,7 +124,7 @@ internal static class RedeemRoute
     /// <param name="store">The store directory.</param>
     /// <param name="clock">The clock.</param>
     /// <returns>The operations.</returns>
-    public static InvitationOperations Operations(string? store, TestClock clock) =>
+    public static InvitationOperations Operations(string? store, IClock clock) =>
         new(
             new StubStoreDirectory(store),
             clock,
@@ -133,7 +138,7 @@ internal static class RedeemRoute
     /// <param name="clock">The clock the mint reads.</param>
     /// <param name="uses">How many accounts the invitation is good for.</param>
     /// <returns>The code and the record.</returns>
-    public static Minting Mint(string store, TestClock clock, int uses) =>
+    public static Minting Mint(string store, IClock clock, int uses) =>
         Operations(store, clock)
             .Mint(Guid.Parse("11111111-1111-4111-8111-111111111111"), "Household", null, uses);
 }
