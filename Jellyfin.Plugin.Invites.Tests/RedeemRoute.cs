@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Controllers;
@@ -7,6 +8,7 @@ using Jellyfin.Plugin.Invites.Redemption;
 using Jellyfin.Plugin.Invites.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 
 namespace Jellyfin.Plugin.Invites.Tests;
 
@@ -137,6 +139,45 @@ internal static class RedeemRoute
             accounts)
         {
             ControllerContext = new ControllerContext { HttpContext = context },
+        };
+
+    /// <summary>
+    /// A context whose request carries a posted body, so the keys of that body
+    /// are there to be read.
+    /// </summary>
+    /// <remarks>
+    /// The other factory here hands the action a bound object and leaves the
+    /// request carrying nothing, which is enough for every assertion about what
+    /// the action does with its answers. It is not enough for the one about
+    /// which FIELDS arrived: a body is what carries a field the form does not
+    /// define, and a context with no body carries none of them however the
+    /// bound object is filled in. So a test about the widening builds its
+    /// request here and binds the object from the same dictionary.
+    /// </remarks>
+    /// <param name="fields">The body, one entry per posted field.</param>
+    /// <returns>The context.</returns>
+    public static DefaultHttpContext Posting(IDictionary<string, StringValues> fields)
+    {
+        var context = Request();
+        context.Request.Method = "POST";
+        context.Request.ContentType = "application/x-www-form-urlencoded";
+        context.Request.Form = new FormCollection(new Dictionary<string, StringValues>(fields));
+
+        return context;
+    }
+
+    /// <summary>
+    /// The three fields the form defines, filled in, as a posted body.
+    /// </summary>
+    /// <param name="username">The name to ask for.</param>
+    /// <param name="password">The password to ask for, and its confirmation.</param>
+    /// <returns>The body, which a caller adds to before posting it.</returns>
+    public static Dictionary<string, StringValues> Body(string username, string password) =>
+        new(StringComparer.Ordinal)
+        {
+            ["username"] = username,
+            ["password"] = password,
+            ["confirmation"] = password,
         };
 
     /// <summary>

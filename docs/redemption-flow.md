@@ -23,17 +23,24 @@ TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
     Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
     Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
-The post asks the limiter, asks the decision and calls the creation routine. The
-fourth, the password rules, is reached by nothing: validating an answer is #75's
-and #76's and the post does none of it.
+The post asks the limiter, asks the decision and calls the creation routine, and
+it reaches the password rules too, through the judgement it makes about the
+answers before it looks at any code:
+
+    git grep -n 'PasswordRules.WhyRefused(submission.Password)' -- Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs
+    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:117:        if (PasswordRules.WhyRefused(submission.Password) is not null)
+
+THIS PARAGRAPH SAID THE FOURTH IS REACHED BY NOTHING. All four have a caller.
 
 So this document is no longer a page of promises, and the states below are worth
 reading with that in mind. What a reader should not take from the landing is that
 the flow is walked end to end. Which transitions act and which are still promises
 is written at the branch table rather than counted here, and three of the states
 below name work no route does: the anti-forgery token in `Form` and `Posted` is
-#78, the `Validated` state is #75 and #76, and `Done` is #79 and is served by
-nothing, so a finished redemption ends at the server's own not-found page.
+#78, and `Done` is #79 and is served by nothing, so a finished redemption ends
+at the server's own not-found page. The `Validated` state is reached: the post
+judges the answers it was sent before it judges the code, and what it does not
+judge is the username, which is #67.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written

@@ -51,8 +51,8 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// which is served, rather than about the invitation, which is what was refused.
 /// </para>
 /// <para>
-/// <b>What the post does not do yet.</b> It validates no answer, which is #75's
-/// and #76's, and it carries no anti-forgery token, which is #78's. The
+/// <b>What the post does not do yet.</b> It judges no username, which is #67's, and it
+/// carries no anti-forgery token, which is #78's. What it does judge is <see cref="SetupAnswers"/>. The
 /// completion address a finished redemption is sent to is fixed by docs/api.md
 /// and is served by nothing until #79 lands, so a person who finishes today has
 /// an account and meets the server's own not-found page.
@@ -189,14 +189,14 @@ public sealed class RedeemController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Submit(string code, [FromForm] SetupSubmission submission)
     {
-        if (submission is null
-            || string.IsNullOrEmpty(submission.Username)
-            || string.IsNullOrEmpty(submission.Password)
-            || submission.Confirmation is null)
+        var answers = SetupAnswers.Accept(submission, Request);
+        if (answers is null)
         {
             // Read off the request and nothing else, before any code is judged,
-            // so this answer is the same whatever the code is worth. What the
-            // answers themselves have to satisfy is #75's and #76's.
+            // so this answer is the same whatever the code is worth. Every rule
+            // behind it is in SetupAnswers, which is where the argument for each
+            // one is; what is here is the order, and the order is the part that
+            // keeps a malformed post from telling anybody what its code was worth.
             return BadRequest();
         }
 
@@ -238,8 +238,8 @@ public sealed class RedeemController : ControllerBase
         {
             account = await AccountCreation.CreateAsync(
                 _accounts,
-                submission.Username,
-                submission.Password,
+                answers.Username,
+                answers.Password,
                 reserved.Template!).ConfigureAwait(false);
         }
         catch (ServerAccountWriteRefusedException)

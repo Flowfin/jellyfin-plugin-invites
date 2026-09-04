@@ -443,11 +443,22 @@ It compares the members of the bound type against the control names on the serve
 form and reds in both directions, so a fourth member is refused and so is a
 control the post would never receive.
 
-What that does not reach is whether the post USES what it bound, and one of the
-three is bound and unread today: the confirmation. Whether the two copies of the
-password agree is an answer being validated, which is #75, and the response to a
-disagreement is the form again rather than the single refusal. So a person who
-mistypes a password twice differently gets the account with the first of them.
+What that does not reach is whether the post USES what it bound.
+
+THIS PARAGRAPH SAID THE CONFIRMATION WAS BOUND AND UNREAD, so that a person who
+mistyped a password twice differently got the account with the first of them.
+It is read. The post asks one judgement about the answers before it looks at any
+code, and comparing the two copies ordinally is one of the rules that judgement
+applies:
+
+    git grep -n 'public static AcceptedAnswers? Accept' -- Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs
+    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:102:    public static AcceptedAnswers? Accept(SetupSubmission? submission, HttpRequest? request)
+
+What has not changed is the response. A disagreement is answered with the bare
+bad request every malformed post gets, rather than with the form again carrying
+the reason, which is what docs/refusal-response.md fixes and what this route does
+not serve. So the mistake is caught before an account exists and the person is
+not told which mistake it was.
 
 ### An invitation can never create more than one account per use
 

@@ -234,6 +234,116 @@ public class RedeemPostTests
     }
 
     /// <summary>
+    /// A post whose answers the server refuses is answered out of the request
+    /// alone: nothing is looked up, no attempt is counted and the use stands.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The page states the password rules above the field and compares the two
+    /// copies as they are typed, and a caller that never loaded the page does
+    /// neither. So both cases below are ones no browser produces and every
+    /// client that skips the page can: what refuses them has to be the server.
+    /// </para>
+    /// <para>
+    /// The invitation is live and its code is right, so the only thing that can
+    /// leave the use standing is the answers having been judged before the code
+    /// was. Which rule refused which case is asserted in
+    /// <c>SetupAnswersTests</c> rather than here.
+    /// </para>
+    /// </remarks>
+    /// <param name="password">What the post carried as the password.</param>
+    /// <param name="confirmation">What it carried as the confirmation.</param>
+    /// <returns>Nothing a caller reads.</returns>
+    [Theory]
+    [InlineData("a password long enough", "a different password")]
+    [InlineData("a password long enough", "A password long enough")]
+    [InlineData("short", "short")]
+    public async Task APostWhoseAnswersAreRefusedIsAnsweredWithoutJudgingTheCode(
+        string password,
+        string confirmation)
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var seam = new ARecordingWriteSeam();
+        var limiter = new AttemptLimiter(clock);
+        var controller = RedeemRoute.Over(directory.Path, clock, limiter, seam, RedeemRoute.Request());
+
+        var answer = await controller.Submit(
+            minted.Code,
+            new SetupSubmission { Username = "newcomer", Password = password, Confirmation = confirmation });
+
+        Assert.IsType<BadRequestResult>(answer);
+        Assert.Equal(0, limiter.AddressesHeld);
+        Assert.Empty(seam.Asked);
+        Assert.Equal(1, Assert.Single(new InvitationStore(directory.Path).Read().Invitations).UsesRemaining);
+    }
+
+    /// <summary>
+    /// A body crafted with fields the form does not define creates no account,
+    /// takes no use and leaves the record exactly as it was.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the crafted post #75 asks for, and the three extra fields are
+    /// chosen to be the ones that would matter if any of them were read: two
+    /// name members of the grant an account is created with and one names the
+    /// template itself. Nothing in the plugin binds them, so a route that
+    /// ignored an unexpected field rather than refusing it would create an
+    /// ordinary account here and every other assertion in this file would still
+    /// pass.
+    /// </para>
+    /// <para>
+    /// What the assertions read is the store and the write seam rather than the
+    /// response, because the property is that the request changed nothing: the
+    /// use is unspent, the record claims no account, and the seam was never
+    /// asked to write one. An account whose grant was steered by a posted field
+    /// would show up as a call on the seam, and there are none.
+    /// </para>
+    /// <para>
+    /// The bound is that the body is a dictionary the test builds rather than
+    /// bytes a client sent. No request has crossed a socket in this file and
+    /// nothing here says what a server's own pipeline does with a body it reads
+    /// off the wire.
+    /// </para>
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task ACraftedBodyCarryingExtraFieldsLeavesTheInvitationUntouched()
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var seam = new ARecordingWriteSeam();
+        var limiter = new AttemptLimiter(clock);
+
+        var body = RedeemRoute.Body("newcomer", "a password long enough");
+        body["maymanage"] = "true";
+        body["libraries"] = "every one of them";
+        body["template"] = "Household";
+
+        var controller = RedeemRoute.Over(
+            directory.Path,
+            clock,
+            limiter,
+            seam,
+            RedeemRoute.Posting(body));
+
+        var answer = await controller.Submit(
+            minted.Code,
+            RedeemRoute.Filled("newcomer", "a password long enough"));
+
+        Assert.IsType<BadRequestResult>(answer);
+        Assert.Equal(0, limiter.AddressesHeld);
+        Assert.Empty(seam.Asked);
+        Assert.Null(seam.AppliedTemplate);
+
+        var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
+        Assert.Equal(1, stored.UsesRemaining);
+        Assert.Empty(stored.AccountsProduced);
+    }
+
+    /// <summary>
     /// The limiter is asked before the code is judged, so an attempt over the
     /// threshold takes no use off a live invitation.
     /// </summary>
