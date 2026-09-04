@@ -214,7 +214,7 @@ working. Those limits are chosen now, so the ground has moved and the number
 follows from them:
 
     git grep -n 'Per source address, twenty attempts an hour' origin/master -- docs/rate-limit.md
-    origin/master:docs/rate-limit.md:133:**Per source address, twenty attempts an hour. Across all sources, ten attempts
+    origin/master:docs/rate-limit.md:143:**Per source address, twenty attempts an hour. Across all sources, ten attempts
 
     $ awk 'BEGIN{ bound=1000; perAddress=20; global=10;
         printf "bound / per-address limit an hour = %d sources at their ceiling, held whole\n", bound/perAddress;
