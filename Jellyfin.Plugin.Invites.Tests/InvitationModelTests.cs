@@ -78,14 +78,21 @@ internal sealed class CountedRecords : IReadOnlyList<Invitation>
 /// them arrived with the code that made them possible and are not written again
 /// here: two mints differ and canonicalisation is idempotent, both in
 /// <c>InvitationCodeTests</c>, and revocation is idempotent, in
-/// <c>RevocationTests</c>. One of the remaining four needs a routine that
-/// consumes a use, which nothing in this tree has.
+/// <c>RevocationTests</c>.
 /// </para>
 /// <para>
-/// The three below are the ones the model can answer today. None of them uses a
-/// fake: the store is the real one, over a directory the test creates and
-/// removes, which is what #101 asks for and what makes the first assertion worth
-/// anything at all.
+/// THIS REMARK SAID ONE OF THE REMAINING FOUR NEEDS A ROUTINE THAT CONSUMES A
+/// USE, WHICH NOTHING IN THIS TREE HAS. Something consumes one, so the fourth is
+/// below with the other three: spending the last use leaves the record where it
+/// was, with nothing left on it, rather than taking it out of the store.
+/// </para>
+/// <para>
+/// None of the four uses a fake: the store is the real one, over a directory the
+/// test creates and removes, which is what #101 asks for and what makes the
+/// first assertion worth anything at all. The fourth spends the use through the
+/// operation that spends one rather than by writing a record that already reads
+/// as spent, for the reason that issue's own comments give: a record arranged to
+/// look spent never goes near the routine that would make the mistake.
 /// </para>
 /// </remarks>
 public class InvitationModelTests
@@ -113,6 +120,60 @@ public class InvitationModelTests
             uses: 3,
             templateLabel: templateLabel,
             template: TestTemplates.Household);
+    }
+
+    /// <summary>
+    /// Spending the last use leaves the record in the store with nothing left on
+    /// it, rather than removing it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The record is what an operator answers "where did this account come from"
+    /// out of, and a spent invitation is exactly the one they ask about. A model
+    /// that deleted a record when its last use went would answer that question
+    /// with nothing, and would do it silently, because the account it produced
+    /// looks like any other account on the server.
+    /// </para>
+    /// <para>
+    /// It also has to stay for the decision to keep refusing it. A record that is
+    /// gone and a record that was never minted are the same thing to a lookup, so
+    /// deleting it would turn every later presentation of that code into the
+    /// no-such-invitation branch rather than the spent one, and the two are one
+    /// response to the person and two different rows to the operator.
+    /// </para>
+    /// <para>
+    /// What removes a spent record is retention, ninety days after it stopped
+    /// being usable, and that is a sweep on a schedule rather than a consequence
+    /// of the last use going.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SpendingTheLastUseLeavesTheRecordSpentRatherThanDeleted()
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var operations = RedeemRoute.Operations(directory.Path, clock);
+        var minted = operations.Mint(
+            Guid.Parse("11112222-3333-4444-5555-666677778888"),
+            "Household",
+            null,
+            uses: 1);
+
+        var reservation = operations.Reserve(minted.Code);
+
+        Assert.True(reservation.MayCreateAnAccount);
+
+        var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
+        Assert.Equal(minted.Invitation.Id, stored.Id);
+        Assert.Equal(0, stored.UsesRemaining);
+        Assert.Equal(1, stored.UsesGranted);
+        Assert.False(stored.IsRevoked);
+        Assert.Equal(minted.Invitation.ExpiresAt, stored.ExpiresAt);
+
+        // And the second presentation is refused as spent rather than as a code
+        // nothing matches, which is only possible while the record is there.
+        Assert.False(operations.Reserve(minted.Code).MayCreateAnAccount);
+        Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
     }
 
     /// <summary>
