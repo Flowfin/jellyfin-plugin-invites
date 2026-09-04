@@ -70,7 +70,7 @@ so a test that reaches out fails there rather than on the next machine.
 The tests this rule refuses are listed in `docs/tests-not-written.md`, each with
 the clause that refuses it and what covers the same risk instead. Read it before
 adding a test that needs a browser, a server, a certificate or a sleep, because
-the answer is probably already there and says what to write instead. Two of the
+the answer is probably already there and says what to write instead. Three of the
 replacements are a person doing something once per release, and
 `docs/manual-checks.md` is where a run of those is recorded.
 

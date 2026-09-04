@@ -1,10 +1,10 @@
 # Tests this plugin refuses to write
 
-Seven obvious tests are refusals here. Each one would be a reasonable thing to
+Eight obvious tests are refusals here. Each one would be a reasonable thing to
 add, each one would break the headless rule in `CONTRIBUTING.md`, and each one
 is therefore replaced by something narrower rather than dropped.
 
-Writing the list down is what stops the seventh of them arriving in good faith
+Writing the list down is what stops the eighth of them arriving in good faith
 next year, with a comment explaining that it only needs a browser. A refusal
 nobody recorded is a refusal that gets reversed by whoever did not know it was
 one.
@@ -74,7 +74,7 @@ elevated rights, writes outside a temporary directory it owns, reads or writes
 the machine's certificate stores, opens a network connection, launches an
 external binary, or sleeps on a real clock.
 
-## The seven
+## The eight
 
 ### A test that drives the setup page in a browser
 
@@ -196,6 +196,33 @@ is the version the package is compiled against and the one on which the archive
 compiled against 10.11.11 did not load. Per supported line is what the manual
 install is for, and a job pinned to a digest says nothing about the line above
 or below it.
+
+### A test that the account signs in with the password the person chose
+
+It would create an account through this plugin, hand that password to the
+server's own sign-in and read what came back. It needs a server binary and
+somewhere to put it, and a connection to reach it: an external binary, a write
+outside a temporary directory it owns, and a network connection. Three clauses.
+
+The refusal is narrower than it first reads and the narrowing is the useful
+part. This plugin does not authenticate anybody. It hands the password to the
+server's own credential routine and keeps nothing, so what a sign-in then
+answers is a fact about the server rather than about this repository. What IS
+decidable here is that the right member is reached, with the account and the
+password, in whichever of the two shapes the ends of the declared server line
+differ by.
+
+Replaced by three things, covering different halves. `ServerAccountWritesTests`
+drives the credential arm against two stand-ins, one carrying each shape of the
+member, so the arm binds and is called correctly on either end of the line.
+`NoTraceOfThePasswordTests` reads every file the plugin wrote, the response it
+sent and the trail of calls it made, for the password's bytes, which is the half
+that is about this plugin keeping nothing. And one manual step per release, in
+the third check of `docs/manual-checks.md`, where somebody signs in as the
+created account with the password that was typed.
+
+Status: both suite replacements exist. The manual step has never been run,
+because nothing has been released.
 
 ### A test of the plugin behind a real reverse proxy with real certificates
 
@@ -410,7 +437,12 @@ Row by row, which is the same thing each status line above says at more length.
 The setup page has neither of its two, because #107 is open and no manual check
 has been recorded. The real-server row has its ABI floor build, its
 packaging job and the jobs that install the packaged artefact into a published
-server, and not its manual install. The reverse-proxy row has both. The mail row has nothing to replace and
+server, and not its manual install. The sign-in row has both of its suite
+replacements and not its manual step, and it is the row whose two halves are
+furthest apart: what the suite holds is that the right member is called, and
+what the manual step would answer is the only question a person actually asks of
+an invitation, which is whether they can sign in afterwards. The reverse-proxy
+row has both. The mail row has nothing to replace and
 says so. The dashboard row has all three for both pages. The sleeping row has
 the seam and the boundary cases for three of its four behaviours, and not the
 fourth, which does not exist. The sibling row has its replacement, and that

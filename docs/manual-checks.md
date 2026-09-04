@@ -86,6 +86,18 @@ What it does not remove is this row. The routine is asserted against a policy a
 test hands it, and this check is the one that reads a policy off a running
 server, which nothing in this repository does.
 
+A fourth step, and it is the only one that answers the question an invited
+person actually has. Sign in as the created account with the password that was
+typed into the form. Nothing in this repository can answer it: this plugin hands
+the password to the server's own credential routine and keeps nothing, so
+whether the server then honours it is the server's behaviour and is measured
+nowhere here. docs/tests-not-written.md carries that refusal and names this step
+as one of its replacements.
+
+The password for the run is chosen for the run and is not written into this page
+or into a `Notes` cell. A credential recorded beside the version it was used on
+is a credential in the repository, which is what the whole of #66 is about.
+
 THIS PARAGRAPH SAID TWO OF THOSE THREE STEPS CANNOT BE RUN, BECAUSE THE ROUTE
 HAD NO POST BEHIND IT. It has one:
 
