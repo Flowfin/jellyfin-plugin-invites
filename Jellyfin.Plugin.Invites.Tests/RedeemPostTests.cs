@@ -202,6 +202,12 @@ public class RedeemPostTests
     /// A post that does not carry the fields the form defines is answered out of
     /// the request alone: nothing is looked up and no attempt is counted.
     /// </summary>
+    /// <remarks>
+    /// The anti-forgery pair is in order in every row, for the reason written at
+    /// the theory below it: a submission built here without a token would be
+    /// refused by #78's check with the same answer and would prove nothing about
+    /// the field that is missing.
+    /// </remarks>
     /// <param name="username">What the post carried as the username.</param>
     /// <param name="password">What it carried as the password.</param>
     /// <param name="confirmation">What it carried as the confirmation.</param>
@@ -225,7 +231,13 @@ public class RedeemPostTests
 
         var answer = await controller.Submit(
             minted.Code,
-            new SetupSubmission { Username = username, Password = password, Confirmation = confirmation });
+            new SetupSubmission
+            {
+                Username = username,
+                Password = password,
+                Confirmation = confirmation,
+                Token = RedeemRoute.Presented,
+            });
 
         Assert.IsType<BadRequestResult>(answer);
         Assert.Equal(0, limiter.AddressesHeld);
@@ -243,6 +255,15 @@ public class RedeemPostTests
     /// copies as they are typed, and a caller that never loaded the page does
     /// neither. So both cases below are ones no browser produces and every
     /// client that skips the page can: what refuses them has to be the server.
+    /// </para>
+    /// <para>
+    /// <b>The anti-forgery pair is in order in every row, and it has to be
+    /// stated rather than assumed.</b> #78 put a check ahead of the answers that
+    /// answers a forged post with the same bare bad request these rows expect,
+    /// so a submission built here without a token would pass every assertion
+    /// below while proving nothing about the answers. What says the refusal is
+    /// the answers' is that the same submission with acceptable answers is
+    /// honoured, which is the first test in this file.
     /// </para>
     /// <para>
     /// The invitation is live and its code is right, so the only thing that can
@@ -271,7 +292,13 @@ public class RedeemPostTests
 
         var answer = await controller.Submit(
             minted.Code,
-            new SetupSubmission { Username = "newcomer", Password = password, Confirmation = confirmation });
+            new SetupSubmission
+            {
+                Username = "newcomer",
+                Password = password,
+                Confirmation = confirmation,
+                Token = RedeemRoute.Presented,
+            });
 
         Assert.IsType<BadRequestResult>(answer);
         Assert.Equal(0, limiter.AddressesHeld);
