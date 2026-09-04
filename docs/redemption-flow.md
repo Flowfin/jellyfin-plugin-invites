@@ -16,18 +16,24 @@ refused by, and the routine that creates the account in the one safe order:
     origin/master:Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
     origin/master:Jellyfin.Plugin.Invites/Setup/PasswordRules.cs
 
-What none of them has is a caller, because the post this flow turns on does not
-exist:
+THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
+TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
-    git grep -nE '\[Http(Get|Post)' origin/master -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
-So every transition below is still a promise and the sentence was right about
-the flow. What it was wrong about is the distance: four of these promises have
-their routine written and their wiring missing, and a reader deciding what to
-build from a page that says none of it exists writes a second one of something
-that is already there. The setup page at that route is served, which the same
-sentence also denied.
+The post asks the limiter, asks the decision and calls the creation routine. The
+fourth, the password rules, is reached by nothing: validating an answer is #75's
+and #76's and the post does none of it.
+
+So this document is no longer a page of promises, and the states below are worth
+reading with that in mind. What a reader should not take from the landing is that
+the flow is walked end to end. Which transitions act and which are still promises
+is written at the branch table rather than counted here, and three of the states
+below name work no route does: the anti-forgery token in `Form` and `Posted` is
+#78, the `Validated` state is #75 and #76, and `Done` is #79 and is served by
+nothing, so a finished redemption ends at the server's own not-found page.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written
@@ -147,23 +153,31 @@ landed under #398:
 It does not unwind, and it says so on itself rather than leaving a reader to
 find out:
 
-    git grep -n 'Nothing is undone' origin/master -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
-    origin/master:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:63:/// <b>What a failure part-way leaves.</b> Nothing is undone. A refusal from the
+    git grep -n 'Nothing is undone' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:63:/// <b>What a failure part-way leaves.</b> Nothing is undone. A refusal from the
 
 It does not disable the account either. The seam it writes through declares
 three acts and none of them is a delete or a disable:
 
-    git grep -nE '^    Task' origin/master -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
+    git grep -nE '^    Task' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
 
 THE DELETE THIS UNWIND NEEDS IS REFUSED RATHER THAN MERELY ABSENT, which is the
 part that changes what somebody building these two branches should do. Widening
 the seam by a fourth act turns a guard red:
 
-    git grep -n 'public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds' origin/master -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
-    origin/master:Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:190:    public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds()
+    git grep -n 'public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:190:    public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds()
+
+Every quotation in this section names a commit rather than `origin/master`, and
+it named the branch until #439. A reference against a moving ref is a reference
+to whatever that ref holds when the check runs, so the same bytes are green on a
+branch and red on the mainline the moment a merge moves a line above the target.
+None of these five had gone stale; they were converted because the next change to
+either of those two files would have made them stale on the mainline behind a
+green pull request, which is what happened twice on two other pages.
 
 That guard is #91's answer read from this side: a plugin that can delete an
 account is a larger power than a redemption needs, and it was weighed and
@@ -177,9 +191,12 @@ WHICH OF THE TWO IS WRONG IS NOT DECIDED HERE. Either this flow gives up its
 only compensating action and says what the residual is, or the refusal is
 revisited with the delete held to the narrowest surface that serves it. The
 first is what the tree already does and the second is a change to #91's answer.
-The direction of a residual left by a failure part-way is #53's clause, the
-routine that would carry it is #399's, and this paragraph names both rather than
-choosing for them.
+The direction of a residual left by a failure part-way is #53's clause. The
+routine is written now, and what it does is the first of the two: it leaves the
+account where the failure left it, answers the person with the single refusal,
+and keeps the use taken. So the flow gives up its compensating action in
+practice, this paragraph is what says so, and revisiting #91's answer is still
+the other way out rather than a settled one.
 
 What was already right and stays right is where the unwind would live: in the
 same routine as the create rather than in a background sweep.

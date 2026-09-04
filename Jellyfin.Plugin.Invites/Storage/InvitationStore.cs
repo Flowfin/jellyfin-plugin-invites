@@ -385,8 +385,11 @@ public sealed class InvitationStore
     /// <b>One writer at a time is the caller's.</b> Nothing here serialises two
     /// writers, and two processes writing one store are two moves racing, where
     /// the loser's records are lost rather than mixed in. The lock covering
-    /// read, decide and write belongs to whoever redeems, which is #40's other
-    /// half and has no caller yet, and two servers over one store is #96.
+    /// read, decide and write belongs to whoever redeems, and that caller exists:
+    /// <see cref="Invitations.InvitationOperations.Reserve"/> takes the monitor,
+    /// reads, asks the decision and writes the use before letting go, which is
+    /// #40 inside one process. Two servers over one store is #96 and is not
+    /// covered by that monitor at all.
     /// </para>
     /// <para>
     /// A write that fails leaves its unfinished file behind under

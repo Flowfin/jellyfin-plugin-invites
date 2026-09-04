@@ -14,16 +14,21 @@ renders them.
 
 THIS PARAGRAPH SAID THERE IS NO TRAIL TO APPEND TO, AND THERE IS ONE NOW. The
 trail, its entry and its bound are in the tree as
-`Jellyfin.Plugin.Invites/Attempts/`, landed under #43. What has not changed is
-the other half of the sentence: there is no redemption path to produce an
-outcome, because the routine deciding a redemption still has no caller.
+`Jellyfin.Plugin.Invites/Attempts/`, landed under #43.
+
+IT THEN SAID THERE IS NO REDEMPTION PATH TO PRODUCE AN OUTCOME, BECAUSE THE
+ROUTINE DECIDING A REDEMPTION HAS NO CALLER. It has one:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
 
-So nothing appends to a trail on a running server, and the difference between
-the two halves is the one to keep: an entry that is appended is now judged by
-something, and no attempt reaches the thing that would append one.
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+So an outcome is produced on every submission to the redemption post, and nothing
+appends to a trail on a running server. Both halves of this page exist and
+neither reaches the other, which is the state to read carefully: the gap is one
+call rather than two components, and it is #43.
 
 THIS PARAGRAPH SAID NOTHING HERE IS ENFORCED AND MOST OF IT NOW IS. Every name
 in the table below is a member of `AttemptOutcome`, and
@@ -45,11 +50,11 @@ made.
 
 | Outcome                | What it means                                                                                                     | Produced by |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| `Accepted`             | The code was honoured and an account was created.                                                                 | #399        |
-| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #399        |
-| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #51, #399   |
-| `Spent`                | The record was found and had no uses left.                                                                        | #55, #399   |
-| `Revoked`              | The record was found and the operator had revoked it.                                                             | #54, #399   |
+| `Accepted`             | The code was honoured and an account was created.                                                                 | #43         |
+| `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #43         |
+| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #43, #51    |
+| `Spent`                | The record was found and had no uses left.                                                                        | #43, #55    |
+| `Revoked`              | The record was found and the operator had revoked it.                                                             | #43, #54    |
 | `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31         |
 | `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33         |
 | `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78         |
@@ -96,10 +101,34 @@ whole redemption decision in one routine, and that routine reaches five states:
     Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:47:    Spent = 3,
     Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:52:    Honoured = 4,
 
-What no issue has built is the caller that turns one of those into an entry, and
-that is the post on the redemption route. So the column names it on the five
-rows a decision reaches, and #51, #54 and #55 stay beside it because each of
-those still owns the rule its row is about.
+What no issue has built is the caller that turns one of those into an entry. So
+the column names the issue that would write one on the five rows a decision
+reaches, and #51, #54 and #55 stay beside it because each of those still owns the
+rule its row is about.
+
+## The column named the post, the post landed, and it appends nothing
+
+THIS SECTION AND FIVE ROWS ABOVE NAMED THE POST ON THE REDEMPTION ROUTE. It
+landed, and a cell naming it would send a reader after closed work, which is this
+page's subject happening on this page for the third time in a row.
+
+What matters more than the pointer is what the landing did NOT bring. The post
+decides a presented code, takes the use, creates the account and records it, and
+it appends nothing anywhere:
+
+    git grep -n 'AttemptTrail\|AttemptEntry' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs ; echo "exit=$?"
+    exit=1
+
+So the caller this column is about is still absent, and the reason changed rather
+than the fact: it used to be that no route judged a presented code, and now one
+does and does not record what it judged. The cells name #43, which is the issue
+that appends an entry and which also still owes where a trail is written and
+under which store version. Neither of those is decided anywhere in this tree.
+
+Reading the landing as the column being satisfied is the mistake this section
+exists against, and it is easier to make than the last two: the route is there,
+the decision is made, and the one act that would fill this table is the one that
+is missing.
 
 ## The column named the setup page for the post, and it does not now
 
@@ -132,9 +161,12 @@ which "the post is #74" is not. It was found by reading the page against the
 tracker.
 
 Writing this section moved the line two pasted references name, one below and
-one on [docs/personal-data.md](personal-data.md), from 143 to 178. Both are
-re-made from the command rather than adjusted by the difference, which is what
-`pasted-line-reference.sh` refused this change for until they were.
+one on [docs/personal-data.md](personal-data.md), from 143 to 178, and the
+section written after it moved the same line again, from 178 to 210. Every one of
+those is re-made from the command rather than adjusted by the difference, which
+is what `pasted-line-reference.sh` refused each change for until they were. Two
+sections have now been added above a paste on this page and neither author
+noticed the paste; the check did, both times.
 
 `Accepted` and `Honoured` are not two spellings of one state, and moving the
 column does not make them one. The decision's `Honoured` says the invitation may
@@ -181,8 +213,8 @@ bound below the limiter's threshold leaves the trail unable to show the limiter
 working. Those limits are chosen now, so the ground has moved and the number
 follows from them:
 
-    git grep -n 'Per source address, twenty attempts an hour' origin/master -- docs/rate-limit.md
-    origin/master:docs/rate-limit.md:133:**Per source address, twenty attempts an hour. Across all sources, ten attempts
+    git grep -n 'Per source address, twenty attempts an hour' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- docs/rate-limit.md
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:docs/rate-limit.md:143:**Per source address, twenty attempts an hour. Across all sources, ten attempts
 
     $ awk 'BEGIN{ bound=1000; perAddress=20; global=10;
         printf "bound / per-address limit an hour = %d sources at their ceiling, held whole\n", bound/perAddress;
@@ -265,7 +297,7 @@ THIS PARAGRAPH WENT ON TO CALL THE BOUND A QUANTITY NOTHING HAS CHOSEN, AND
 THIS PAGE CHOSE IT UNDER `## The bound, in two parts` ABOVE:
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:178:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:210:**The failure bound is one thousand entries.** This paragraph said the number was
 
 So a reader arriving at this section was told this page has no number for a
 thing this page states, which is worse than a stale claim about another

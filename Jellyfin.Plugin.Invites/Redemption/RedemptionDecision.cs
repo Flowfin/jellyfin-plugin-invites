@@ -38,9 +38,15 @@ namespace Jellyfin.Plugin.Invites.Redemption;
 /// </para>
 /// <para>
 /// <b>What it does not check.</b> The ceiling on how many accounts the plugin
-/// may create in a period, from #33, is not tested here, because nothing in the
-/// tree says what that number is yet. When it exists it is one more argument to
-/// this routine and one more refusal below, rather than a second routine.
+/// may create in a period, from #33, is not tested here. THIS REMARK SAID THAT
+/// WAS BECAUSE NOTHING IN THE TREE SAYS WHAT THE NUMBER IS, AND SAID IT WOULD
+/// ARRIVE AS ONE MORE ARGUMENT TO THIS ROUTINE. The number exists, in
+/// <see cref="Accounts.CreationCeiling"/>, and it did not arrive here. It is not
+/// a question about a record: two records identical in every field are honoured
+/// or refused by it according to what other redemptions did today, which is a
+/// fact about the server rather than about the invitation. Handing it in would
+/// make this routine's table a table of two subjects. It is asked by the caller
+/// before the use is taken, which is where the live ceiling is asked too.
 /// </para>
 /// <para>
 /// <b>The ceiling on live invitations is #33's too and is not a refusal here.</b>

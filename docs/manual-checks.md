@@ -86,17 +86,23 @@ What it does not remove is this row. The routine is asserted against a policy a
 test hands it, and this check is the one that reads a policy off a running
 server, which nothing in this repository does.
 
-Two of those three steps cannot be run today, and this is the form rather than
-the run, so they are here waiting for the release rather than left out of it:
+THIS PARAGRAPH SAID TWO OF THOSE THREE STEPS CANNOT BE RUN, BECAUSE THE ROUTE
+HAD NO POST BEHIND IT. It has one:
 
     $ git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
-The redemption route serves a page and there is no post behind it, which is #399
-since #71 split it out of #74 on 2026-08-31, so nothing is redeemed and no
-account is created. A row for a step that cannot
-be run says so in `Notes` and stays in the table. Taking it out until the code
-lands is how a release gets cut without it.
+So a link can be turned into an account on a running server, and these steps are
+runnable rather than waiting. What is still not runnable is what comes after a
+finished redemption: the completion address the post sends the person to is
+served by nothing until #79 lands, so a run of these steps ends at the server's
+own not-found page with the account already created, and a `Notes` cell that
+records the run says so.
+
+Nothing here has been run. This is the form rather than the run, and a row for a
+step that cannot be run says so in `Notes` and stays in the table. Taking it out
+until the code lands is how a release gets cut without it.
 
 ## How a run is recorded
 

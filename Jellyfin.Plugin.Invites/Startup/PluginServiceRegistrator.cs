@@ -48,12 +48,14 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IPublicAddress, PluginPublicAddress>();
         serviceCollection.AddSingleton<IConfiguredTemplates, PluginConfiguredTemplates>();
         serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
+        serviceCollection.AddSingleton<IServerAccountWrites, ServerAccountWrites>();
         serviceCollection.AddSingleton<IRunningServer, RunningServer>();
         serviceCollection.AddSingleton<ServerLineGate>();
         serviceCollection.AddSingleton<RefuseOnAServerLineMismatch>();
         serviceCollection.Configure<MvcOptions>(options => options.Conventions.Add(new ThisPluginsControllers()));
         serviceCollection.AddSingleton<InvitationOperations>();
         serviceCollection.AddSingleton<AttemptLimiter>();
+        serviceCollection.AddSingleton<CreationCeiling>();
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
         serviceCollection.AddSingleton<IScheduledTask, RetentionSweep>();
         serviceCollection.AddHostedService<LoadOnStart>();

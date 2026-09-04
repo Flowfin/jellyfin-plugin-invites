@@ -62,10 +62,16 @@ the same routine: what moved it is the remarks #62 added above it, in the change
 that put the refusal at the top of this section. The line-reference check refused
 the old number before this branch was pushed rather than a reader finding it.
 
-What is still missing is the caller. Nothing in the plugin reaches that routine
-outside the suite, which is #399's half of the split #398's body records, so the
-line is untested for the same reason as before written the other way round: the
-path exists and nothing walks it from a request.
+THIS PARAGRAPH SAID THE CALLER IS STILL MISSING AND THAT NOTHING IN THE PLUGIN
+REACHES THAT ROUTINE OUTSIDE THE SUITE. The post reaches it:
+
+    git grep -n 'account = await AccountCreation.CreateAsync' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:239:            account = await AccountCreation.CreateAsync(
+
+So the path is walked from a request now, and this line is put to the case it was
+written for. What still holds it undefended is the half below rather than the
+absence of a caller: the server sets the all-libraries flag on every account it
+creates, this plugin may not clear it, and no route changes that.
 
 THIS PARAGRAPH ALSO SAID NOTHING HERE WRITES A USER POLICY, AND SOMETHING DOES.
 The routine that applies an account template landed under #69 and writes fifteen
@@ -103,8 +109,8 @@ THE TEST THIS PARAGRAPH SAID THE LINE OWED IS AT THE TOP OF THIS SECTION, AND IT
 DID NOT WAIT FOR THE POST. It said the day the redemption post lands is the day
 this line owes a test of its own. That was wrong about which arrival mattered:
 what a refusal needs is a routine to live in, not a caller to reach it, and #62
-put it in the routine the moment there was one. The post is still #399's and the
-line is refused before it.
+put it in the routine the moment there was one. The post has landed since, and
+the line is refused before it reaches the post rather than by it.
 
 Beside it stand the spelling below and the routine that applies a template,
 which writes fifteen policy fields and no administrator flag.
@@ -161,7 +167,7 @@ service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
     Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:50:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:59:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:61:        serviceCollection.AddHostedService<LoadOnStart>();
 
 Both numbers moved twice in one night and this paste is the second re-run: first
 by two, when the retention sweep from #59 was registered and its namespace
@@ -219,10 +225,13 @@ account: what it takes is a policy and a template, which is why the test this
 half wants is still absent.
 
 THIS SENTENCE SAID THAT HALF WAITS ON SOMETHING THAT CREATES THE ACCOUNT THE
-POLICY WOULD BELONG TO, AND THAT HAS ARRIVED. #398 landed it, and what the half
-waits on now is the recorded-call contract in #103 and the post in #399: the
-routine is reached from the suite and from nowhere else, so a test asserting
-that a redemption modifies no existing account has no request to make.
+POLICY WOULD BELONG TO, AND THAT HAS ARRIVED. #398 landed it and the post reaches
+it, so a test asserting that a redemption modifies no existing account has a
+request to make now. What the half waits on is the recorded-call contract in
+#103: what a route-level test can read today is the call trail of the write seam,
+and the seam declares three acts none of which names an account a caller chose,
+so what such a test would assert is the absence of a shape rather than the
+absence of a call.
 
 The second half, that no other
 path in the plugin ever reaches the server's update method, said here that it is
@@ -286,8 +295,11 @@ every test above is green over a policy whose flag a test set rather than one
 the server made. Whether the way out is a named exemption for the one routine
 that applies a template, or a disclosure that the list does not bound what an
 account sees, is #63's, where the reading is written in full, and this page
-takes neither. Nothing reaches the routine from a request yet, which is #399,
-so no account has been created this way; the sentence above is about what the
+takes neither. THIS SENTENCE SAID NOTHING REACHES THE ROUTINE FROM A REQUEST, SO
+NO ACCOUNT HAS BEEN CREATED THIS WAY. The post reaches it, so an account created
+by a redemption on a running server would see every library whatever the template
+names. No server has been run, so it has not happened; the sentence above is
+about what the
 first one will carry.
 
 ### An invitation can never be redeemed after expiry, after revocation, or with no uses left
@@ -356,9 +368,11 @@ What that does not change is the rule's narrowness, and this is the half a reade
 should leave with. It matches a spelling, so a secret reaching a log call through
 a local or through a string built two files away is invisible to it, which
 `docs/logging.md` says rule by rule. Neither of the two routines is the redemption
-path, and the redemption path is where a code is in scope to be logged at all;
-that path is #399's, so this half of the line has never been put to the case it
-exists for.
+path, and the redemption path is where a code is in scope to be logged at all.
+THAT PATH IS WRITTEN NOW, and this half of the line is put to the case it exists
+for: the post holds a presented code and a password for the length of a request
+and writes no log line at all, so the rule has a subject on the one route where
+it matters and nothing on that route matches it.
 
 Not refused, for a backup. No test in this repository sees a backup: it is a
 file another tool made, on a machine this suite never runs on. What stands
@@ -367,8 +381,21 @@ somebody makes by hand. `docs/manual-checks.md` is the register such a check is
 recorded in and it does not carry this one, and #100 is where what belongs in it
 is decided.
 
-Not refused, for an error message. The single indistinguishable refusal is #77
-and there is no response to inspect.
+THIS SAID NOT REFUSED, FOR AN ERROR MESSAGE, ON THE GROUND THAT THERE IS NO
+RESPONSE TO INSPECT. There is one. The redemption post answers every refusal of a
+presented code with one page, and that page is inspected in two directions:
+`RefusalPageTests.ThePageCarriesNothingThatVariesBetweenTheCases` requires it to
+carry no form, no input and no link, and
+`RedeemPostTests.EveryRefusalThisRouteServesIsTheSameResponse` compares the whole
+of what six cases answer with, body included, so a code appearing in any of them
+would have to appear in all six identically and would then not be a code.
+
+The other answer this route gives is a bad request, and it carries no body at
+all. So nothing a person is shown by the post can carry the code they presented.
+
+What is not inspected is the refusal half of the page route, which serves the
+setup page for every code and refuses nothing; that is #75 and #77 and discloses
+nothing about a code for the opposite reason, which is that it reads none.
 
 ### An invitation can never be extended by anything the redeeming party sends
 
@@ -397,29 +424,52 @@ refuses a field nobody placed in `docs/personal-data.md`, and
 holds those three against `docs/setup-never-asks.md`. A fourth field added to the
 form reddens all three.
 
-What is absent is the post that receives them:
+THIS PASSAGE SAID THE POST THAT RECEIVES THEM IS ABSENT, AND IT IS NOT:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:59:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
-So this half of the line cannot be broken today, and for the weakest of reasons:
-nothing reads a submitted field because nothing receives one. The form posts back
-to an address with no post action behind it, which
-`SetupPageTests.TheFormPostsBackToWhereItCameFrom` holds and which is worth
-reading as the state it is rather than as a working flow. What the field list
-does NOT bound is what a post handler will read - a handler binding a request
-body to a model wider than the form is exactly this line broken, and no
-assertion above sees it. That is #75.
+So this half of the line can be broken now, and it is held rather than left to
+the weakest of reasons. What the passage named as the gap was that the field list
+bounds what the form ASKS and not what a handler READS, that a handler binding a
+request body to a model wider than the form is exactly this line broken, and that
+no assertion saw it. One does:
+
+    git grep -n 'public void ThePostBindsTheFormsFieldsAndNothingWider' -- Jellyfin.Plugin.Invites.Tests/SetupFormInventoryTests.cs
+    Jellyfin.Plugin.Invites.Tests/SetupFormInventoryTests.cs:211:    public void ThePostBindsTheFormsFieldsAndNothingWider()
+
+It compares the members of the bound type against the control names on the served
+form and reds in both directions, so a fourth member is refused and so is a
+control the post would never receive.
+
+What that does not reach is whether the post USES what it bound, and one of the
+three is bound and unread today: the confirmation. Whether the two copies of the
+password agree is an answer being validated, which is #75, and the response to a
+disagreement is the form again rather than the single refusal. So a person who
+mistypes a password twice differently gets the account with the first of them.
 
 ### An invitation can never create more than one account per use
 
-Not refused. Nothing creates an account.
+THIS SAID THE LINE IS NOT REFUSED BECAUSE NOTHING CREATES AN ACCOUNT. The
+redemption post creates one, and part of the line is refused now:
 
-The line has three parts and they are three issues. The record is the only
+    git grep -n 'var reserved = Spending.Of(matched);' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:646:            var reserved = Spending.Of(matched);
+
+The use is taken inside the monitor that read the records and decided against
+them, and it is taken BEFORE the account is created, so a request that gets an
+account has already paid for it and a second presentation of a spent code meets
+the decision refusing it. `RedeemPostTests.ASingleUseInvitationIsRefusedTheSecondTime`
+drives that pair through the route.
+
+The line has three parts and one of them is now held. The record is the only
 authority for the count, which is #52. The crash between creating the account
 and writing the count back is #53, and its direction is decided there: lose an
-invitation rather than grant an extra account. Two redemptions at once are #40's
-lock and #106's deterministic test of it.
+invitation rather than grant an extra account, which is the direction the post
+takes and does not close, because a failure after the use was taken leaves the
+use taken and no account. Two redemptions at once are #40's lock, which the
+monitor above is, and #106's deterministic test of it, which is not written.
 
 ## Where this list is not defended today
 
@@ -428,29 +478,50 @@ sections:
 
 | Line | What is missing | Where it lands |
 | --- | --- | --- |
-| Never create an administrator | Account creation, and the decision that a grant may not manage | #62 |
-| Never modify an existing account | Account creation, and the write side of the seam a test would drive it through | #103 |
-| Never grant beyond the template | The account the policy is written to, on which the all-libraries flag the server sets stays on because this plugin may not clear it | #63, #399 |
+| Never modify an existing account | A test that drives a redemption against a server already holding an account and asserts it is untouched. What holds the line meanwhile is the shape: the seam declares three acts, none of them names an account a caller chose, and the identifier the writes are addressed by comes out of the creation | #103 |
+| Never grant beyond the template | The all-libraries flag the server sets on every account it creates stays on, because this plugin may not clear it, so the account a redemption creates sees every library whatever the template names | #63 |
 | Never be recovered, for a backup | A check somebody makes by hand. The register it would be recorded in is in the tree and carries no row for it | #100 |
-| Never be recovered, for an error message | The refusal response | #77 |
-| Never be extended by what is sent, at the route | The post that receives the form. The route, the form and the field list are all in the tree | #75 |
-| Never create more than one account per use | Account creation, and the redemption path that spends a use under the lock. The count itself is authoritative already | #40, #53 |
+| Never create more than one account per use | The window between the use being taken and the account existing, and a test that makes two redemptions of one code race deterministically. The count is authoritative, the monitor covers read, decide and write, and the use is taken before the account is created | #53, #106 |
 
-Four of the seven lines are undefended in whole or in part, and that is the
-state of the plugin rather than a gap in this page. The rule the page is for is
-the other direction: a line's source arriving with no test for the line is what
-this table exists to make visible, so a change that lands one of the issues
-above lands the line's test in the same change and moves its row out of this
-table.
+THREE ROWS LEFT THIS TABLE WHEN THE REDEMPTION POST LANDED, AND THE COUNT DID
+NOT MOVE. It was four of the seven lines undefended in whole or in part and it
+still is, over a different set, which is why the rows are listed rather than
+counted from memory.
+
+What left: an administrator, because the routine that refuses one is reached from
+a request now and the refusal is asserted inside it; an error message, because
+there is a refusal to inspect and it is compared whole across six cases; and what
+the redeeming party sends, because the post binds three fields and a test reads
+its members against the controls on the served form.
+
+What arrived in their place is nothing. The two rows that changed are the two
+that were partly about account creation, and creation arriving narrowed them
+rather than closing them: what each waits on now is written in its own row rather
+than named as a missing routine.
+
+The rule the page is for is the other direction: a line's source arriving with no
+test for the line is what this table exists to make visible, so a change that
+lands one of the issues above lands the line's test in the same change and moves
+its row out of this table. That happened three times in one change here, which is
+the table working rather than the table being wrong.
 
 #69 LEFT THE THIRD COLUMN OF THREE ROWS AND NO ROW LEFT THE TABLE. That issue is
 closed as completed, so a reader following the column to find where the missing
 thing lands arrived at finished work, which is the defect this page is for
-happening on this page. What the routine it landed does is written in the second
-and third sections above; what none of the three rows was ever about is the
-routine, and each one still names account creation or the seam that would drive
-it. A row leaves this table when the line has a test, not when an issue named
-beside it closes.
+happening on this page. A row leaves this table when the line has a test, not
+when an issue named beside it closes, and the three that left above left because
+each line gained one.
+
+Every number in the third column is open, which is a state a reader can check and
+which this page cannot hold on its own:
+
+    for i in 53 63 100 103 106; do printf '%s=%s ' "$i" "$(gh issue view "$i" --repo Flowfin/jellyfin-plugin-invites --json state --jq .state)"; done
+    53=OPEN 63=OPEN 100=OPEN 103=OPEN 106=OPEN
+
+`.github/lint/issue-pointer.sh` reads columns of exactly this shape against the
+tracker and refuses a cell naming closed work, and this column is not in its
+register. Adding it is a decision about that register rather than an edit here,
+and until somebody takes it this table is checked by whoever reads it.
 
 Nothing in the table moves for the capability refusal added under #91, and that
 is deliberate. What is missing in each row is a routine and the test over it,

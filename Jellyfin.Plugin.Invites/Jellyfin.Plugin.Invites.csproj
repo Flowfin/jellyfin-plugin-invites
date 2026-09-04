@@ -37,6 +37,8 @@
     <EmbeddedResource Include="Configuration\configPage.html" />
     <None Remove="Setup\setupPage.html" />
     <EmbeddedResource Include="Setup\setupPage.html" />
+    <None Remove="Setup\refusalPage.html" />
+    <EmbeddedResource Include="Setup\refusalPage.html" />
   </ItemGroup>
 
   <!--

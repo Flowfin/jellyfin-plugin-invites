@@ -131,16 +131,27 @@ naming a deleter here.
 | --- | --- | --- |
 | `username` | Becomes the name of the account the server creates, so it is held in the server's own user database on the same footing as an account an operator made by hand. The record points at an account by identifier and never by name, so this plugin keeps no second copy of it. | Deleting the account, on the server |
 | `password` | The credential of the account being created. It is handed to the server and held here in no form: not in the store, not in a log line, not in the trail. What reads it in this plugin is the length rule in `Jellyfin.Plugin.Invites/Setup/PasswordRules.cs`, which answers why a password is refused and keeps none of it. | Never held here |
-| `confirmation` | Compared with the password so a mistyped credential is caught before an account exists carrying it. It is the one value on the form with no reader outside the request it arrived in. | Never held here |
+| `confirmation` | Asked so a mistyped credential can be caught before an account exists carrying it. NOTHING COMPARES IT TODAY: the post binds it and never reads it, because comparing the two copies is an answer being validated on the server, which is #75. It is the one value on the form with no reader at all. | Never held here |
 
-Nothing takes a submission yet, so no value in this table has reached the plugin
-on any server:
+THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
 
     $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs ; echo "exit=$?"
-    exit=1
+    exit=0
 
-So the rows are written before the post that fills them, in the same direction
-as the record table above, which was written before the record type existed. The
+    $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+
+So these three rows describe values that reach the plugin on a running server,
+and each row is now a claim about behaviour rather than a plan. Two of the three
+are as the rows say. The third is not: the confirmation is bound and never read,
+because comparing it with the password is validating an answer, which is #75, so
+a mistyped credential is NOT caught before an account exists carrying it. That
+row says it is, and the row is corrected below rather than here, where the
+correction would be lost in a table cell.
+
+No server has run any of it. The rows were written before the post that fills
+them, in the same direction as the record table above, which was written before
+the record type existed. The
 comparison between what the page asks and what this section names is
 `Jellyfin.Plugin.Invites.Tests.SetupFormInventoryTests` rather than a reading
 somebody repeats, so a fourth question added to the form with no row here reds
@@ -241,7 +252,7 @@ quantity had already derived one and had been carrying it for a fortnight.
     fd0fdfe 2026-08-17 Choose the attempt trail's failure bound, for #43
 
     git grep -n 'The failure bound is one thousand entries' -- docs/attempt-outcomes.md
-    docs/attempt-outcomes.md:178:**The failure bound is one thousand entries.** This paragraph said the number was
+    docs/attempt-outcomes.md:210:**The failure bound is one thousand entries.** This paragraph said the number was
 
 It bounds failures and not the whole trail, and that half is the one a summary
 here would lose. Successes are kept and are bounded by the ceilings in #33
@@ -299,14 +310,30 @@ stopped being usable more than ninety days ago is gone at the next daily run,
 without an operator doing anything. What the sweep never removes is a record that
 could still be redeemed, and it reaches no account at all.
 
-The redemption half is unchanged. A `Redeem` controller exists and serves the
-page, and no redemption commits:
+THE REDEMPTION HALF IS NOT UNCHANGED, AND THIS PARAGRAPH SAID NO REDEMPTION
+COMMITS. One does. The controller carries a post as well as the page, and an
+honoured code writes to the store twice: once to take the use, once to record the
+account it produced.
 
 ```
-$ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:49:public sealed class RedeemController : ControllerBase
-origin/master:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
+$ git grep -nE '\bRedeem' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- 'Jellyfin.Plugin.Invites/*.cs'
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:75:public sealed class RedeemController : ControllerBase
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:100:    /// Initializes a new instance of the <see cref="RedeemController"/> class.
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:115:    public RedeemController(
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
 ```
+
+Both quotations above name a commit rather than a branch, and the change that
+made them do so is #439's. A reference against `origin/master` is a reference to
+whatever that ref holds when the check runs, so the same bytes are green on a
+branch and red on the mainline the moment a merge moves a line above the target.
+That happened twice in one evening on these two pages. The register at
+`.github/lint/pasted-line-reference-records.txt` already names this repair in its
+own header: a quotation that can name a revision is judged at that revision
+rather than excused.
+
+Neither write adds a field to this inventory. What they move is the use count and
+the list of accounts a record claims, and both already have their rows above.
 
 One file the plugin writes on every start, named here because it is the write
 that happens with no operator action behind it and so appears on a server where

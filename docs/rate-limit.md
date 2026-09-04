@@ -20,13 +20,23 @@ the sentence moving. There is an endpoint a stranger can reach:
     exit=0
 
 `RedeemController` serves the setup page anonymously, so the address the limiter
-belongs on exists. What it still does not do is read an invitation or decide
-anything, so there is no attempt to count: the same bytes come back for a code
-that was never minted as for a live one, and the routine that would tell them
-apart has no caller.
+belongs on exists.
+
+THIS PARAGRAPH SAID THAT ROUTE READS NO INVITATION AND DECIDES NOTHING, SO THERE
+IS NO ATTEMPT TO COUNT. Its post decides one on every submission, and it asks
+this limiter before it does:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
+
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+What is unchanged is the GET. The same bytes still come back for a code that was
+never minted as for a live one, because that action reads no invitation, and its
+refusal half is #75 and #77. So a browser following a link spends no allowance
+and a form being posted spends one, which is the split the numbers below are
+sized against.
 
 ## The counter lives in memory, in the plugin's process
 
@@ -243,11 +253,13 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:175:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:186:memory for as long as its window and no longer, and that the trail does not
 
-The line moved from 149 to 174 when the paragraph above it was repaired, and
-from 174 to 175 when #61 added the template grant's row above it, and the
-sentence this points at is not one of the bytes that changed either time. It is re-pasted
+The line moved from 149 to 174 when the paragraph above it was repaired, from
+174 to 175 when #61 added the template grant's row above it, and from 175 to 186
+when the post landed and the sentence about nothing taking a submission was
+corrected above it. The sentence this points at is not one of the bytes that
+changed any of those times. It is re-pasted
 here rather than renumbered quietly, because a corrected number with nothing
 said about it reads exactly like one that was right all along.
 
@@ -270,8 +282,10 @@ episode ends.
 The half that is this page's is the consequence for the limiter: the write
 happens on the state transition rather than on the event, so the limiter's own
 refusals do not become the write path the trail's bound exists to close.
-`AttemptLimiter` does not append anything today, because nothing calls it and
-there is no trail on disk to append to.
+`AttemptLimiter` does not append anything today. THAT USED TO REST ON NOTHING
+CALLING IT, and the post calls it now; what is left is that there is no trail on
+disk to append to, and that whether a throttled attempt appends an entry at all
+is one answer between #31 and #43 that nobody has given.
 
 ## What is written now, and what of this page it holds
 
@@ -281,8 +295,8 @@ pass every workflow in this repository. `AttemptLimiter` landed under #31 and tw
 of those three have moved.
 
     git grep -n 'public const int PerAddressCeiling\|public const int GlobalCeiling' -- Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
-    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:67:    public const int PerAddressCeiling = 20;
-    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:72:    public const int GlobalCeiling = 10;
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:72:    public const int PerAddressCeiling = 20;
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:77:    public const int GlobalCeiling = 10;
 
 Something reads this page as well. `AttemptLimiterTests` matches the sentence
 under `## The two numbers` above, resolves the words in it, and compares them
@@ -297,10 +311,31 @@ registration handing out a limiter per request would give every attempt an empty
 counter while passing every assertion about one instance, so the registration's
 lifetime is asserted separately.
 
-**Nothing calls it.** An attempt is a presented code being judged and no route
-judges one, so the limiter counts nothing on a running server today. That is
-#399, and until it lands this page describes a component that is built and
-unreached.
+**THIS PARAGRAPH SAID NOTHING CALLS IT, AND THE POST CALLS IT.** An attempt is a
+presented code being judged, the post on the redemption route judges one on every
+submission, and it asks here first:
+
+    git grep -n 'if (!_limiter.MayJudge(from)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:213:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+
+So this page no longer describes a component that is built and unreached. Three
+things about the call are worth having here rather than in the route, because
+this page is where the numbers are argued.
+
+The order is asked before judged. Nothing is looked up until the limiter has
+allowed the attempt and counted it, which is what makes the two numbers bound
+guesses rather than describe them after the fact. A test drives the global
+ceiling and then presents a live code, and the invitation comes back with its use
+untouched.
+
+A request the server cannot place is refused rather than counted. `MayJudge`
+refuses to count an attempt naming no address, which this page's own decision
+about the counter's key requires, and the route answers such a request with the
+ordinary refusal instead of judging it outside the limit.
+
+What is counted is a submission and never a page view. The route serves the setup
+page to anybody who asks, unchanged and without reading a code, so a browser
+loading a link spends nothing. The allowance is spent by a form being posted.
 
 ## What is still not claimed
 

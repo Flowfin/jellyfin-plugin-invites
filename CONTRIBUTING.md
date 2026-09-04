@@ -154,7 +154,7 @@ decision as a table of cases rather than as repeated test methods. Both are in
 the tree, so this rule binds today rather than once something arrives:
 
     git grep -n "public static RedemptionVerdict Decide" -- Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
-    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:80:    public static RedemptionVerdict Decide(
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:86:    public static RedemptionVerdict Decide(
     git grep -n "^public class RedemptionDecisionTableTests" -- Jellyfin.Plugin.Invites.Tests/RedemptionDecisionTableTests.cs
     Jellyfin.Plugin.Invites.Tests/RedemptionDecisionTableTests.cs:85:public class RedemptionDecisionTableTests
 

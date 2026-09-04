@@ -16,13 +16,18 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Nothing appends to a trail on a running server. The route that judges a
-/// presented code is #399 and does not exist, so what is asserted here is the
-/// value and its rules rather than a redemption. Every clause of #43 about
-/// the shape of an entry, the fixed set, the bound, the drop order and the drop
-/// notice is reachable from that; the clause about every redemption attempt
-/// appending exactly one entry is not, and no test here is written as though it
-/// were.
+/// Nothing appends to a trail on a running server. THAT SENTENCE USED TO REST ON
+/// THERE BEING NO ROUTE THAT JUDGES A PRESENTED CODE, and there is one: the post
+/// landed and it judges one on every submission. What it does not do is append
+/// an entry, so the sentence holds for a different reason than it did, and the
+/// reason is now the only one left. Where a trail is written and under which
+/// store version is #43's and is decided nowhere in this tree.
+///
+/// So what is asserted here is the value and its rules rather than a redemption.
+/// Every clause of #43 about the shape of an entry, the fixed set, the bound, the
+/// drop order and the drop notice is reachable from that; the clause about every
+/// redemption attempt appending exactly one entry is not, and no test here is
+/// written as though it were.
 /// </para>
 /// <para>
 /// No clock is read. Every instant below is a value the test chose, which is what

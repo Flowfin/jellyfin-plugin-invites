@@ -93,19 +93,28 @@ already doing that for the names written as a class, a dot and a method, and it
 reads only those: after the first mention of a class this page drops it, so it
 saw twenty-seven names and the fourteen written bare were read by nothing.
 
-Nothing in this repository redeems an invitation or creates an account yet, so
-several of these are held at the routine that decides and not on any path a
-stranger can reach:
+THIS PARAGRAPH SAID NOTHING IN THIS REPOSITORY REDEEMS AN INVITATION OR CREATES
+AN ACCOUNT. Both happen now. The post on the public route judges a presented
+code, takes the use and creates the account:
 
 ```
 git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'; echo "exit=$?"
-exit=1
+exit=0
 ```
 
-Routes are served now, which they were not when this section was written. Four
-of them are administrator-only and one is reachable without an account, and the
-public one serves a page and reads no invitation. Where that is the difference
-between a property and what holds it, it is written out.
+```
+git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+```
+
+So the properties below are on a path a stranger can reach for the first time,
+and that is the sentence to read before the rest of this page: what was held at a
+routine nobody called is now held on a live route, and no server has run it.
+
+Routes are served. Four of them are administrator-only and two are reachable
+without an account, and the public pair serves the setup page for every code and
+receives the form. Where that is the difference between a property and what holds
+it, it is written out.
 
 ### Codes are minted from a cryptographic source at a calculated entropy
 
@@ -228,20 +237,32 @@ reader deciding whether that spelling is available. No timing was measured, and
 this is a claim about which branches the routine takes rather than about a
 clock.
 
-Byte-identical responses are not held, because no route answers a presented
-code. This paragraph said nothing here serves a route, and routes are served.
-What is absent is narrower and is the half that matters: the public route
-answers a code with the same page whether or not it was ever minted, so it
-neither distinguishes the four nor refuses any of them, and nothing posts to it:
+THIS PARAGRAPH SAID BYTE-IDENTICAL RESPONSES ARE NOT HELD BECAUSE NO ROUTE
+ANSWERS A PRESENTED CODE, AND THAT NOTHING POSTS TO THE PUBLIC ROUTE. One does:
 
 ```
 git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs; echo "exit=$?"
-exit=1
+exit=0
 ```
 
-What a person is shown is decided in
-[docs/refusal-response.md](docs/refusal-response.md), and the assertion that the
-four are identical on the wire waits for the route that writes them.
+```
+git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+```
+
+They are held on that route and the assertion is at the route level, which is
+where a response the server actually sends can be read:
+`RedeemPostTests.EveryRefusalThisRouteServesIsTheSameResponse` drives five of the
+six cases [docs/refusal-response.md](docs/refusal-response.md) lists through the
+action and compares the status, the body, the content type and every header.
+
+Two bounds stay, and they are the halves that matter. The sixth case, a ceiling
+on what the plugin may create, is refused by nothing yet, so it is not in the
+comparison. And the GET still answers every code with the same setup page, so it
+distinguishes nothing and refuses nothing; its refusal half is #75 and #77.
+
+Timing is not held and no test in this repository will say otherwise. That claim
+and its reason are in [docs/refusal-response.md](docs/refusal-response.md).
 
 ### Redemption is rate limited
 

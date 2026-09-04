@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using Jellyfin.Plugin.Invites.Controllers;
 using Jellyfin.Plugin.Invites.Setup;
 using Xunit;
 
@@ -176,5 +178,45 @@ public class SetupFormInventoryTests
         Assert.Equal(
             new[] { "confirmation", "password", "username" },
             FieldsOnTheForm());
+    }
+
+    /// <summary>
+    /// What the post binds is exactly what the form asks for, and nothing
+    /// wider.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the direction the two assertions above cannot see, and
+    /// docs/what-an-invitation-can-never-do.md named it as the gap while there
+    /// was no post: a model bound from a request that carries a member the form
+    /// has no control for is a value a stranger can set that nobody meant to
+    /// offer, and it looks exactly like the form's own model in every other
+    /// reading. A member is matched to a control by its name, compared ignoring
+    /// case, because that is how the binder matches them.
+    /// </para>
+    /// <para>
+    /// It reds in both directions on purpose. A member with no control is the
+    /// widening; a control with no member is a question the person answers and
+    /// the post never receives, which is the quieter half and is how a field
+    /// ends up silently ignored.
+    /// </para>
+    /// <para>
+    /// What this does not read is whether the post USES what it bound. The
+    /// confirmation is bound and not read today, which is #75's, and that is a
+    /// judgement about the body of an action rather than a shape any reading of
+    /// a type makes.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ThePostBindsTheFormsFieldsAndNothingWider()
+    {
+        var bound = typeof(SetupSubmission)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(property => property.Name.ToLowerInvariant())
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.NotEmpty(bound);
+        Assert.Equal(FieldsOnTheForm(), bound);
     }
 }

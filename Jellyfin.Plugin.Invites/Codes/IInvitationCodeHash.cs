@@ -31,18 +31,18 @@ namespace Jellyfin.Plugin.Invites.Codes;
 /// not, in the file that defines what keying means here.
 /// </para>
 /// <para>
-/// <b>What still does not call it.</b> One routine in the plugin takes this
-/// interface, the one in <see cref="Redemption.RedemptionDecision"/> that decides
-/// a presented code, and nothing calls that routine. So the seam is exercised
-/// only by the suite. docs/threat-model.md carries the command that shows the
-/// absence, written there rather than here because a command pasted into source
-/// is a line the same command then finds.
+/// <b>THIS REMARK SAID NOTHING CALLS THE ROUTINE THAT TAKES THIS INTERFACE.</b>
+/// One routine in the plugin takes it, the one in
+/// <see cref="Redemption.RedemptionDecision"/> that decides a presented code, and
+/// the redemption post reaches that routine on every submission. So the keyed
+/// form is used for deciding a presented code on a live route now, and no longer
+/// only for writing a record at the mint.
 /// </para>
 /// <para>
-/// The mint path does construct the implementation and hash a code with it, in
-/// <see cref="Invitations.InvitationOperations"/>, but it holds the concrete type
-/// rather than this interface. So the keyed form is in use for writing a record
-/// and has never been used for deciding one.
+/// What the caller holds is still the concrete type rather than this interface,
+/// because it constructs the implementation from the secret it has just opened.
+/// So this interface is the shape the decision takes and never the shape anything
+/// is registered as, which is why no registration names it.
 /// </para>
 /// </remarks>
 public interface IInvitationCodeHash
