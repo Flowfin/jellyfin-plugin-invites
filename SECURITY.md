@@ -104,7 +104,7 @@ exit=0
 
 ```
 git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 ```
 
 So the properties below are on a path a stranger can reach for the first time,
@@ -247,7 +247,7 @@ exit=0
 
 ```
 git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 ```
 
 They are held on that route and the assertion is at the route level, which is

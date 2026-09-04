@@ -9,7 +9,7 @@ BEFORE THAT IT SAID NONE OF THEM WERE. Five act. The record these rules judge is
 in the tree, as `Invitation` under #38, and so is the routine that judges it:
 
     git grep -n 'public static class RedemptionDecision' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:54:public static class RedemptionDecision
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:60:public static class RedemptionDecision
 
 Four of the five act at minting and the fifth is the comparison that routine
 makes. They are read off the source rather than counted from the sections below,
@@ -18,11 +18,11 @@ because the count in this paragraph is the thing that went stale twice:
     git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:65:    public DateTimeOffset ExpiresAt { get; }
     Jellyfin.Plugin.Invites/Invitations/Invitation.cs:192:    public DateTimeOffset ExpiresAt { get; }
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:253:        var lasts = validity ?? DefaultValidity;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:260:        if (lasts <= TimeSpan.Zero)
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:268:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:315:                expiresAt: now + lasts,
-    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:235:        if (now >= record.ExpiresAt)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:256:        var lasts = validity ?? DefaultValidity;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:263:        if (lasts <= TimeSpan.Zero)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:271:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:318:                expiresAt: now + lasts,
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:241:        if (now >= record.ExpiresAt)
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:668:        public DateTimeOffset ExpiresAt { get; set; }
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:967:        public DateTimeOffset ExpiresAt { get; set; }
 
@@ -64,7 +64,7 @@ the decision:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
     1
 

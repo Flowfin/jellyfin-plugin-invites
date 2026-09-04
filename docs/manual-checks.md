@@ -90,8 +90,8 @@ THIS PARAGRAPH SAID TWO OF THOSE THREE STEPS CANNOT BE RUN, BECAUSE THE ROUTE
 HAD NO POST BEHIND IT. It has one:
 
     $ git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:127:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
 So a link can be turned into an account on a running server, and these steps are
 runnable rather than waiting. What is still not runnable is what comes after a

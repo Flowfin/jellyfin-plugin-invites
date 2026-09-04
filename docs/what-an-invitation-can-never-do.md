@@ -66,7 +66,7 @@ THIS PARAGRAPH SAID THE CALLER IS STILL MISSING AND THAT NOTHING IN THE PLUGIN
 REACHES THAT ROUTINE OUTSIDE THE SUITE. The post reaches it:
 
     git grep -n 'account = await AccountCreation.CreateAsync' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:218:            account = await AccountCreation.CreateAsync(
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:239:            account = await AccountCreation.CreateAsync(
 
 So the path is walked from a request now, and this line is put to the case it was
 written for. What still holds it undefended is the half below rather than the
@@ -167,7 +167,7 @@ service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
     Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:50:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:60:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:61:        serviceCollection.AddHostedService<LoadOnStart>();
 
 Both numbers moved twice in one night and this paste is the second re-run: first
 by two, when the retention sweep from #59 was registered and its namespace
@@ -414,8 +414,8 @@ form reddens all three.
 THIS PASSAGE SAID THE POST THAT RECEIVES THEM IS ABSENT, AND IT IS NOT:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:127:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:138:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
 So this half of the line can be broken now, and it is held rather than left to
 the weakest of reasons. What the passage named as the gap was that the field list
@@ -442,7 +442,7 @@ THIS SAID THE LINE IS NOT REFUSED BECAUSE NOTHING CREATES AN ACCOUNT. The
 redemption post creates one, and part of the line is refused now:
 
     git grep -n 'var reserved = Spending.Of(matched);' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:643:            var reserved = Spending.Of(matched);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:646:            var reserved = Spending.Of(matched);
 
 The use is taken inside the monitor that read the records and decided against
 them, and it is taken BEFORE the account is created, so a request that gets an

@@ -139,7 +139,7 @@ THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
     exit=0
 
     $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:175:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
 So these three rows describe values that reach the plugin on a running server,
 and each row is now a claim about behaviour rather than a plan. Two of the three

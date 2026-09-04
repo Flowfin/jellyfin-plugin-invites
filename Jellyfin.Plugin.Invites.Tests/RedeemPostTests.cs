@@ -150,10 +150,19 @@ public class RedeemPostTests
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The five cases are driven through the action rather than constructed, so
+    /// The six cases are driven through the action rather than constructed, so
     /// what is compared is the response the route produces and not a value a
     /// test assembled. A stranger able to tell any two of these apart can ask
     /// this route which codes exist, one guess at a time.
+    /// </para>
+    /// <para>
+    /// IT WAS FIVE AND IT IS SIX. The ceiling on how many accounts the plugin may
+    /// create in a window is refused by something now, so the last row of
+    /// docs/refusal-response.md's table has a response to compare. That case is
+    /// the one that would most obviously deserve its own message and most
+    /// obviously must not have one: a page saying the server has created too many
+    /// accounts today tells a stranger something true about the server they had
+    /// no other way to learn, while refusing them.
     /// </para>
     /// <para>
     /// What this cannot assert is timing, and docs/refusal-response.md says so
@@ -172,7 +181,7 @@ public class RedeemPostTests
             answers.Add(refusal);
         }
 
-        Assert.True(answers.Count >= 5, "Fewer cases were driven than this route serves: " + answers.Count);
+        Assert.True(answers.Count >= 6, "Fewer cases were driven than this route serves: " + answers.Count);
 
         var first = answers[0];
         var differing = answers
@@ -256,6 +265,51 @@ public class RedeemPostTests
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ContentResult>(answer).StatusCode);
         Assert.Empty(seam.Asked);
         Assert.Equal(1, Assert.Single(new InvitationStore(directory.Path).Read().Invitations).UsesRemaining);
+    }
+
+    /// <summary>
+    /// A redemption refused by the ceiling on accounts leaves the invitation
+    /// exactly as it was.
+    /// </summary>
+    /// <remarks>
+    /// The ceiling is asked before the use is taken, so a person who meets it
+    /// can follow the same link again once the window turns. An invitation spent
+    /// against a ceiling would cost the operator a fresh mint for a refusal that
+    /// had nothing to do with the person holding the link, and it would be spent
+    /// silently, because the response says nothing about which case refused it.
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task ARedemptionOverTheCeilingTakesNoUseAndCreatesNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var ceiling = new CreationCeiling(clock);
+        var seam = new ARecordingWriteSeam();
+
+        for (var created = 0; created < CreationCeiling.AccountsInAWindow; created++)
+        {
+            Assert.True(ceiling.MayCreate());
+        }
+
+        var refused = await RedeemRoute
+            .Over(directory.Path, clock, ceiling, seam, RedeemRoute.Request())
+            .Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"));
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ContentResult>(refused).StatusCode);
+        Assert.Empty(seam.Asked);
+        Assert.Equal(1, Assert.Single(new InvitationStore(directory.Path).Read().Invitations).UsesRemaining);
+
+        // The window turns and the same link works, which is what "leaves the
+        // invitation exactly as it was" has to mean to the person holding it.
+        clock.Advance(CreationCeiling.Window);
+        var honoured = await RedeemRoute
+            .Over(directory.Path, clock, ceiling, seam, RedeemRoute.Request())
+            .Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"));
+
+        Assert.Equal(StatusCodes.Status303SeeOther, Assert.IsType<StatusCodeResult>(honoured).StatusCode);
+        Assert.Equal(0, Assert.Single(new InvitationStore(directory.Path).Read().Invitations).UsesRemaining);
     }
 
     /// <summary>
@@ -492,6 +546,24 @@ public class RedeemPostTests
                 .Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"))
                 .ConfigureAwait(true);
             answers.Add(("refused by the rate limit", ComparedOn(answer, context)));
+        }
+
+        using (var directory = new OwnedDirectory())
+        {
+            var clock = new TestClock(_minted);
+            var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+            var ceiling = new CreationCeiling(clock);
+            for (var created = 0; created < CreationCeiling.AccountsInAWindow; created++)
+            {
+                Assert.True(ceiling.MayCreate());
+            }
+
+            var context = RedeemRoute.Request();
+            var answer = await RedeemRoute
+                .Over(directory.Path, clock, ceiling, new ARecordingWriteSeam(), context)
+                .Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"))
+                .ConfigureAwait(true);
+            answers.Add(("refused by the ceiling on accounts", ComparedOn(answer, context)));
         }
 
         return answers;

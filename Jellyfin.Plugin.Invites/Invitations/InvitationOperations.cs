@@ -91,7 +91,10 @@ public sealed class InvitationOperations
     /// ceiling rather than against this one: this ceiling bounds what is
     /// outstanding at an instant, and a bound on how many accounts may be
     /// created in a period is the one that still holds when this one is set
-    /// badly. That third ceiling is not in this tree.
+    /// badly. THIS REMARK SAID THAT THIRD CEILING IS NOT IN THIS TREE. It is:
+    /// <see cref="Accounts.CreationCeiling"/>, asked on the redemption route
+    /// before a use is taken, and it is not a refusal here for the same reason
+    /// the live ceiling is not one in the decision routine.
     /// </para>
     /// <para>
     /// <b>What it does not bound, said plainly because the issue's own body

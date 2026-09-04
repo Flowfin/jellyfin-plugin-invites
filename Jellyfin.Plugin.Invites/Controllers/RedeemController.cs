@@ -32,7 +32,9 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// </para>
 /// <para>
 /// <b>The post decides nothing itself.</b> Whether a limit was reached is
-/// <see cref="AttemptLimiter"/>'s, whether the code may be honoured is
+/// <see cref="AttemptLimiter"/>'s, whether this plugin may create another
+/// account at all is <see cref="CreationCeiling"/>'s, whether the code may be
+/// honoured is
 /// <see cref="RedemptionDecision"/>'s, taking the use is
 /// <see cref="InvitationOperations.Reserve"/>'s under the store's own monitor,
 /// and creating the account is <see cref="AccountCreation"/>'s. This type reads
@@ -91,6 +93,7 @@ public sealed class RedeemController : ControllerBase
 
     private readonly InvitationOperations _operations;
     private readonly AttemptLimiter _limiter;
+    private readonly CreationCeiling _ceiling;
     private readonly IServerAccountWrites _accounts;
 
     /// <summary>
@@ -102,19 +105,27 @@ public sealed class RedeemController : ControllerBase
     /// for the process, because a limiter handed out per request would give
     /// every attempt an empty counter.
     /// </param>
+    /// <param name="ceiling">
+    /// How many accounts this plugin may create in a window, asked before the
+    /// use is taken. One instance for the process, for the reason the limiter is
+    /// one: a ceiling handed out per request counts to one and bounds nothing.
+    /// </param>
     /// <param name="accounts">The write seam over the server's user table.</param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public RedeemController(
         InvitationOperations operations,
         AttemptLimiter limiter,
+        CreationCeiling ceiling,
         IServerAccountWrites accounts)
     {
         ArgumentNullException.ThrowIfNull(operations);
         ArgumentNullException.ThrowIfNull(limiter);
+        ArgumentNullException.ThrowIfNull(ceiling);
         ArgumentNullException.ThrowIfNull(accounts);
 
         _operations = operations;
         _limiter = limiter;
+        _ceiling = ceiling;
         _accounts = accounts;
     }
 
@@ -200,6 +211,16 @@ public sealed class RedeemController : ControllerBase
         }
 
         if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+        {
+            return Refusal();
+        }
+
+        // Asked before the use is taken, so a redemption this refuses leaves the
+        // invitation exactly as it found it. The person is answered with the same
+        // page as every other refusal, which docs/refusal-response.md requires:
+        // a caller able to tell a ceiling refusal apart learns something true
+        // about the server that refusing them was not meant to disclose.
+        if (!_ceiling.MayCreate())
         {
             return Refusal();
         }

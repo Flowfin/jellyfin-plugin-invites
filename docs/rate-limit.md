@@ -30,7 +30,7 @@ this limiter before it does:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 What is unchanged is the GET. The same bytes still come back for a code that was
 never minted as for a live one, because that action reads no invitation, and its
@@ -316,7 +316,7 @@ presented code being judged, the post on the redemption route judges one on ever
 submission, and it asks here first:
 
     git grep -n 'if (!_limiter.MayJudge(from)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:202:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:213:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
 
 So this page no longer describes a component that is built and unreached. Three
 things about the call are worth having here rather than in the route, because
