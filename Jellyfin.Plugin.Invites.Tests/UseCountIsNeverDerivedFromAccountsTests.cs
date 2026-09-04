@@ -45,9 +45,16 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// stated without a name-shaped exemption, and the rest is the review's.
 /// </para>
 /// <para>
-/// This does not assert #95's done-condition. Deleting a created account and
-/// asserting the invitation stays spent needs a seam that can create and delete
-/// one, which is #103, and a routine that consumes a use, which is #52.
+/// THIS SAID IT DOES NOT ASSERT #95'S DONE-CONDITION, AND NAMED TWO THINGS THAT
+/// WOULD BE NEEDED FIRST. It still does not assert it, and the reason is now the
+/// narrow one rather than an absence: what this refuses is a shape, and a
+/// done-condition about behaviour is asserted by driving the behaviour.
+/// <c>ADeletedAccountKeepsTheUseSpentTests</c> does that, over records a
+/// redemption really spent, and neither of the two things named here turned out
+/// to be what it needed. No seam creates or deletes an account for it - a
+/// deletion outside the plugin is the read seam no longer reporting an
+/// identifier - and the routine that consumes a use arrived under #399 rather
+/// than #52.
 /// </para>
 /// </remarks>
 public class UseCountIsNeverDerivedFromAccountsTests
