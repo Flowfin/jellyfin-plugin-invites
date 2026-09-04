@@ -131,7 +131,7 @@ naming a deleter here.
 | --- | --- | --- |
 | `username` | Becomes the name of the account the server creates, so it is held in the server's own user database on the same footing as an account an operator made by hand. The record points at an account by identifier and never by name, so this plugin keeps no second copy of it. | Deleting the account, on the server |
 | `password` | The credential of the account being created. It is handed to the server and held here in no form: not in the store, not in a log line, not in the trail. What reads it in this plugin is the length rule in `Jellyfin.Plugin.Invites/Setup/PasswordRules.cs`, which answers why a password is refused and keeps none of it. | Never held here |
-| `confirmation` | Asked so a mistyped credential can be caught before an account exists carrying it. NOTHING COMPARES IT TODAY: the post binds it and never reads it, because comparing the two copies is an answer being validated on the server, which is #75. It is the one value on the form with no reader at all. | Never held here |
+| `confirmation` | Asked so a mistyped credential can be caught before an account exists carrying it. It is compared against the password, ordinally, by the judgement the post makes about its answers before it looks at any code, and it is held in no form afterwards: it never leaves that judgement, so no routine downstream is handed two copies of a password. | Never held here |
 
 THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
 
@@ -142,12 +142,19 @@ THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
     Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
 
 So these three rows describe values that reach the plugin on a running server,
-and each row is now a claim about behaviour rather than a plan. Two of the three
-are as the rows say. The third is not: the confirmation is bound and never read,
-because comparing it with the password is validating an answer, which is #75, so
-a mistyped credential is NOT caught before an account exists carrying it. That
-row says it is, and the row is corrected below rather than here, where the
-correction would be lost in a table cell.
+and each row is now a claim about behaviour rather than a plan.
+
+THIS PARAGRAPH SAID THE THIRD ROW WAS NOT AS IT READ, because the confirmation
+was bound and never read and a mistyped credential was therefore not caught
+before an account existed carrying it. It is read now, and the row above says so
+rather than carrying the correction underneath it:
+
+    git grep -n 'submission.Confirmation, StringComparison.Ordinal' -- Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs
+    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:122:        if (!string.Equals(submission.Password, submission.Confirmation, StringComparison.Ordinal))
+
+What the row does not say, because it is not this page's subject, is that the
+person is not told which of the two mistakes they made. That is the response
+docs/refusal-response.md fixes and this route does not serve.
 
 No server has run any of it. The rows were written before the post that fills
 them, in the same direction as the record table above, which was written before

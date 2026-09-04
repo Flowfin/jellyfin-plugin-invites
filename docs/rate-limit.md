@@ -253,12 +253,14 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:186:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:193:memory for as long as its window and no longer, and that the trail does not
 
 The line moved from 149 to 174 when the paragraph above it was repaired, from
-174 to 175 when #61 added the template grant's row above it, and from 175 to 186
+174 to 175 when #61 added the template grant's row above it, from 175 to 186
 when the post landed and the sentence about nothing taking a submission was
-corrected above it. The sentence this points at is not one of the bytes that
+corrected above it, and from 186 to 193 when the post began comparing the two
+copies of the password and the correction underneath that row was replaced by
+the row saying so. The sentence this points at is not one of the bytes that
 changed any of those times. It is re-pasted
 here rather than renumbered quietly, because a corrected number with nothing
 said about it reads exactly like one that was right all along.

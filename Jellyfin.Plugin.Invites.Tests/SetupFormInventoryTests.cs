@@ -201,10 +201,10 @@ public class SetupFormInventoryTests
     /// ends up silently ignored.
     /// </para>
     /// <para>
-    /// What this does not read is whether the post USES what it bound. The
-    /// confirmation is bound and not read today, which is #75's, and that is a
-    /// judgement about the body of an action rather than a shape any reading of
-    /// a type makes.
+    /// What this does not read is whether the post USES what it bound. That the
+    /// confirmation is compared against the password is <c>SetupAnswersTests</c>, and
+    /// that a post refused for it takes no use is <c>RedeemPostTests</c>: both are
+    /// judgements about an action's body rather than a shape any reading of a type makes.
     /// </para>
     /// </remarks>
     [Fact]

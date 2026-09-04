@@ -12,11 +12,11 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// control names rather than a second vocabulary for them.
 /// </para>
 /// <para>
-/// <b>Nothing here is validated and that is deliberate.</b> Whether an answer is
-/// acceptable is decided on the server under #75, the password rules are #76's
-/// and already exist as <see cref="Setup.PasswordRules"/>, and refusing a
-/// username the server would reject or one that collides is #67's. This type
-/// carries what arrived and makes no judgement about it.
+/// <b>Nothing here is validated and that is deliberate.</b> This type carries
+/// what arrived and makes no judgement about it; whether the answers are
+/// acceptable is decided by <see cref="SetupAnswers"/>, which is what the post
+/// asks before it looks at any code. Refusing a username the server would reject
+/// or one that collides is still #67's and is not among the rules it applies.
 /// </para>
 /// <para>
 /// <b>The anti-forgery token is not here.</b> docs/api.md names one on this
@@ -45,12 +45,13 @@ public sealed class SetupSubmission
     /// Gets or sets the second copy of the password the form asks for.
     /// </summary>
     /// <remarks>
-    /// Bound and not read. That the two copies agree is an answer being
-    /// validated on the server, which is #75's, and the response to a
-    /// disagreement is the form again rather than the single refusal, which
-    /// docs/refusal-response.md fixes and this route does not serve. Binding it
-    /// without reading it is what makes the absence visible here rather than
-    /// leaving a control on the page whose value goes nowhere.
+    /// Read by <see cref="SetupAnswers.Accept"/> and compared ordinally against
+    /// the password, and by nothing else: it never leaves that judgement, so no
+    /// routine downstream is handed two copies of a password and a choice about
+    /// which one to use. What is still not served is a response that tells the
+    /// person the two disagreed. The form again, with the reason on it, is what
+    /// docs/refusal-response.md fixes for that case and this route answers the
+    /// bare bad request instead.
     /// </remarks>
     public string? Confirmation { get; set; }
 }
