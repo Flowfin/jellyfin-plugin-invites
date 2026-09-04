@@ -344,6 +344,92 @@ public class RedeemPostTests
     }
 
     /// <summary>
+    /// A name the server would refuse for its shape leaves the invitation
+    /// exactly as it was: no use taken, no account, nothing asked of the server.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is #67's first clause and it is the reason the rule is copied into
+    /// this plugin at all. The server refuses such a name too, inside the call
+    /// that creates the account, which is after the use has been taken: the
+    /// reservation spends first and the creation throws afterwards, so the
+    /// person is left with a link that is gone and no account, and a fresh mint
+    /// is the only way back. Applying the rule before the reservation is what
+    /// turns that into a refusal that costs nothing.
+    /// </para>
+    /// <para>
+    /// The three names are the shapes a person produces by accident rather than
+    /// on purpose: a name pasted with a space on the end, one carrying a
+    /// separator the server does not take, and one that is only whitespace.
+    /// </para>
+    /// </remarks>
+    /// <param name="username">A name the server's expression refuses.</param>
+    /// <returns>Nothing a caller reads.</returns>
+    [Theory]
+    [InlineData("ada ")]
+    [InlineData("ada/lovelace")]
+    [InlineData("   ")]
+    public async Task ANameTheServerWouldRefuseCostsNoUse(string username)
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var seam = new ARecordingWriteSeam();
+        var limiter = new AttemptLimiter(clock);
+        var controller = RedeemRoute.Over(directory.Path, clock, limiter, seam, RedeemRoute.Request());
+
+        var answer = await controller.Submit(
+            minted.Code,
+            RedeemRoute.Filled(username, "a password long enough"));
+
+        Assert.IsType<BadRequestResult>(answer);
+        Assert.Equal(0, limiter.AddressesHeld);
+        Assert.Empty(seam.Asked);
+
+        var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
+        Assert.Equal(1, stored.UsesRemaining);
+        Assert.Empty(stored.AccountsProduced);
+    }
+
+    /// <summary>
+    /// A name the server accepts is not refused here, including the three the
+    /// server's own message forgets to mention.
+    /// </summary>
+    /// <remarks>
+    /// The half of the copy that is easy to leave untested. A rule that refused
+    /// everything would satisfy the theory above and every other assertion about
+    /// a refusal in this file, and the person who could not use their link would
+    /// be the one who found out. The redemption is driven to its end rather than
+    /// only to its answer, so what is asserted is that the account was created
+    /// with the name as it was typed and not with some altered form of it, which
+    /// is this issue's clause that no name is ever silently changed.
+    /// </remarks>
+    /// <param name="username">A name the server's expression accepts.</param>
+    /// <returns>Nothing a caller reads.</returns>
+    [Theory]
+    [InlineData("Ada Lovelace")]
+    [InlineData("ada@example.org")]
+    [InlineData("ada+guest")]
+    [InlineData("O'Brien")]
+    public async Task ANameTheServerAcceptsIsCreatedExactlyAsItWasTyped(string username)
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var seam = new ARecordingWriteSeam();
+        var context = RedeemRoute.Request();
+        var controller = RedeemRoute.Over(directory.Path, clock, seam, context);
+
+        var answer = await controller.Submit(
+            minted.Code,
+            RedeemRoute.Filled(username, "a password long enough"));
+
+        Assert.Equal(StatusCodes.Status303SeeOther, Assert.IsType<StatusCodeResult>(answer).StatusCode);
+        Assert.Equal("create " + username, seam.Asked[0]);
+        Assert.Equal(0, Assert.Single(new InvitationStore(directory.Path).Read().Invitations).UsesRemaining);
+    }
+
+    /// <summary>
     /// The limiter is asked before the code is judged, so an attempt over the
     /// threshold takes no use off a live invitation.
     /// </summary>

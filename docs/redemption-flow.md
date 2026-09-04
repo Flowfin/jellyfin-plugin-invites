@@ -39,8 +39,10 @@ is written at the branch table rather than counted here, and three of the states
 below name work no route does: the anti-forgery token in `Form` and `Posted` is
 #78, and `Done` is #79 and is served by nothing, so a finished redemption ends
 at the server's own not-found page. The `Validated` state is reached: the post
-judges the answers it was sent before it judges the code, and what it does not
-judge is the username, which is #67.
+judges the answers it was sent before it judges the code, and the one answer it
+cannot fully judge is the username, whose shape it refuses against the server's
+own expression and whose collision with an existing account it cannot see. That
+half is #67's, and branch 3 of the table below is the branch it leaves standing.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written

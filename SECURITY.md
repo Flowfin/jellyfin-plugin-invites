@@ -516,8 +516,13 @@ because the page does not do it:
 
 ```
 git grep -n 'It does not say which server it belongs to' docs/setup-never-asks.md
-docs/setup-never-asks.md:100:It does not say which server it belongs to, which the presentation rules above
+docs/setup-never-asks.md:113:It does not say which server it belongs to, which the presentation rules above
 ```
+
+The line moved from 100 to 113 when that page stopped saying nothing takes a
+submission, which added a paragraph above it. The sentence this points at is not
+one of the bytes that changed, and the number is re-pasted rather than corrected
+quietly.
 
 Naming the server means writing a value into markup that nothing is written
 into, which is what leaves the page with no place a presented code could reach

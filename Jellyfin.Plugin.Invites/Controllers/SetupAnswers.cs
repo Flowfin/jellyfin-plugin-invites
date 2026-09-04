@@ -85,13 +85,13 @@ public static class SetupAnswers
     /// </returns>
     /// <remarks>
     /// <para>
-    /// The username is judged for presence only. What the server would accept as
-    /// a name and what collides with a name it already holds are #67's, and its
-    /// reading of both server assemblies this build resolves found nothing on
-    /// the reachable surface that decides either except the call that creates
-    /// the account. A rule invented here would be a second authority for a
-    /// question this plugin cannot answer, and it would refuse names the server
-    /// accepts.
+    /// The username is judged for the shape the server would accept, by
+    /// <see cref="UsernameRules"/>, which is a copy of the server's own
+    /// expression rather than a rule invented here. What is NOT judged is
+    /// whether the name collides with one the server already holds: answering
+    /// that needs a reading of the server's usernames that this plugin has no
+    /// seam for, so a colliding name still costs the use before the server
+    /// refuses it. That half is #67's and is unmet.
     /// </para>
     /// <para>
     /// The two copies of the password are compared ordinally. A comparison that
@@ -120,6 +120,11 @@ public static class SetupAnswers
         }
 
         if (!string.Equals(submission.Password, submission.Confirmation, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (UsernameRules.WhyRefused(submission.Username) is not null)
         {
             return null;
         }

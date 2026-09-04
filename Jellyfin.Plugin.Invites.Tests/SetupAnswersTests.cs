@@ -127,6 +127,33 @@ public class SetupAnswersTests
     }
 
     /// <summary>
+    /// A name the server would refuse for its shape is refused here, and one it
+    /// accepts is carried forward unaltered.
+    /// </summary>
+    /// <remarks>
+    /// Which names the rule takes is <c>UsernameRulesTests</c>, and this is that
+    /// the judgement asks it at all: without this the copy of the server's rule
+    /// could be correct and reached by nothing. The accepted case also asserts
+    /// the name comes back as it was typed, because this issue's clause is that
+    /// no name is ever silently altered and a judgement that trimmed one would
+    /// still refuse everything this file names.
+    /// </remarks>
+    [Fact]
+    public void ANameTheServerWouldRefuseIsRefusedAndOneItAcceptsIsCarriedForward()
+    {
+        Assert.Null(SetupAnswers.Accept(
+            Submission("ada/lovelace", Long, Long),
+            Posted(RedeemRoute.Body("ada/lovelace", Long))));
+
+        var answers = SetupAnswers.Accept(
+            Submission("Ada Lovelace", Long, Long),
+            Posted(RedeemRoute.Body("Ada Lovelace", Long)));
+
+        Assert.NotNull(answers);
+        Assert.Equal("Ada Lovelace", answers.Username);
+    }
+
+    /// <summary>
     /// A post carrying a field the form does not define is refused rather than
     /// having the field ignored.
     /// </summary>

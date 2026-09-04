@@ -140,6 +140,18 @@ is a disclosure with no way around it if the person is to choose their own name,
 it is #67's, and it is already written down under what is not defended rather
 than hidden here.
 
+THE SHAPE HALF OF THAT REFUSAL IS BUILT AND DISCLOSES NOTHING, which is worth
+separating from the collision it sits beside. A name the server's expression
+refuses is refused out of the request alone, before any code is looked at and
+before any use is spent, so the answer says nothing about the code and nothing
+about which accounts exist:
+
+    git grep -n 'public static string? WhyRefused' -- Jellyfin.Plugin.Invites/Setup/UsernameRules.cs
+    Jellyfin.Plugin.Invites/Setup/UsernameRules.cs:122:    public static string? WhyRefused(string? username)
+
+What is unbuilt is the collision, and it is the half that carries the
+disclosure.
+
 ## What "identical" covers
 
 Comparing the visible text is not the property. The list below is what the
