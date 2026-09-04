@@ -57,8 +57,9 @@
 # Two modes:
 #   check [root]  read the tracked documents under root and judge every reference
 #   selftest      fail unless the rule fires on the fixture whose line has moved,
-#                 names it alone, stays quiet on the clean one, and declines the
-#                 one whose revision is not in the tree rather than passing it
+#                 names it alone, stays quiet on the clean one, declines the one
+#                 whose revision is not in the tree rather than passing it, and
+#                 refuses the one whose revision is a branch rather than a commit
 set -uo pipefail
 
 FIXTURES=".github/lint/fixtures/pasted-line-reference"
@@ -209,6 +210,23 @@ judge_file() {
     key="${rev}|${path}"
     entry="${relative}"$'\t'"${where}:${pasted}"
 
+    # A revision that is not a commit is a revision that moves. It resolves to
+    # whatever it holds at the moment this runs, so a reference against one is
+    # green on a branch and red on the mainline the moment a merge inserts a line
+    # above the target - and the change that caused it is not the change that
+    # reds. That happened twice on this repository in one evening, which is #439.
+    # Refused before the target is read, because reading it is what makes such a
+    # reference look sound.
+    if [ -n "$rev" ] && ! printf '%s' "$rev" | grep -qE '^[0-9a-f]{7,40}$'; then
+      mismatches="${mismatches}${relative}:${line}"$'
+'
+      echo "::error::${relative}:${line}: the reference names the revision ${rev}, which is not a commit."
+      echo "  A branch, a tag or a symbolic ref moves, so this reference is judged against something different on every run and goes stale on the mainline behind a pull request that was green."
+      echo "  Re-run the command against the commit you read it at and paste that, in the <commit>:<path>:<line>:<content> form. A quotation that can name a revision is judged at that revision rather than excused, which is what .github/lint/pasted-line-reference-records.txt says in its own header."
+      fail=1
+      continue
+    fi
+
     load_target "$root" "$rev" "$path" "$key"
     if [ -n "${TARGET_REFUSED[$key]:-}" ]; then
       declined_count=$((declined_count + 1))
@@ -322,12 +340,13 @@ cmd_selftest() {
   local clean="${FIXTURES}/clean.md"
   local moved="${FIXTURES}/line-has-moved.trip.md"
   local absent="${FIXTURES}/revision-is-not-in-the-tree.md"
+  local moving="${FIXTURES}/revision-is-a-moving-ref.trip.md"
   local recorded="${FIXTURES}/recorded-quotation.md"
   local caught="${FIXTURES}/record-has-caught-up.trip.md"
   local register="${FIXTURES}/records.txt"
   local target="${FIXTURES}/target.txt"
   local f
-  for f in "$clean" "$moved" "$absent" "$recorded" "$caught" "$register" "$target"; do
+  for f in "$clean" "$moved" "$absent" "$moving" "$recorded" "$caught" "$register" "$target"; do
     if [ ! -f "$f" ]; then
       echo "::error::missing ${f}. Every case owns its own document, and all of them point at a target inside the fixture directory so that an edit to the plugin cannot move a fixture's line underneath it."
       return 1
@@ -366,6 +385,17 @@ cmd_selftest() {
       ;;
     *)
       echo "::error::revision-is-not-in-the-tree.md: expected [1 0 1 0] and no mismatch, got [${got}]. A reference this cannot resolve has to be reported as not evaluated; passing it silently would let a paste buy a green mark by naming something nothing here can read."
+      selftest_fail=1
+      ;;
+  esac
+
+  got=$(outcome_of "$moving")
+  case "$got" in
+    "1 0 0 0 ${moving}:9")
+      echo "bites revision-is-a-moving-ref.trip.md: a reference against a branch is refused before the branch is resolved"
+      ;;
+    *)
+      echo "::error::revision-is-a-moving-ref.trip.md: expected [1 0 0 0] with ${moving}:9 the only mismatch, got [${got}]. The fixture pastes a line the target really carries, so a leg comparing content alone would pass it; what has to be refused is the revision, and refusing it after resolving the branch would make the outcome depend on what that branch holds today."
       selftest_fail=1
       ;;
   esac
