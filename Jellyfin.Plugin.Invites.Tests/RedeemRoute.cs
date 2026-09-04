@@ -75,6 +75,7 @@ internal static class RedeemRoute
                 new StubPublicAddress("https://media.example.org"),
                 TestTemplates.AsConfigured),
             new AttemptLimiter(clock),
+            new CreationCeiling(clock),
             accounts)
         {
             ControllerContext = new ControllerContext { HttpContext = context },
@@ -103,6 +104,36 @@ internal static class RedeemRoute
                 new StubPublicAddress("https://media.example.org"),
                 TestTemplates.AsConfigured),
             limiter,
+            new CreationCeiling(clock),
+            accounts)
+        {
+            ControllerContext = new ControllerContext { HttpContext = context },
+        };
+
+    /// <summary>
+    /// The controller with a creation ceiling the caller holds, for a test that
+    /// drives the same ceiling over its threshold.
+    /// </summary>
+    /// <param name="store">Where the store sits.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="ceiling">The ceiling, shared with whatever else the test does.</param>
+    /// <param name="accounts">The write seam.</param>
+    /// <param name="context">The request and response.</param>
+    /// <returns>The controller.</returns>
+    public static RedeemController Over(
+        string? store,
+        IClock clock,
+        CreationCeiling ceiling,
+        IServerAccountWrites accounts,
+        HttpContext context) =>
+        new(
+            new InvitationOperations(
+                new StubStoreDirectory(store),
+                clock,
+                new StubPublicAddress("https://media.example.org"),
+                TestTemplates.AsConfigured),
+            new AttemptLimiter(clock),
+            ceiling,
             accounts)
         {
             ControllerContext = new ControllerContext { HttpContext = context },

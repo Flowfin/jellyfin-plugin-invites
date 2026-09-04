@@ -188,22 +188,33 @@ public class OneClockReadingTests
     /// the limiter read before it.
     /// </summary>
     /// <remarks>
-    /// The route is driven here rather than the operation, because the limiter
-    /// reads the same seam first and a reader could reasonably wonder whether the
-    /// decision then gets the second reading. It does not: the invitation expires
-    /// between the two, and it is honoured.
+    /// <para>
+    /// The route is driven here rather than the operation, because the two
+    /// guards in front of the reservation read the same seam first and a reader
+    /// could reasonably wonder whether the decision then gets one of their
+    /// readings. It does not: the invitation expires immediately after the last
+    /// of them, and it is honoured.
+    /// </para>
+    /// <para>
+    /// THE COUNT HERE WAS TWO AND IS THREE, and the property did not move. The
+    /// limiter took a reading and the reservation took a reading; the ceiling on
+    /// how many accounts may be created in a window landed between them and
+    /// takes one of its own. Each of the three judges a different subject at its
+    /// own instant, and the rule this file is about is that ONE redemption is
+    /// decided at ONE reading, which is the operation and is asserted above.
+    /// </para>
     /// </remarks>
     /// <returns>Nothing a caller reads.</returns>
     [Fact]
-    public async Task ASubmissionIsDecidedAtOneReadingWhateverTheLimiterRead()
+    public async Task ASubmissionIsDecidedAtOneReadingWhateverTheGuardsInFrontRead()
     {
         using var directory = new OwnedDirectory();
         var minted = RedeemRoute.Mint(directory.Path, new TestClock(_minted), uses: 1);
 
-        // Two readings before the expiry and everything after it past the expiry:
-        // the limiter takes the first, the reservation takes the second, and a
-        // third would refuse the record.
-        var clock = new AMovingClock(minted.Invitation.ExpiresAt.AddSeconds(-2), TimeSpan.FromSeconds(1));
+        // Three readings before the expiry and everything after it past the
+        // expiry: the limiter takes the first, the ceiling the second, the
+        // reservation the third, and a fourth would refuse the record.
+        var clock = new AMovingClock(minted.Invitation.ExpiresAt.AddSeconds(-3), TimeSpan.FromSeconds(1));
         var seam = new ARecordingWriteSeam();
 
         var answer = await RedeemRoute
@@ -211,6 +222,6 @@ public class OneClockReadingTests
             .Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"));
 
         Assert.Equal(StatusCodes.Status303SeeOther, Assert.IsType<StatusCodeResult>(answer).StatusCode);
-        Assert.Equal(2, clock.Reads);
+        Assert.Equal(3, clock.Reads);
     }
 }

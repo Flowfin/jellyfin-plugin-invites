@@ -96,13 +96,13 @@ post below reaches it through the operation that reads the records, asks for the
 verdict and takes the use inside one monitor.
 
     git grep -n 'var match = Lookup(codeHash.Of(canonical), records);' -- Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs
-    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:99:        var match = Lookup(codeHash.Of(canonical), records);
+    Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:105:        var match = Lookup(codeHash.Of(canonical), records);
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs' ; echo "exit=$?"
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 What the paragraph was FOR still holds and is worth keeping in front of whoever
 extends this route. It costs more here than in most places, because it is read by
@@ -192,6 +192,12 @@ refused with a conflict and nothing is written. This page named the use-count
 ceiling in the table above and named no other, which read as the whole of what
 this route refuses; it is not, and the second of the three ceilings in #33 has
 been acting since it landed:
+
+The third acts on the redemption post rather than here, and it refuses nothing an
+operator sends: it bounds how many accounts this plugin may create in a day
+across every invitation, so an operator who mints a link never meets it and a
+person redeeming one meets the single refusal without being told which case it
+was.
 
     git grep -nE 'catch \(LiveCeilingReachedException refused\)' -- Jellyfin.Plugin.Invites/Controllers/InvitesController.cs
     Jellyfin.Plugin.Invites/Controllers/InvitesController.cs:147:        catch (LiveCeilingReachedException refused)

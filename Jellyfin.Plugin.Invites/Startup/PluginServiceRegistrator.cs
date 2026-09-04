@@ -55,6 +55,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.Configure<MvcOptions>(options => options.Conventions.Add(new ThisPluginsControllers()));
         serviceCollection.AddSingleton<InvitationOperations>();
         serviceCollection.AddSingleton<AttemptLimiter>();
+        serviceCollection.AddSingleton<CreationCeiling>();
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
         serviceCollection.AddSingleton<IScheduledTask, RetentionSweep>();
         serviceCollection.AddHostedService<LoadOnStart>();

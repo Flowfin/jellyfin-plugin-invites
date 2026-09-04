@@ -19,7 +19,7 @@ what [docs/api.md](api.md) says at that route: the setup page is served there fo
 every code, because that route reads no invitation.
 
     git grep -n 'var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:246:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:267:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
 
 This document is still what the rest is built against, and it is a decision
 rather than a description of behaviour: the wording, the case list and the
@@ -153,11 +153,17 @@ description of one:
   are read off the route rather than listed from memory:
 
       git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:278:        headers.ContentSecurityPolicy = policy;
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:279:        headers.XFrameOptions = "DENY";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:280:        headers.XContentTypeOptions = "nosniff";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:281:        headers.CacheControl = "no-store";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:282:        headers[ReferrerPolicy] = "no-referrer";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:299:        headers.ContentSecurityPolicy = policy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:300:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:301:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:302:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:303:        headers[ReferrerPolicy] = "no-referrer";
+
+  EVERY LINE NUMBER IN THAT PASTE MOVED BY THREE WHEN THE ROUTE TOOK THE
+  CEILING ON HOW MANY ACCOUNTS MAY BE CREATED IN A WINDOW, and none of the five
+  values changed. It is re-made from the command rather than adjusted by the
+  difference, which is the rule the check enforces and the reason it refuses a
+  quiet renumbering.
 
   THE FIRST OF THE FIVE READS A PARAMETER NOW AND USED TO NAME THE SETUP PAGE.
   When the route served one page the policy could be written where it was set; a
@@ -216,7 +222,7 @@ The comparison lives once, at the route level, because that is the only place
 that sees the response the server actually sends. It exists:
 
     git grep -n 'public async Task EveryRefusalThisRouteServesIsTheSameResponse' -- Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs
-    Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs:167:    public async Task EveryRefusalThisRouteServesIsTheSameResponse()
+    Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs:176:    public async Task EveryRefusalThisRouteServesIsTheSameResponse()
 
 It drives five of the six cases through the action and compares what came back on
 everything the list above names, reading the headers off the response rather than
@@ -224,10 +230,16 @@ naming them, so a header the route starts setting joins the comparison without
 anybody adding it. #107 widens it rather than writing a second one, and the other
 three issues add their case to it.
 
-The sixth case is not reached, and that is stated rather than left to be inferred
-from a count: nothing in this tree refuses a redemption for a ceiling on what the
-plugin may create, so there is no such response to compare. That is #33's third
-ceiling.
+THIS PARAGRAPH SAID THE SIXTH CASE IS NOT REACHED, BECAUSE NOTHING REFUSED A
+REDEMPTION FOR A CEILING. Something does: #33's third ceiling landed and the
+comparison drives all six.
+
+That case is the one which would most obviously deserve a message of its own and
+most obviously must not have one. A page saying the server has created too many
+accounts today tells a stranger something true about the server they had no other
+way to learn, and it does it while refusing them. The person who meets it is
+usually not an attacker, and telling them nothing is the price of not telling the
+one who is.
 
 This document is where the case list and the compared-on list are kept, so adding
 a case is an edit here and a case there rather than a new test.
@@ -262,7 +274,7 @@ It belonged to the route that first serves a refusal, that route is the post, an
 the post picked `403 Forbidden`:
 
     git grep -n 'refusal.StatusCode = StatusCodes.Status403Forbidden;' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:247:        refusal.StatusCode = StatusCodes.Status403Forbidden;
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:268:        refusal.StatusCode = StatusCodes.Status403Forbidden;
 
 Why that one, in the terms this page argues everything else in. It is true of
 every case in the table without narrowing any of them: the server understood the

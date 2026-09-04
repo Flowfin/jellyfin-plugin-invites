@@ -155,7 +155,7 @@ DOES. What stood here pasted the mint's signature and said a name that matches
 no entry was not refused at minting. Both halves moved with #61:
 
     git grep -n 'TemplateSettings.Named(_templates.Templates, templateLabel)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:229:            template = TemplateSettings.Named(_templates.Templates, templateLabel);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:232:            template = TemplateSettings.Named(_templates.Templates, templateLabel);
 
 A name that matches no entry is refused at minting as a bad request naming this
 setting, and a list with a fault in it refuses every mint with a conflict
@@ -168,7 +168,7 @@ the record and hands it to the routine that creates the account, and it never
 reads this list:
 
     git grep -n 'reserved.Template!' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:222:                reserved.Template!).ConfigureAwait(false);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:243:                reserved.Template!).ConfigureAwait(false);
 
 That is #61's rule reaching an account for the first time: editing an entry here
 changes what the next invitation grants and leaves every live one exactly as it
@@ -207,7 +207,7 @@ its own:
 
     git grep -n 'public const int LiveCeiling\|public const int MaximumValidityDays' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:67:    public const int MaximumValidityDays = 90;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:114:    public const int LiveCeiling = 500;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:117:    public const int LiveCeiling = 500;
 
 At most ten accounts on one invitation, at most ninety days of validity, and at
 most five hundred live invitations in the store at once. The reasoning for each
@@ -218,7 +218,7 @@ The default validity is a fourth number and is not a ceiling. Seven days, and it
 is what a mint that names no validity gets:
 
     git grep -n 'public static TimeSpan DefaultValidity' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:162:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:165:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
 
 The three constants and the default each moved down under #61, by one, one
 and ten lines, as the mint gained the template seam above them. None of the
@@ -266,9 +266,23 @@ ceiling would bound is no longer zero per hour on a running server, and the only
 numbers standing between a leaked link and a run of accounts are the use count on
 the record and the redemption limiter's two.
 
-So five hundred live invitations at ten uses each is what the standing set can
-authorise with no further operator action, and no number bounds what arrives from
-it in an hour.
+THIS PARAGRAPH SAID NO NUMBER BOUNDS WHAT ARRIVES FROM THE STANDING SET. One
+does. Five hundred live invitations at ten uses each is still five thousand
+accounts the set can authorise with no further operator action, and #33's third
+ceiling bounds how many of them may arrive in a day:
+
+    git grep -n 'public const int AccountsInAWindow' -- Jellyfin.Plugin.Invites/Accounts/CreationCeiling.cs
+    Jellyfin.Plugin.Invites/Accounts/CreationCeiling.cs:68:    public const int AccountsInAWindow = 50;
+
+So the five thousand is a hundred days of growth rather than an evening of it,
+and the number is reasoned rather than counted: nobody has watched a real server,
+and the reasoning is on the constant.
+
+It is not a setting. There is nothing on the configuration type an operator can
+move it with, which is deliberate for now: a ceiling an operator can raise is a
+ceiling an attacker who has the operator's session can raise, and #86 is where a
+configured value would have to be bounded by this constant rather than replace
+it.
 
 **What is owed here and is not written.** #113 asks that this section say the
 ceilings are enforced when the configuration loads and that an out-of-range value

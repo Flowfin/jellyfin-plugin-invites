@@ -132,7 +132,7 @@ absence the paragraph rested on has gone:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 So the sentence is a description of a live route now, and every clause below is
 worth reading as one. Which of them are held by something that runs and which are
@@ -266,7 +266,7 @@ decision routine having no caller, and it has one:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 What survives is the half about exercise rather than about reach. Several of
 these mitigations are on a path a stranger can reach now. None of them has been
