@@ -358,6 +358,80 @@ public class AccountTemplateApplicationTests
     }
 
     /// <summary>
+    /// A library the template does not name is never granted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #103 asks for a test per refusal and this is that refusal on its own,
+    /// rather than as one branch of the field-by-field theory above. The two are
+    /// not the same assertion: that theory requires every field to be the grant
+    /// or the value the server had, over every field at once, and reads as a
+    /// statement about the routine's coverage. This reads as a statement about
+    /// one library, which is the sentence somebody would go looking for after an
+    /// account saw something it should not have.
+    /// </para>
+    /// <para>
+    /// The policy starts carrying a library no template names, on both fields the
+    /// libraries reach, so a routine that added to what was there rather than
+    /// replacing it is caught. Adding is the mistake with the plausible motive:
+    /// it looks like not taking anything away from an existing account.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ALibraryTheTemplateDoesNotNameIsNeverGranted()
+    {
+        var granted = new Guid("55555555-5555-5555-5555-555555555555");
+        var policy = new UserPolicy
+        {
+            EnabledFolders = [_aLibraryNoTemplateNames],
+            EnabledChannels = [_aLibraryNoTemplateNames],
+        };
+
+        AccountTemplateApplication.ApplyTo(policy, ATemplate(true, libraries: ImmutableArray.Create(granted)));
+
+        Assert.Equal(new[] { granted }, policy.EnabledFolders);
+        Assert.Equal(new[] { granted }, policy.EnabledChannels);
+        Assert.DoesNotContain(_aLibraryNoTemplateNames, policy.EnabledFolders);
+        Assert.DoesNotContain(_aLibraryNoTemplateNames, policy.EnabledChannels);
+    }
+
+    /// <summary>
+    /// A permission the template does not name keeps the value the server had
+    /// set.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The other half of #103's refusal list, and the one whose failure is
+    /// invisible on the account that meets it: a field this plugin quietly reset
+    /// to a type's default looks like a field the server set that way, and the
+    /// operator has no reason to look.
+    /// </para>
+    /// <para>
+    /// The field driven is one no grant of an account template reaches, so what
+    /// is asserted is not that this field in particular is safe but that a field
+    /// outside the grant list is left alone. Which fields the grants reach is
+    /// held by the table above, so the two together say every field is either
+    /// granted or untouched, one field at a time and once as a set.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void APermissionTheTemplateDoesNotNameKeepsTheValueTheServerSet()
+    {
+        // The two values are set against each other so that a routine writing
+        // either of them has to disagree with one of these assertions whichever
+        // way it writes. A fixture whose value happens to match what a careless
+        // write would set is a fixture that passes for the wrong reason, and the
+        // first draft of this test was one: it started this field at false, and
+        // a break setting it to false left the test green.
+        var policy = new UserPolicy { EnableSyncTranscoding = true, EnablePlaybackRemuxing = false };
+
+        AccountTemplateApplication.ApplyTo(policy, ATemplate(true));
+
+        Assert.True(policy.EnableSyncTranscoding);
+        Assert.False(policy.EnablePlaybackRemuxing);
+    }
+
+    /// <summary>
     /// The policy fields the template's grants are written to, against the value
     /// each one takes for the template handed in.
     /// </summary>
