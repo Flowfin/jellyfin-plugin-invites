@@ -210,6 +210,57 @@ the other way out rather than a settled one.
 What was already right and stays right is where the unwind would live: in the
 same routine as the create rather than in a background sweep.
 
+## Which way a death falls
+
+The branches above are failures the route ANSWERS. This is the one it does not:
+the process stops between two writes and nobody is answered at all. #53 asks for
+the direction of that residual to be stated rather than discovered, and the
+direction is chosen rather than incidental.
+
+**The use is written to disk before the server is asked to create anything.** The
+reservation reads the records, asks for the verdict and writes the decremented
+count, all inside one monitor, and only then does the route call the creation
+routine:
+
+    git grep -n 'var reservation = _operations.Reserve(code);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:228:        var reservation = _operations.Reserve(code);
+
+That is the first of the two answers #53 offers, writing the intent before the
+account exists, and it is chosen for the reason that issue gives: prefer the
+direction that loses an invitation over the one that grants an extra account. A
+lost invitation is an operator minting a second one. An extra account is a
+stranger on the server.
+
+**So a death anywhere after the reservation costs the invitation.** There are two
+places it can fall and they leave different things behind.
+
+| Death at | On the server | In the store | What an operator sees |
+| --- | --- | --- | --- |
+| After the use is written, before the account exists | Nothing | The use is spent and the record claims no account | An invitation that is spent and produced nothing. The remedy is a fresh mint |
+| After the account exists, before the record claims it | The account | The use is spent and the record claims no account | The same record, and an account on the server that no invitation names |
+
+The second row is the window this issue is about, and what it does NOT leave is
+the failure that window is named for: the record is already spent when the
+account comes into existence, so a restart cannot honour the code a second time
+and the invitation cannot produce two accounts. That is asserted at the route
+rather than argued here, in
+`ACrashLosesTheInvitationTests.ARestartAfterTheAccountExistsCannotProduceASecondAccount`.
+
+**The account the second row leaves is not deleted and not disabled**, which is
+the compensating action the section above says this flow gives up. What finds it
+is the consistency report, which compares the accounts the store claims against
+the accounts the server has; an account no invitation names is outside what that
+comparison reads, so the operator's route to it is the server's own user list
+rather than anything this plugin prints. That gap is real and it is the price of
+the direction chosen here.
+
+**What is not covered by any of this.** A machine losing power part-way through
+the store's own write is a question about that write rather than about this
+order, and it is where the store's atomic replace is argued. Nothing here
+measures it, and no process was killed to produce the assertions above: what
+they read is the state on disk at the moment the server is written to, and what
+a component reading that disk afterwards decides.
+
 ## No branch ends undefined
 
 The eight branches the issue names are rows 1 through 8. Rows 9 and 10 are added
