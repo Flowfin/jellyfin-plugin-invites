@@ -25,10 +25,20 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// <para>
 /// <b>The page does not take the code and the post does.</b> A page assembled
 /// around a value a stranger chose is a page with an injection surface, and the
-/// way to have none is to serve bytes that no request contributed to. The post
-/// has to have the code, because there is nothing to judge without it, and it
-/// reaches no markup: it is canonicalised, hashed and compared, and both pages
-/// this route serves are the same bytes for every caller.
+/// way to have none is to serve bytes no request contributed to. The post has to
+/// have the code, because there is nothing to judge without it, and it reaches
+/// no markup: it is canonicalised, hashed and compared.
+/// </para>
+/// <para>
+/// <b>The one thing the page is not the same bytes for every caller in.</b> This
+/// paragraph said both pages this route serves are, and one of them stopped
+/// being so when the anti-forgery token landed: a token that did not differ per
+/// page view would be one a forged form could carry. What still holds, and is
+/// the half the sentence was written for, is that nothing a REQUEST carried
+/// reaches the markup. The token is minted here, refused by
+/// <see cref="Setup.FormToken.IsWellFormed"/> unless it is hexadecimal, and
+/// written in by <see cref="SetupPage.For"/>. The refusal page is untouched and
+/// is still the same bytes for everybody.
 /// </para>
 /// <para>
 /// <b>The post decides nothing itself.</b> Whether a limit was reached is
@@ -52,7 +62,7 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// </para>
 /// <para>
 /// <b>What the post does not do yet.</b> It cannot tell a name already taken from one
-/// the server refuses, which is #67's; it carries no anti-forgery token, which is #78's. The
+/// the server refuses, which is #67's. The
 /// completion address a finished redemption is sent to is fixed by docs/api.md
 /// and is served by nothing until #79 lands, so a person who finishes today has
 /// an account and meets the server's own not-found page.
@@ -141,7 +151,18 @@ public sealed class RedeemController : ControllerBase
     {
         Secure(SetupPage.ContentSecurityPolicy);
 
-        return Content(SetupPage.Html, SetupPage.ContentType);
+        // Both halves are written on this one response and they are the same
+        // value: the cookie the browser will send back by itself, and the
+        // control on the form, which a page on another site cannot read in
+        // order to forge. Minted per page view, because a token that did not
+        // move would be one a forged form could simply carry.
+        var minted = FormToken.Fresh();
+        Response.Cookies.Append(
+            FormToken.CookieName,
+            minted,
+            FormToken.OptionsFor(Request.IsHttps));
+
+        return Content(SetupPage.For(minted), SetupPage.ContentType);
     }
 
     /// <summary>
@@ -164,9 +185,12 @@ public sealed class RedeemController : ControllerBase
     /// <returns>The redirect, the refusal, or the bad request.</returns>
     /// <remarks>
     /// <para>
-    /// <b>The order is most of what this action is.</b> The shape of the request
-    /// is read first, because a post missing a field is answered out of the
-    /// request alone and therefore discloses nothing about any code. Then the
+    /// <b>The order is most of what this action is.</b> The anti-forgery token
+    /// is read first, and then the shape of the request, because both are
+    /// answered out of the request alone and therefore disclose nothing about
+    /// any code. Both happen before the limiter, so a forged post is refused
+    /// without a lookup, without an attempt counted and without a use spent.
+    /// Then the
     /// limiter, so an attempt is counted before anything is looked up. Then the
     /// reservation, which reads the records, asks for the verdict and takes the
     /// use inside one monitor. Then the account. Then the record of which
@@ -189,6 +213,18 @@ public sealed class RedeemController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Submit(string code, [FromForm] SetupSubmission submission)
     {
+        if (!FormToken.Accompanies(Request, submission?.Token))
+        {
+            // Before everything, so a post from a page on another site costs the
+            // invitation nothing: no record is read, no attempt is counted and
+            // no use is taken. It is not the single refusal, which
+            // docs/refusal-response.md keeps for the cases that would otherwise
+            // say something about a code; this one is decided out of the request
+            // alone and says nothing about any code, which is exactly what the
+            // bad request below already means.
+            return Malformed();
+        }
+
         var answers = SetupAnswers.Accept(submission, Request);
         if (answers is null)
         {
@@ -197,7 +233,7 @@ public sealed class RedeemController : ControllerBase
             // behind it is in SetupAnswers, which is where the argument for each
             // one is; what is here is the order, and the order is the part that
             // keeps a malformed post from telling anybody what its code was worth.
-            return BadRequest();
+            return Malformed();
         }
 
         var from = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -254,6 +290,25 @@ public sealed class RedeemController : ControllerBase
         _operations.RecordAccount(reserved.Id, account);
 
         return Completed();
+    }
+
+    /// <summary>
+    /// The answer to a post this route read nothing out of: one that carried no
+    /// good anti-forgery token, or not the fields the form defines.
+    /// </summary>
+    /// <returns>The bad request, under this route's headers.</returns>
+    /// <remarks>
+    /// It carries no document, so the policy is the one that permits nothing.
+    /// The headers are set here for the reason they are set on every other
+    /// answer this route gives: the class remarks say every response carries the
+    /// same five, and an answer that quietly carried four would make that
+    /// sentence false for the one case nothing drives.
+    /// </remarks>
+    private BadRequestResult Malformed()
+    {
+        Secure(NoDocument);
+
+        return BadRequest();
     }
 
     /// <summary>

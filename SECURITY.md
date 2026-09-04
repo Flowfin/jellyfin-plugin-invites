@@ -247,7 +247,7 @@ exit=0
 
 ```
 git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:186:    [HttpPost("{code}")]
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
 ```
 
 They are held on that route and the assertion is at the route level, which is
@@ -501,9 +501,13 @@ The page exists and is served, which this section said it did not, so the two
 halves of it are now in different states and are worth reading apart.
 
 The form and what it loads are a description of something serving today.
-`SetupPageTests.TheFormAsksForThreeThingsAndNoFourth` holds that the served
-bytes carry the three fields named above and nothing else, so a question added
-to the form cannot arrive without somebody moving that assertion.
+`SetupPageTests.TheFormAsksForThreeThingsAndCarriesOneOfItsOwn` holds that the
+served bytes carry the three fields named above, the anti-forgery token, and
+nothing else, so a question added to the form cannot arrive without somebody
+moving that assertion.
+`SetupFormInventoryTests.TheThreeQuestionsTheRefusalListNamesAreTheOnesRead`
+holds the narrower half, that the three above are the only controls a person
+answers, and its neighbour holds that the token is the only one they do not.
 `ThePageFetchesFromNowhereElse` reads the same bytes for four spellings of an
 address somewhere else, `ThePageRunsNoScript` refuses a script element, a
 `javascript:` address and a handler attribute, and
@@ -516,7 +520,7 @@ because the page does not do it:
 
 ```
 git grep -n 'It does not say which server it belongs to' docs/setup-never-asks.md
-docs/setup-never-asks.md:113:It does not say which server it belongs to, which the presentation rules above
+docs/setup-never-asks.md:121:It does not say which server it belongs to, which the presentation rules above
 ```
 
 The line moved from 100 to 113 when that page stopped saying nothing takes a

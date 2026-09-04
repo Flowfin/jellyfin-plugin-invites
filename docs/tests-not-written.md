@@ -282,9 +282,10 @@ the setup page is a route. That was a prediction rather than a reading and it
 went the other way. The setup page landed as an embedded resource too, so the
 assertion that it fetches nothing from anywhere else reads compiled-in bytes and
 reaches no route at all. What is route-level is the sentence joining the two:
-`TheRouteServesThePageUnchanged` asserts the response body is those exact bytes,
-which is what makes an assertion about the bytes an assertion about what a
-browser receives.
+`TheRouteServesThePageWithNothingInItButItsOwnToken` asserts the response body
+is those exact bytes with one value written in, and that putting the placeholder
+back where that value went gives the compiled-in page again, which is what makes
+an assertion about the bytes an assertion about what a browser receives.
 
 Status: all three parts exist for both pages. #19 is closed and the formatter
 reads both served pages like every other tracked non-C# file, since nothing in

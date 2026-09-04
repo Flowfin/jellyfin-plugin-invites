@@ -13,14 +13,26 @@ namespace Jellyfin.Plugin.Invites.Setup;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The page is bytes and nothing is put into them.</b> It is an embedded
-/// resource served exactly as it was compiled in, so there is no place a
-/// presented code, a username or anything else a request carried could be
-/// written into the markup. That removes the injection class rather than
-/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
-/// not bind the code in its route at all. The cost is that the page cannot yet
-/// say which server it belongs to, which docs/setup-never-asks.md asks for under
-/// its presentation rules and which is not met here.
+/// <b>Nothing a request carried is put into the page.</b> It is an embedded
+/// resource, so there is no place a presented code, a username or anything else
+/// a caller sent could be written into the markup. That removes the injection
+/// class rather than escaping it, and it is why
+/// <see cref="Controllers.RedeemController"/> does not bind the code in its
+/// route at all. The cost is that the page cannot yet say which server it
+/// belongs to, which docs/setup-never-asks.md asks for under its presentation
+/// rules and which is not met here.
+/// </para>
+/// <para>
+/// <b>ONE value is written in, and it is this plugin's own.</b> The anti-forgery
+/// token #78 puts on the form has to differ per page view or it defends
+/// nothing, so the resource carries <see cref="Placeholder"/> where the value
+/// goes and <see cref="For"/> is the one routine that fills it. The sentence
+/// above is unchanged by that and is the reason the substitution is safe to
+/// make: the value is minted here rather than received, and <see cref="For"/>
+/// refuses anything <see cref="FormToken.IsWellFormed"/> does not accept, which
+/// admits only hexadecimal digits. So what reaches the markup carries no
+/// character HTML gives a meaning to, and there is nothing to escape rather than
+/// an escape somebody has to have got right.
 /// </para>
 /// <para>
 /// <b>No build step and no framework.</b> The whole page is one HTML file with
@@ -50,6 +62,17 @@ public static class SetupPage
     /// </summary>
     public const string ContentType = "text/html; charset=utf-8";
 
+    /// <summary>
+    /// What stands in the resource where the anti-forgery token goes.
+    /// </summary>
+    /// <remarks>
+    /// It is deliberately not shaped like a token. A placeholder that
+    /// <see cref="FormToken.IsWellFormed"/> would accept is one that a
+    /// substitution which silently did nothing would leave behind as a usable
+    /// value, and every page view would then carry the same one.
+    /// </remarks>
+    public const string Placeholder = "__token__";
+
     private const string StyleOpen = "<style>";
     private const string StyleClose = "</style>";
 
@@ -73,6 +96,48 @@ public static class SetupPage
     /// back up is named one directive at a time.
     /// </remarks>
     public static string ContentSecurityPolicy => _policy;
+
+    /// <summary>
+    /// The page as it is served for one page view, carrying the token that view
+    /// is bound to.
+    /// </summary>
+    /// <param name="token">The token minted for this response.</param>
+    /// <returns>The page, with <see cref="Placeholder"/> replaced.</returns>
+    /// <exception cref="ArgumentException">
+    /// The token is not one this plugin mints. Refused rather than written in,
+    /// because the argument that the substitution needs no escaping rests
+    /// entirely on the alphabet of what is substituted, and a caller handing in
+    /// something else is the one case that argument does not cover.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// The compiled-in page does not carry the placeholder exactly once. Either
+    /// way the response would go out with no token on the form or with two
+    /// controls carrying one, and a form whose token nothing filled in is a form
+    /// every post is refused for.
+    /// </exception>
+    public static string For(string token)
+    {
+        if (!FormToken.IsWellFormed(token))
+        {
+            throw new ArgumentException(
+                "The setup page is only ever handed a token this plugin minted, which is "
+                + Length()
+                + " hexadecimal characters. What was handed in is not one, and writing it into the markup is the injection this page exists without.",
+                nameof(token));
+        }
+
+        var occurrences = Occurrences(_html, Placeholder);
+        if (occurrences != 1)
+        {
+            throw new InvalidOperationException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The compiled-in setup page carries the anti-forgery placeholder {0} times and the substitution fills exactly one. A page served with none is a page whose every post is refused, and a page served with two is two controls answering for one token.",
+                    occurrences));
+        }
+
+        return _html.Replace(Placeholder, token, StringComparison.Ordinal);
+    }
 
     /// <summary>
     /// Builds the policy for a page, naming its one style element by hash.
@@ -118,6 +183,16 @@ public static class SetupPage
             CultureInfo.InvariantCulture,
             "default-src 'none'; style-src 'sha256-{0}'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
             Convert.ToBase64String(digest));
+    }
+
+    /// <summary>
+    /// How long a token is, as a sentence fragment, read from the type that
+    /// decides it rather than typed here a second time.
+    /// </summary>
+    /// <returns>The length.</returns>
+    private static string Length()
+    {
+        return FormToken.Length.ToString(CultureInfo.InvariantCulture);
     }
 
     private static int Occurrences(string page, string what)

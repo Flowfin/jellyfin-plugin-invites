@@ -61,17 +61,29 @@ public class SetupPageTests
     }
 
     /// <summary>
-    /// The response body is the page and nothing was put into it. Every byte a
-    /// browser receives was compiled in, so no value a request carried can reach
-    /// the markup.
+    /// The response body is the page with one value written in, and that value
+    /// is the anti-forgery token this response itself minted. No value a request
+    /// carried reaches the markup, which is the claim this test was written for
+    /// and which the token does not weaken.
     /// </summary>
+    /// <remarks>
+    /// The third assertion is the one doing the work. Putting the placeholder
+    /// back where the token went gives the compiled-in page back byte for byte,
+    /// so nothing ELSE was substituted: a second insertion anywhere on the page
+    /// would survive that reversal and fail here.
+    /// </remarks>
     [Fact]
-    public void TheRouteServesThePageUnchanged()
+    public void TheRouteServesThePageWithNothingInItButItsOwnToken()
     {
         var served = Serve();
+        var minted = RedeemRoute.TokenSetOn(served.Headers);
 
-        Assert.Equal(SetupPage.Html, served.Content);
+        Assert.True(FormToken.IsWellFormed(minted));
+        Assert.Equal(SetupPage.For(minted), served.Content);
         Assert.Equal(SetupPage.ContentType, served.ContentType);
+        Assert.Equal(
+            SetupPage.Html,
+            served.Content!.Replace(minted, SetupPage.Placeholder, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -251,24 +263,34 @@ public class SetupPageTests
 
     /// <summary>
     /// The form asks for the three things docs/setup-never-asks.md says it asks
-    /// for, and for nothing else. Which questions are refusals is read by a
-    /// person against that list, and no check can decide whether a field asks
-    /// for a legal name; that a fourth field arrived at all is what this says.
+    /// for, carries the one control this plugin fills in for itself, and carries
+    /// no fifth. Which questions are refusals is read by a person against that
+    /// list, and no check can decide whether a field asks for a legal name; that
+    /// another field arrived at all is what this says.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The count is over <c>name="</c> across the whole page rather than inside
-    /// the form, so the viewport declaration in the head is one of the four. A
+    /// the form, so the viewport declaration in the head is one of the five. A
     /// narrower count would need the page parsed, and a parser here is a
     /// dependency the runtime set does not carry for one assertion.
+    /// </para>
+    /// <para>
+    /// It said four until the anti-forgery token landed. The token is not a
+    /// question and <c>SetupFormInventoryTests</c> is where the two kinds are
+    /// told apart; what this leg is for is that nothing arrives on the form
+    /// without somebody having changed this number.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void TheFormAsksForThreeThingsAndNoFourth()
+    public void TheFormAsksForThreeThingsAndCarriesOneOfItsOwn()
     {
         var page = SetupPage.Html;
 
         Assert.Contains("name=\"username\"", page, StringComparison.Ordinal);
         Assert.Contains("name=\"password\"", page, StringComparison.Ordinal);
         Assert.Contains("name=\"confirmation\"", page, StringComparison.Ordinal);
+        Assert.Contains("name=\"" + FormToken.Field + "\"", page, StringComparison.Ordinal);
         Assert.Contains("name=\"viewport\"", page, StringComparison.Ordinal);
 
         var named = 0;
@@ -279,7 +301,7 @@ public class SetupPageTests
             at = page.IndexOf("name=\"", at + 1, StringComparison.Ordinal);
         }
 
-        Assert.Equal(4, named);
+        Assert.Equal(5, named);
     }
 
     /// <summary>

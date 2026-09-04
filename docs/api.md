@@ -85,11 +85,14 @@ the caller is a browser following a link. Reading the invitation here writes
 nothing.
 
 What answers today is narrower than that paragraph, and the difference is worth
-reading before anybody calls this route. #74 landed the page and nothing else:
-the same bytes are served for every code, no invitation is looked up, and the
-response carries no anti-forgery token. So the refusal half is undelivered, and
-the route discloses nothing about a code because it does not read one. #75 and
-#77 own the refusal and #78 owns the token.
+reading before anybody calls this route. THIS PARAGRAPH SAID THE RESPONSE
+CARRIES NO ANTI-FORGERY TOKEN. It carries one since #78: the response mints a
+value, writes it into the form and into a cookie scoped to this route, and the
+post below refuses a submission that does not carry both. What is still narrower
+than the paragraph above is the rest of it. No invitation is looked up here and
+the same page is served for every code, apart from that token, so the refusal
+half is undelivered and the route discloses nothing about a code because it does
+not read one. #75 and #77 own the refusal.
 
 THIS PARAGRAPH SAID THE LOOKUP BY CODE EXISTS AND HAS NO CALLER. It has one: the
 post below reaches it through the operation that reads the records, asks for the

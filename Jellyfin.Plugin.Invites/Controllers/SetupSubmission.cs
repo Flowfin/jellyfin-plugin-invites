@@ -19,9 +19,14 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// would reject is among those rules; one that COLLIDES is not, and is #67's.
 /// </para>
 /// <para>
-/// <b>The anti-forgery token is not here.</b> docs/api.md names one on this
-/// route and #78 owns it. A member for it now would be a field nothing
-/// validates, which reads to the next person as though something did.
+/// <b>The anti-forgery token is here and something validates it.</b> The
+/// paragraph that stood here said it was absent, and that a member for it with
+/// nothing validating it would read to the next person as though something did.
+/// <see cref="Jellyfin.Plugin.Invites.Setup.FormToken.Accompanies"/> is what reads it, and the post asks that
+/// before it reads anything else. It sits on this type rather than beside it
+/// because <see cref="SetupAnswers.Fields"/> derives the field names a post may
+/// carry from these members: a token bound anywhere else would arrive as a field
+/// the form does not define and be refused as a widening.
 /// </para>
 /// </remarks>
 public sealed class SetupSubmission
@@ -40,6 +45,18 @@ public sealed class SetupSubmission
     /// and nothing here keeps it.
     /// </remarks>
     public string? Password { get; set; }
+
+    /// <summary>
+    /// Gets or sets the anti-forgery token the served page put on the form.
+    /// </summary>
+    /// <remarks>
+    /// Not a question the person is asked. It is a hidden control this plugin
+    /// filled in when it served the page, and it is here because this is the
+    /// type the post binds a form into. What it is worth is decided by
+    /// <see cref="Jellyfin.Plugin.Invites.Setup.FormToken.Accompanies"/> against the cookie written on the
+    /// same response, and never by this type, which judges nothing.
+    /// </remarks>
+    public string? Token { get; set; }
 
     /// <summary>
     /// Gets or sets the second copy of the password the form asks for.

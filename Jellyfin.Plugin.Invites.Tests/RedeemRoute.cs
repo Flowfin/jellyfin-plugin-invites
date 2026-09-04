@@ -5,6 +5,7 @@ using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Controllers;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Redemption;
+using Jellyfin.Plugin.Invites.Setup;
 using Jellyfin.Plugin.Invites.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -41,16 +42,85 @@ internal static class RedeemRoute
     public static IPAddress From { get; } = IPAddress.Loopback;
 
     /// <summary>
+    /// The anti-forgery token a request the suite makes carries, in the cookie
+    /// and on the form alike, so that a test about anything else drives the
+    /// route as a browser that loaded the page does.
+    /// </summary>
+    /// <remarks>
+    /// A fixed value rather than a minted one, because a test that fails should
+    /// fail the same way twice. It is shaped like a real token, which is what
+    /// makes it usable: the route refuses anything that is not
+    /// <see cref="FormToken.Length"/> hexadecimal characters, and a stand-in
+    /// that walked through that refusal would leave every test here driving the
+    /// forgery path instead of the one it is about.
+    /// </remarks>
+    public static string Presented { get; } =
+        "0f1e2d3c4b5a69788796a5b4c3d2e1f00123456789abcdeffedcba9876543210";
+
+    /// <summary>
     /// A context carrying a source address, so an attempt from it can be
     /// counted.
     /// </summary>
     /// <returns>The context.</returns>
+    /// <remarks>
+    /// It carries the anti-forgery cookie the served page would have set, for
+    /// the reason it carries an address: a context without one drives the
+    /// refusal a test did not mean to reach, and every test here that is not
+    /// about forgery would then be asserting the same one thing.
+    /// <c>AntiForgeryTests</c> is where a context deliberately missing it is
+    /// built.
+    /// </remarks>
     public static DefaultHttpContext Request()
     {
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = From;
+        context.Request.Headers.Cookie = FormToken.CookieName + "=" + Presented;
 
         return context;
+    }
+
+    /// <summary>
+    /// A context whose anti-forgery half is in order and whose request names no
+    /// source address, for the one test about a caller the server cannot place.
+    /// </summary>
+    /// <returns>The context.</returns>
+    public static DefaultHttpContext WithoutAnAddress()
+    {
+        var context = Request();
+        context.Connection.RemoteIpAddress = null;
+
+        return context;
+    }
+
+    /// <summary>
+    /// The token a response set, read back off the header the route wrote it on.
+    /// </summary>
+    /// <param name="headers">The response headers.</param>
+    /// <returns>The value, or the empty string where no such cookie was set.</returns>
+    /// <remarks>
+    /// Read out of <c>Set-Cookie</c> rather than out of anything the test kept,
+    /// because what the browser will send back is what that header said and not
+    /// what the routine intended to say.
+    /// </remarks>
+    public static string TokenSetOn(IHeaderDictionary headers)
+    {
+        ArgumentNullException.ThrowIfNull(headers);
+
+        var prefix = FormToken.CookieName + "=";
+        foreach (var written in headers.SetCookie)
+        {
+            if (written is null || !written.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var value = written[prefix.Length..];
+            var ends = value.IndexOf(';', StringComparison.Ordinal);
+
+            return ends < 0 ? value : value[..ends];
+        }
+
+        return string.Empty;
     }
 
     /// <summary>
@@ -178,6 +248,7 @@ internal static class RedeemRoute
             ["username"] = username,
             ["password"] = password,
             ["confirmation"] = password,
+            [FormToken.Field] = Presented,
         };
 
     /// <summary>
@@ -187,7 +258,13 @@ internal static class RedeemRoute
     /// <param name="password">The password to ask for.</param>
     /// <returns>The submission, with the confirmation matching the password.</returns>
     public static SetupSubmission Filled(string username, string password) =>
-        new() { Username = username, Password = password, Confirmation = password };
+        new()
+        {
+            Username = username,
+            Password = password,
+            Confirmation = password,
+            Token = Presented,
+        };
 
     /// <summary>
     /// The operations over a store directory, for a test that has to arrange

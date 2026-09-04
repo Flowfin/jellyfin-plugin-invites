@@ -19,18 +19,26 @@ server's own expression, and every key in the body against the fields the form
 defines:
 
     git grep -n 'var answers = SetupAnswers.Accept(submission, Request);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:192:        var answers = SetupAnswers.Accept(submission, Request);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:228:        var answers = SetupAnswers.Accept(submission, Request);
 
-What is still absent is the anti-forgery token, which is #78, and two things
-#75 and #67 hold open: the person is not told which rule they missed, and a name
-that collides with an existing account is not seen until the server refuses it,
-by which time the use is spent.
+THIS PARAGRAPH SAID THE ANTI-FORGERY TOKEN IS STILL ABSENT. #78 landed it, and
+it is asked before any of the judgements above: a post carries the token the
+page was served with and the cookie written on the same response, or it is
+refused out of the request alone with no code read and no use taken. What is
+still open is two things #75 and #67 hold: the person is not told which rule
+they missed, and a name that collides with an existing account is not seen until
+the server refuses it, by which time the use is spent.
+
+The token is not one of the questions this page governs. It is a hidden control
+this plugin fills in for itself, it is derived from nothing anybody typed, and
+`SetupFormInventoryTests` is where the form is divided between the questions and
+that one control, in both directions.
 
 What the form asks for is held against the list below rather than read against
-it by hand. A fourth field arriving at all reds the suite:
+it by hand. A fifth field arriving at all reds the suite:
 
 ```
-$ grep -n 'public void TheFormAsksForThreeThingsAndNoFourth' Jellyfin.Plugin.Invites.Tests/SetupPageTests.cs
+$ grep -n 'public void TheFormAsksForThreeThingsAndCarriesOneOfItsOwn' Jellyfin.Plugin.Invites.Tests/SetupPageTests.cs
 ```
 
 Which questions are refusals is still a person's reading. No check can decide

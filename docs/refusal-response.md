@@ -19,7 +19,7 @@ what [docs/api.md](api.md) says at that route: the setup page is served there fo
 every code, because that route reads no invitation.
 
     git grep -n 'var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:267:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:322:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
 
 This document is still what the rest is built against, and it is a decision
 rather than a description of behaviour: the wording, the case list and the
@@ -128,6 +128,17 @@ they had no other way to learn, and it does it while refusing them.
 `RefusedByAntiForgery` and `RefusedByValidation` produce their own responses and
 must not be folded into this page.
 
+ONE OF THE TWO IS SERVED NOW AND IT IS NOT THE RESPONSE THIS SECTION IMAGINES.
+#78 landed the token, and a post that does not carry it is answered with the bad
+request this route already gives a post it read nothing out of, under the same
+five headers, rather than with a form carrying a reason. That is inside this
+section's rule rather than an exception to it: what the rule refuses is folding
+the case into the single indistinguishable refusal, and it is not folded. The
+sentence below saying both happen after the invitation was honoured enough to
+show the person a form is the half that does not fit this one, and it is the
+reason the answer is a bad request rather than the form again: a post with no
+good token was not necessarily made by anybody who was ever shown the form.
+
 Both happen after the invitation was already honoured enough to show the person
 a form. A password that is too short, a confirmation that does not match or a
 username already taken are the person's own answers being wrong, and a page that
@@ -165,11 +176,11 @@ description of one:
   are read off the route rather than listed from memory:
 
       git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:299:        headers.ContentSecurityPolicy = policy;
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:300:        headers.XFrameOptions = "DENY";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:301:        headers.XContentTypeOptions = "nosniff";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:302:        headers.CacheControl = "no-store";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:303:        headers[ReferrerPolicy] = "no-referrer";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:354:        headers.ContentSecurityPolicy = policy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:355:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:356:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:357:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:358:        headers[ReferrerPolicy] = "no-referrer";
 
   EVERY LINE NUMBER IN THAT PASTE MOVED BY THREE WHEN THE ROUTE TOOK THE
   CEILING ON HOW MANY ACCOUNTS MAY BE CREATED IN A WINDOW, and none of the five
@@ -286,7 +297,7 @@ It belonged to the route that first serves a refusal, that route is the post, an
 the post picked `403 Forbidden`:
 
     git grep -n 'refusal.StatusCode = StatusCodes.Status403Forbidden;' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:268:        refusal.StatusCode = StatusCodes.Status403Forbidden;
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:323:        refusal.StatusCode = StatusCodes.Status403Forbidden;
 
 Why that one, in the terms this page argues everything else in. It is true of
 every case in the table without narrowing any of them: the server understood the

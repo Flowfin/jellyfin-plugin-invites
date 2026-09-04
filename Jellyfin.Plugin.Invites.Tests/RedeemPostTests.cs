@@ -527,7 +527,7 @@ public class RedeemPostTests
         var clock = new TestClock(_minted);
         var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
         var seam = new ARecordingWriteSeam();
-        var controller = RedeemRoute.Over(directory.Path, clock, seam, new DefaultHttpContext());
+        var controller = RedeemRoute.Over(directory.Path, clock, seam, RedeemRoute.WithoutAnAddress());
 
         var answer = await controller.Submit(minted.Code, RedeemRoute.Filled("newcomer", "a password long enough"));
 
