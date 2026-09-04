@@ -15,8 +15,8 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// <b>Nothing here is validated and that is deliberate.</b> This type carries
 /// what arrived and makes no judgement about it; whether the answers are
 /// acceptable is decided by <see cref="SetupAnswers"/>, which is what the post
-/// asks before it looks at any code. Refusing a username the server would reject
-/// or one that collides is still #67's and is not among the rules it applies.
+/// asks before it looks at any code. A username the server's own expression
+/// would reject is among those rules; one that COLLIDES is not, and is #67's.
 /// </para>
 /// <para>
 /// <b>The anti-forgery token is not here.</b> docs/api.md names one on this

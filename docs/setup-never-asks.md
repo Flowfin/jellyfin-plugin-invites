@@ -7,11 +7,24 @@ because the page has a box for it. That willingness is the reason to fix the
 question list before the page exists rather than after, and it is why this is a
 refusal list rather than a guideline.
 
-Half of what this document is built against is in the tree. The page is served
+Most of what this document is built against is in the tree. The page is served
 from the plugin, and what it requires of a password is one value in the source
-with [docs/password-rules.md](password-rules.md) behind it. The other half is
-not: nothing takes a submission, so there is no server-side validation and no
-anti-forgery token, which are #75 and #78.
+with [docs/password-rules.md](password-rules.md) behind it.
+
+THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION AND THAT THERE IS THEREFORE NO
+SERVER-SIDE VALIDATION. A post takes one and judges what it carries, out of the
+request alone and before any code is looked at: the password against the same
+rule this page states, the two copies against each other, the name against the
+server's own expression, and every key in the body against the fields the form
+defines:
+
+    git grep -n 'var answers = SetupAnswers.Accept(submission, Request);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:192:        var answers = SetupAnswers.Accept(submission, Request);
+
+What is still absent is the anti-forgery token, which is #78, and two things
+#75 and #67 hold open: the person is not told which rule they missed, and a name
+that collides with an existing account is not seen until the server refuses it,
+by which time the use is spent.
 
 What the form asks for is held against the list below rather than read against
 it by hand. A fourth field arriving at all reds the suite:

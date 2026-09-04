@@ -127,7 +127,7 @@ Takes the answers, decides, and creates the account.
 | Parameter | In | Required | What it is |
 | --- | --- | --- | --- |
 | `code` | path | yes | The same code the page was served for |
-| username | form | yes | The name the account will have. Refused if the server would reject it or if it collides, which is #67 |
+| username | form | yes | The name the account will have. Refused before any use is spent if the server's own expression would reject its shape; a name that COLLIDES with an existing account is not refused here and costs the use, which is #67 |
 | password | form | yes | Chosen by the person. Never stored by this plugin and never carried in a link, which is #66 |
 | anti-forgery token | form | yes | Validated before anything else happens. A post without a valid one is refused and consumes no use, which is #78 |
 

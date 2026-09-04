@@ -51,8 +51,8 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// which is served, rather than about the invitation, which is what was refused.
 /// </para>
 /// <para>
-/// <b>What the post does not do yet.</b> It judges no username, which is #67's, and it
-/// carries no anti-forgery token, which is #78's. What it does judge is <see cref="SetupAnswers"/>. The
+/// <b>What the post does not do yet.</b> It cannot tell a name already taken from one
+/// the server refuses, which is #67's; it carries no anti-forgery token, which is #78's. The
 /// completion address a finished redemption is sent to is fixed by docs/api.md
 /// and is served by nothing until #79 lands, so a person who finishes today has
 /// an account and meets the server's own not-found page.
