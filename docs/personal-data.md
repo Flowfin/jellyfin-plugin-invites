@@ -310,14 +310,21 @@ stopped being usable more than ninety days ago is gone at the next daily run,
 without an operator doing anything. What the sweep never removes is a record that
 could still be redeemed, and it reaches no account at all.
 
-The redemption half is unchanged. A `Redeem` controller exists and serves the
-page, and no redemption commits:
+THE REDEMPTION HALF IS NOT UNCHANGED, AND THIS PARAGRAPH SAID NO REDEMPTION
+COMMITS. One does. The controller carries a post as well as the page, and an
+honoured code writes to the store twice: once to take the use, once to record the
+account it produced.
 
 ```
 $ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:49:public sealed class RedeemController : ControllerBase
+origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:73:public sealed class RedeemController : ControllerBase
+origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:97:    /// Initializes a new instance of the <see cref="RedeemController"/> class.
+origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:107:    public RedeemController(
 origin/master:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
 ```
+
+Neither write adds a field to this inventory. What they move is the use count and
+the list of accounts a record claims, and both already have their rows above.
 
 One file the plugin writes on every start, named here because it is the write
 that happens with no operator action behind it and so appears on a server where
