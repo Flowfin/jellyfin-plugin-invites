@@ -28,16 +28,17 @@ namespace Jellyfin.Plugin.Invites.Attempts;
 /// has dropped half its entries still says how many attempts it saw.
 /// </para>
 /// <para>
-/// <b>Nothing appends one of these yet.</b> The route that judges a presented
-/// code is #399, and until it exists this type records nothing on a running
-/// server. What is here is the entry, its set and its bound; what is not is a
-/// caller.
+/// <b>Nothing appends one of these yet.</b> What is here is the entry, its set
+/// and its bound; what is not is a caller.
 /// </para>
 /// <para>
-/// THAT SENTENCE NAMED #74 BESIDE IT. #74 landed the setup page and judges no
-/// code; the act was split on 2026-08-31 under #71 and the post became #399. A
-/// reader following the pair reached one issue that was done and read the caller
-/// as half built.
+/// THE REASON MOVED AND THE SENTENCE DID NOT. It rested on there being no route
+/// that judges a presented code, first naming #74 and then the post #71 split
+/// out of it. The post landed and judges one, and it appends nothing: it decides,
+/// creates and records the account, and no arm of it reaches this type. So the
+/// absence is a caller that has to be written rather than a route that has to
+/// arrive, which is #43, and where a trail is persisted and under which store
+/// version is still decided nowhere in this tree.
 /// </para>
 /// </remarks>
 public sealed class AttemptEntry

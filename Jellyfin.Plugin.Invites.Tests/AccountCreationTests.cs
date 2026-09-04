@@ -39,6 +39,19 @@ internal sealed class ARecordingWriteSeam : IServerAccountWrites
     /// </summary>
     public Exception? CredentialRefusal { get; set; }
 
+    /// <summary>
+    /// Gets the grant the template arm was handed, or null where it was never
+    /// reached.
+    /// </summary>
+    /// <remarks>
+    /// The call trail records how many libraries a grant carried, which is
+    /// enough to tell one call from another and not enough to tell one grant
+    /// from another. A caller asking which grant reached the server needs the
+    /// value, and #61's rule is exactly a question about which of two equal-sized
+    /// grants arrived.
+    /// </remarks>
+    public AccountTemplate? AppliedTemplate { get; private set; }
+
     /// <inheritdoc />
     public Task<Guid> CreateAccountAsync(string username)
     {
@@ -67,6 +80,7 @@ internal sealed class ARecordingWriteSeam : IServerAccountWrites
     {
         ArgumentNullException.ThrowIfNull(template);
 
+        AppliedTemplate = template;
         _asked.Add(string.Format(
             CultureInfo.InvariantCulture,
             "template {0} {1}",

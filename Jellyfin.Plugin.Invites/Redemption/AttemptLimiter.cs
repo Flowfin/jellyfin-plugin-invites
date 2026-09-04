@@ -53,10 +53,15 @@ namespace Jellyfin.Plugin.Invites.Redemption;
 /// <para>
 /// <b>What this type does not decide.</b> What a refused attempt looks like is
 /// docs/refusal-response.md, and a limiter that answered differently from the
-/// ordinary refusal would be the oracle that whole set exists to close. Whether a
-/// throttled attempt appends a trail entry is docs/attempt-outcomes.md. Neither
-/// is answered here, and neither can be until there is a route that judges a
-/// presented code. Nothing calls this type today.
+/// ordinary refusal would be the oracle that whole set exists to close, and the
+/// route answers a throttled attempt with exactly that refusal. Whether a
+/// throttled attempt appends a trail entry is docs/attempt-outcomes.md and is one
+/// answer between #31 and #43 that nobody has given. Neither is answered here.
+/// </para>
+/// <para>
+/// THIS REMARK SAID NOTHING CALLS THIS TYPE. The redemption post calls it, before
+/// anything about a presented code is looked up, and the counter it keeps is a
+/// counter of real attempts on a running server rather than of nothing.
 /// </para>
 /// </remarks>
 public sealed class AttemptLimiter

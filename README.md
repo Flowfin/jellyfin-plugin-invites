@@ -138,14 +138,17 @@ automate, and what a person does instead is in
 
 ## Screenshots
 
-None yet. The configuration page has five sections on it to photograph and
-nobody has taken a picture of one; the setup page is served and has no post
-behind it, so a screenshot of it would show a form that cannot be submitted.
-Neither is waiting on the issues this paragraph used to name. The
-configuration page landed under #84, which closed on 2026-08-17, so what is
-missing there is somebody taking a photograph rather than work. The post that
-would make the setup form submittable is #399, which #71 split out of #74 on
-2026-08-31; #74 landed the page and judges no code.
+None yet, and what is missing is somebody taking a photograph rather than work.
+The configuration page has five sections on it to photograph and nobody has taken
+a picture of one. The setup page is served and the post that receives its form
+landed, so the form can now be submitted and a screenshot of it would show a
+working page rather than a dead one.
+
+THIS PARAGRAPH SAID A SCREENSHOT OF THE SETUP PAGE WOULD SHOW A FORM THAT CANNOT
+BE SUBMITTED. What a run of it stops at now is one step further on: the page a
+finished redemption is sent to is served by nothing until #79 lands, so somebody
+photographing the whole flow gets the form, the account, and then the server's
+own not-found page.
 
 ## Security
 

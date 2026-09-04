@@ -23,8 +23,8 @@ because the count in this paragraph is the thing that went stale twice:
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:268:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:315:                expiresAt: now + lasts,
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:235:        if (now >= record.ExpiresAt)
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:665:        public DateTimeOffset ExpiresAt { get; set; }
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:964:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:668:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:967:        public DateTimeOffset ExpiresAt { get; set; }
 
 Nine lines rather than eight since #61. The store's stored record moved down by
 ninety-two as the store gained its second shape, and the ninth line is that
@@ -49,15 +49,23 @@ redemption for it to serve. The jump is accepted rather than enforced, which is
 its own section, and what holds the acceptance is three tests rather than a
 refusal.
 
-What is absent is a caller. This paragraph said the plugin serves no route, and
-that stopped being true when the administrator routes and the setup page landed,
-without the sentence moving. The plugin serves routes; none of them hands the
-decision a clock reading or does anything with its verdict:
+THIS PARAGRAPH SAID WHAT IS ABSENT IS A CALLER, AND THAT NO ROUTE HANDS THE
+DECISION A CLOCK READING OR DOES ANYTHING WITH ITS VERDICT. One does both. The
+redemption post reaches it through the operation that reads the store, and that
+operation reads the clock once, before the monitor, and hands that one reading to
+the decision:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
+
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
-    0
+    1
+
+So the rule this page argues first, that one clock reading serves a whole
+redemption, is now a property of something that runs rather than a promise. What
+it is not is measured: no server has been run.
 
 THIS SENTENCE SAID THE FIVE RULES THAT ARE NOT THE BOUNDARY AND THE ONE READING
 ARE DECISIONS WITH NOTHING STANDING BEHIND THEM, and four of those five act at

@@ -25,13 +25,23 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// whoever wrote it remembered.
 /// </para>
 /// <para>
-/// <b>The action that would forget is the next one to be written.</b>
-/// <c>POST /redeem/{code}</c> is in the register of routes docs/api.md says
-/// nothing serves. It is the action that takes a password, on an address that
-/// carries a credential in its path, and it is the one of the two that most
-/// needs a browser told not to frame it, not to store it, not to guess its type
-/// and not to hand the code on in a referrer. Until it exists the property here
-/// is held by there being one action; after it exists it is held by this.
+/// <b>The action that would have forgotten has been written.</b>
+/// <c>POST /redeem/{code}</c> landed under #399. It is the action that takes a
+/// password, on an address that carries a credential in its path, and it is the
+/// one of the two that most needs a browser told not to frame it, not to store
+/// it, not to guess its type and not to hand the code on in a referrer. The
+/// property was held by there being one action and is held by this leg now,
+/// which is why the leg was widened in the same change rather than reporting
+/// the new action as one it cannot drive.
+/// </para>
+/// <para>
+/// <b>What it drives the post down is the refusal.</b> The arguments below are
+/// a well-formed submission and a code no store holds, so the action reaches
+/// its refusal and answers with the headers a refusal carries. The honoured
+/// path answers with a redirect, its headers are asserted in
+/// <c>RedeemPostTests</c> where a honoured code exists to drive it with, and
+/// that split is the same one this file already makes between a header being
+/// set at all and what it is set to.
 /// </para>
 /// <para>
 /// <b>What is asserted, and what is asserted elsewhere.</b> This asks that each
@@ -42,12 +52,14 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// reds both while a value that changed reds only the one that decides it.
 /// </para>
 /// <para>
-/// <b>It fails closed on an action it cannot drive.</b> An action taking
-/// parameters, or a controller that has grown a constructor argument, is
-/// reported by name rather than passed over, because a leg that quietly stops
-/// covering the action it was written for reports the same green as one that
-/// covered it. The repair is to assert the headers on that action here or to
-/// widen this leg so it can drive one, and either way somebody has weighed the
+/// <b>It fails closed on an action it cannot drive.</b> An action taking a
+/// parameter this leg has no argument for is reported by name rather than
+/// passed over, because a leg that quietly stops covering the action it was
+/// written for reports the same green as one that covered it. A controller that
+/// grows a constructor argument is caught one step earlier and harder: the
+/// factory the leg builds it through is ordinary source, so the compiler
+/// refuses rather than the run reporting it. The repair either way is to widen
+/// the leg so it can drive the action, and somebody has then weighed the
 /// question the leg exists to ask.
 /// </para>
 /// <para>
@@ -101,19 +113,13 @@ public class RedemptionRouteHeadersTests
 
         foreach (var action in Actions())
         {
-            if (action.GetParameters().Length != 0)
+            var arguments = ArgumentsFor(action, missing);
+            if (arguments is null)
             {
-                missing.Add(
-                    action.Name
-                    + " takes parameters, so this leg cannot drive it and does not know what it answers with");
                 continue;
             }
 
-            var headers = Answer(action, missing);
-            if (headers is null)
-            {
-                continue;
-            }
+            var headers = Answer(action, arguments);
 
             missing.AddRange(
                 Owed.Where(header => string.IsNullOrEmpty(headers[header].ToString()))
@@ -139,27 +145,63 @@ public class RedemptionRouteHeadersTests
             .ToList();
 
     /// <summary>
-    /// Drives one action and hands back the headers it answered with.
+    /// The arguments this leg can hand one action, or <c>null</c> where it
+    /// cannot make them all.
     /// </summary>
+    /// <remarks>
+    /// A parameter whose type is not in the two below is reported by name rather
+    /// than guessed at with a default. A leg that handed a null for anything it
+    /// did not recognise would drive the action into whatever it does with a
+    /// null and report that as covered, which is the quiet version of not
+    /// covering it.
+    /// </remarks>
     /// <param name="action">The action to drive.</param>
     /// <param name="missing">Where an action that cannot be driven is recorded.</param>
-    /// <returns>The response headers, or <c>null</c> where the action could not be driven.</returns>
-    private static IHeaderDictionary? Answer(MethodInfo action, List<string> missing)
+    /// <returns>The arguments, or <c>null</c>.</returns>
+    private static object?[]? ArgumentsFor(MethodInfo action, List<string> missing)
     {
-        var constructors = typeof(RedeemController).GetConstructors();
-        if (constructors.Length != 1 || constructors[0].GetParameters().Length != 0)
+        var arguments = new List<object?>();
+        foreach (var parameter in action.GetParameters())
         {
+            if (parameter.ParameterType == typeof(string))
+            {
+                arguments.Add("no-store-holds-this-code");
+                continue;
+            }
+
+            if (parameter.ParameterType == typeof(SetupSubmission))
+            {
+                arguments.Add(RedeemRoute.Filled("someone", "a password long enough"));
+                continue;
+            }
+
             missing.Add(
                 action.Name
-                + " sits on a controller this leg can no longer construct, so nothing here reads what it answers with");
+                + " takes a "
+                + parameter.ParameterType.Name
+                + ", which this leg has no argument for, so it cannot drive the action and does not know what it answers with");
             return null;
         }
 
-        var context = new DefaultHttpContext();
-        var controller = (RedeemController)constructors[0].Invoke([]);
-        controller.ControllerContext = new ControllerContext { HttpContext = context };
+        return arguments.ToArray();
+    }
 
-        var returned = action.Invoke(controller, []);
+    /// <summary>
+    /// Drives one action and hands back the headers it answered with.
+    /// </summary>
+    /// <param name="action">The action to drive.</param>
+    /// <param name="arguments">What to hand it.</param>
+    /// <returns>The response headers.</returns>
+    private static IHeaderDictionary Answer(MethodInfo action, object?[] arguments)
+    {
+        var context = RedeemRoute.Request();
+        var controller = RedeemRoute.Over(
+            store: null,
+            new TestClock(DateTimeOffset.UnixEpoch),
+            new ARecordingWriteSeam(),
+            context);
+
+        var returned = action.Invoke(controller, arguments);
         if (returned is Task task)
         {
             task.GetAwaiter().GetResult();

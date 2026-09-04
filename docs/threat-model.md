@@ -122,15 +122,22 @@ for word:
 
 Every clause of it is a property some other issue has to make true, and if any
 of them is not true the cost is larger than the sentence claims. Each clause
-below names where it is kept. Nothing in this repository redeems anything yet,
-so today the sentence is the specification and not a description. The command
-this paragraph used to rest on is the wrong one for that claim now, and it is
-corrected rather than dropped: it asked whether the tree has any route at all,
-and the tree has several. What holds the claim up is the absence of a caller for
-the routine that decides a redemption:
+below names where it is kept.
+
+THIS PARAGRAPH SAID NOTHING IN THIS REPOSITORY REDEEMS ANYTHING YET, SO THE
+SENTENCE IS THE SPECIFICATION AND NOT A DESCRIPTION. Something redeems, and the
+absence the paragraph rested on has gone:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
+
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+So the sentence is a description of a live route now, and every clause below is
+worth reading as one. Which of them are held by something that runs and which are
+still specification is the table below, clause by clause, rather than this
+paragraph.
 
 | Clause | What has to hold for it | Issue |
 | --- | --- | --- |
@@ -249,13 +256,24 @@ reduction with a caller in the tree:
     git grep -n 'new InvitationCodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
     exit=0
 
-So the wider claim is withdrawn. The narrower one is the one that was always
-carrying the weight and it still holds: nothing here redeems an invitation, so no
-mitigation in the grid has been exercised on a path a stranger can reach. The
-routine that decides a redemption has no caller.
+So the wider claim is withdrawn.
+
+THE NARROWER ONE WAS THAT NOTHING HERE REDEEMS AN INVITATION, SO NO MITIGATION IN
+THE GRID HAS BEEN EXERCISED ON A PATH A STRANGER CAN REACH. It rested on the
+decision routine having no caller, and it has one:
 
     git grep -n 'Decide(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*RedemptionDecision.cs'
-    exit=1
+    exit=0
+
+    git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:625:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+
+What survives is the half about exercise rather than about reach. Several of
+these mitigations are on a path a stranger can reach now. None of them has been
+exercised there: no server has been run, no request has crossed a socket, and
+every assertion behind them is made against a controller instantiated as an
+ordinary object in a suite that may open no network connection. A row that is
+green in this repository is a row a test drove and not a row an attack met.
 
 A row whose issue is closed is a row where the work landed under an issue that
 argued it. It is not a row this file measured, and it is not a row anybody has

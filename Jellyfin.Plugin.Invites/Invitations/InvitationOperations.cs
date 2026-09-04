@@ -566,6 +566,140 @@ public sealed class InvitationOperations
         }
     }
 
+    /// <summary>
+    /// Judges one presented code and, where it is honoured against a record
+    /// that carries a grant, takes one use off that record before answering.
+    /// </summary>
+    /// <param name="presented">
+    /// What somebody typed, in whatever shape they typed it. Null and rubbish
+    /// are ordinary inputs, because this is the one surface a stranger reaches.
+    /// </param>
+    /// <returns>
+    /// The verdict, and the record as it stands after its use was taken where
+    /// one was.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Read, decide and write are one unit under the gate, which is #40.</b>
+    /// The records are read inside the monitor, the decision is made against
+    /// exactly those records, and the use is written before the monitor is let
+    /// go. That is also what makes #54 hold: a revocation that lands while
+    /// somebody has the setup page open is seen by this read, because the read
+    /// happens here rather than when the page was served.
+    /// </para>
+    /// <para>
+    /// <b>Nothing here judges an expiry, a use count or a revocation.</b> The
+    /// verdict comes from the one routine that judges those, handed the records
+    /// this monitor read and one clock reading. What this routine adds is the
+    /// write, and the write is the thing the decision routine deliberately
+    /// cannot do because it opens no store.
+    /// </para>
+    /// <para>
+    /// <b>One clock reading for the whole redemption</b>, taken before the
+    /// monitor for the reason every other operation here takes one: two reads
+    /// inside one redemption can straddle an expiry and decide it differently
+    /// depending on how long the machine took.
+    /// </para>
+    /// <para>
+    /// <b>The use is taken before the account exists, and that is the direction
+    /// to fail in.</b> A crash between this write and the account being created
+    /// costs a use and creates nothing; the other order creates an account
+    /// against an invitation that still reads as unused. #53 owns closing that
+    /// window and it is not closed here.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    public Reservation Reserve(string? presented)
+    {
+        var now = _clock.UtcNow;
+
+        lock (_gate)
+        {
+            var directory = Directory();
+            var store = new InvitationStore(directory);
+            var contents = store.Read();
+
+            var hash = new InvitationCodeHash(
+                HashSecret.OpenOrCreate(directory, contents.Invitations).Value);
+
+            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+            if (!verdict.MayCreateAnAccount)
+            {
+                return Reservation.Nothing(verdict);
+            }
+
+            var matched = verdict.Invitation!;
+
+            // A record minted before the grant was copied onto it can create
+            // nothing, and the answer is to leave it alone rather than to look
+            // its label up now. Invitation.Template is where that is argued;
+            // resolving the name here would make an edit to a configured
+            // template change what a live invitation already grants.
+            if (matched.Template is null)
+            {
+                return Reservation.Nothing(verdict);
+            }
+
+            var reserved = Spending.Of(matched);
+            store.Write(contents.Invitations.Replace(matched, reserved));
+
+            return Reservation.Taken(verdict, reserved);
+        }
+    }
+
+    /// <summary>
+    /// Records against an invitation the account its redemption created.
+    /// </summary>
+    /// <param name="id">The non-secret identifier of the record.</param>
+    /// <param name="account">The server's own identifier for the account.</param>
+    /// <returns>
+    /// The record as it now stands, or <c>null</c> where the store no longer
+    /// holds one with that identifier.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>The record is read again rather than being handed in.</b> The account
+    /// was created outside this monitor, so anything could have written the file
+    /// in between, and writing back a record that was read before that would
+    /// undo it. What is written here is the record as it stands now, with one
+    /// account added to what it claims.
+    /// </para>
+    /// <para>
+    /// <b>A record that is gone is not an error.</b> Retention removes records
+    /// whose usefulness has run out, and an account created against one that has
+    /// since been swept is an account the store can no longer trace. Saying so
+    /// with a null is what lets the caller answer the person normally, because
+    /// the account exists either way and refusing them would be a refusal of
+    /// something that already happened.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    /// <exception cref="ArgumentException"><paramref name="account"/> is the empty identifier.</exception>
+    public Invitation? RecordAccount(Guid id, Guid account)
+    {
+        lock (_gate)
+        {
+            var store = Store();
+            var contents = store.Read();
+
+            var found = contents.Invitations.FirstOrDefault(invitation => invitation.Id == id);
+            if (found is null)
+            {
+                return null;
+            }
+
+            var claiming = Spending.With(found, account);
+            if (ReferenceEquals(claiming, found))
+            {
+                return found;
+            }
+
+            store.Write(contents.Invitations.Replace(found, claiming));
+
+            return claiming;
+        }
+    }
+
     private InvitationStore Store() => new(Directory());
 
     private string Directory()

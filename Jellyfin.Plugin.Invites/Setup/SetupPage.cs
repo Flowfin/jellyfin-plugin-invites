@@ -98,7 +98,7 @@ public static class SetupPage
             throw new InvalidOperationException(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "The setup page carries {0} style openings and {1} closings, and the policy names exactly one. A page whose style the policy does not cover is a page a browser renders unstyled.",
+                    "A served page carries {0} style openings and {1} closings, and the policy names exactly one. A page whose style the policy does not cover is a page a browser renders unstyled.",
                     opens,
                     closes));
         }
@@ -108,7 +108,7 @@ public static class SetupPage
         if (to < from)
         {
             throw new InvalidOperationException(
-                "The setup page closes a style element before it opens one, so there is nothing between the two to hash.");
+                "A served page closes a style element before it opens one, so there is nothing between the two to hash.");
         }
 
         var style = page[from..to];
