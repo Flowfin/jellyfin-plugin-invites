@@ -316,12 +316,21 @@ honoured code writes to the store twice: once to take the use, once to record th
 account it produced.
 
 ```
-$ git grep -nE '\bRedeem' origin/master -- 'Jellyfin.Plugin.Invites/*.cs'
-origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:73:public sealed class RedeemController : ControllerBase
-origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:97:    /// Initializes a new instance of the <see cref="RedeemController"/> class.
-origin/master:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:107:    public RedeemController(
-origin/master:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
+$ git grep -nE '\bRedeem' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- 'Jellyfin.Plugin.Invites/*.cs'
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:75:public sealed class RedeemController : ControllerBase
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:100:    /// Initializes a new instance of the <see cref="RedeemController"/> class.
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:115:    public RedeemController(
+d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Setup/SetupPage.cs:20:/// escaping it, and it is why <see cref="Controllers.RedeemController"/> does
 ```
+
+Both quotations above name a commit rather than a branch, and the change that
+made them do so is #439's. A reference against `origin/master` is a reference to
+whatever that ref holds when the check runs, so the same bytes are green on a
+branch and red on the mainline the moment a merge moves a line above the target.
+That happened twice in one evening on these two pages. The register at
+`.github/lint/pasted-line-reference-records.txt` already names this repair in its
+own header: a quotation that can name a revision is judged at that revision
+rather than excused.
 
 Neither write adds a field to this inventory. What they move is the use count and
 the list of accounts a record claims, and both already have their rows above.

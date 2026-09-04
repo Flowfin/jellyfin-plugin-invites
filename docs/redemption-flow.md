@@ -153,23 +153,31 @@ landed under #398:
 It does not unwind, and it says so on itself rather than leaving a reader to
 find out:
 
-    git grep -n 'Nothing is undone' origin/master -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
-    origin/master:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:63:/// <b>What a failure part-way leaves.</b> Nothing is undone. A refusal from the
+    git grep -n 'Nothing is undone' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/AccountCreation.cs:63:/// <b>What a failure part-way leaves.</b> Nothing is undone. A refusal from the
 
 It does not disable the account either. The seam it writes through declares
 three acts and none of them is a delete or a disable:
 
-    git grep -nE '^    Task' origin/master -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
-    origin/master:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
+    git grep -nE '^    Task' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:53:    Task<Guid> CreateAccountAsync(string username);
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:61:    Task SetCredentialAsync(Guid account, string password);
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites/Accounts/IServerAccountWrites.cs:75:    Task ApplyTemplateAsync(Guid account, AccountTemplate template);
 
 THE DELETE THIS UNWIND NEEDS IS REFUSED RATHER THAN MERELY ABSENT, which is the
 part that changes what somebody building these two branches should do. Widening
 the seam by a fourth act turns a guard red:
 
-    git grep -n 'public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds' origin/master -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
-    origin/master:Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:190:    public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds()
+    git grep -n 'public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds' d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334 -- Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs
+    d0cebf36fdb3c6cc1f26b697de0a09bcf93d8334:Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:190:    public void TheWriteSeamDeclaresOnlyTheThreeActsARedemptionNeeds()
+
+Every quotation in this section names a commit rather than `origin/master`, and
+it named the branch until #439. A reference against a moving ref is a reference
+to whatever that ref holds when the check runs, so the same bytes are green on a
+branch and red on the mainline the moment a merge moves a line above the target.
+None of these five had gone stale; they were converted because the next change to
+either of those two files would have made them stale on the mainline behind a
+green pull request, which is what happened twice on two other pages.
 
 That guard is #91's answer read from this side: a plugin that can delete an
 account is a larger power than a redemption needs, and it was weighed and
