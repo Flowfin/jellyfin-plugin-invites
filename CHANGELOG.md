@@ -51,8 +51,9 @@ changelog can say it, and no such change is planned.
 ## 0.1.0.0
 
 The first published version. It adds one page to the server dashboard, and on
-it an operator sets the public address, mints an invitation, reads the
-outstanding ones, revokes one and rotates the key the codes are stored under.
+it an operator sets the public address, writes down the account templates an
+invitation is minted against, mints an invitation, reads the outstanding ones,
+revokes one and rotates the key the codes are stored under.
 No link can be redeemed and no account is created by this plugin, so an
 invitation minted from this version cannot be spent by anybody.
 

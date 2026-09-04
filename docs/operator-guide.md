@@ -12,16 +12,17 @@ exist costs more than the paragraph it saved.
 
 ## What is not walkable yet, said before you start rather than after
 
-Two steps of the seven have nothing to point at.
+One step of the seven has nothing to point at.
 
-**Defining an account template on the configuration page.** A template is an
-entry in the `Templates` setting, and the page has no field for that setting
-yet, which is #435. Writing one today means the plugin configuration endpoint or
-the file on disk, in the shape [docs/configuration.md](configuration.md) gives
-under `## The named templates`. What the mint form takes is the name of such an
-entry; a name that matches none is refused, and the grant behind a name that
-matches is copied onto the invitation at that moment, so editing the entry
-afterwards changes the next invitation and not the ones already sent.
+THIS SECTION SAID TWO STEPS HAD NOTHING TO POINT AT, AND ONE OF THEM HAS A
+SCREEN NOW. Defining an account template is done under Settings on the plugin's
+own page since #435: each template is a block of fields with the rules it has
+to satisfy stated above it, a template is added, edited or removed there, and
+the list is saved with the Save button the address uses. Step 3 below walks it.
+What the mint form takes is the label of such an entry; a name that matches none
+is refused, and the grant behind a name that matches is copied onto the
+invitation at that moment, so editing the entry afterwards changes the next
+invitation and not the ones already sent.
 
 **Watching an invitation get redeemed.** The redemption address serves the setup
 page and nothing posts back to it, so nobody can complete a setup and no account
@@ -98,11 +99,25 @@ badly, is in [docs/configuration.md](configuration.md).
 
 ## Step 3: decide what the invitation grants
 
-There is no screen for this yet, and the section above says where a template is
-written instead. What the mint form asks for is the name of a configured
-template, and what the record keeps is that name and, beside it, a copy of the
-grant the name stood for when you minted: the libraries, the permissions and the
-ceilings, in the shape [docs/configuration.md](configuration.md) describes.
+Under Settings on the plugin's page, below the public address, is the list of
+account templates. Press Add a template, give it a label, tick the libraries the
+account may see, open the permissions it needs and set a ceiling where you want
+one, then Save. The libraries are the server's own, read when the page opens, so
+a library is ticked by name rather than typed by identifier; a library the
+setting names that the server no longer has is shown as such and stays ticked
+until you untick it. Removing a template is a button on its block, and it too
+takes effect at Save.
+
+The rules a template has to satisfy are written above the list, and the page
+judges none of them: a save that breaks one is accepted by the page and refused
+when the plugin loads, with the position of the entry and the rule it missed in
+the server log, and nothing can be minted until it is repaired. The shape of
+what is saved is in [docs/configuration.md](configuration.md) under `## The
+named templates`.
+
+What the mint form asks for is the label of one of those templates, and what
+the record keeps is that label and, beside it, a copy of the grant the label
+stood for when you minted: the libraries, the permissions and the ceilings.
 
 The copy is the part to know about before you edit a template. Changing an entry
 changes what the next invitation minted against it grants and leaves every
