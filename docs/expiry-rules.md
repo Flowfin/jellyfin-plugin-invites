@@ -16,7 +16,7 @@ makes. They are read off the source rather than counted from the sections below,
 because the count in this paragraph is the thing that went stale twice:
 
     git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:65:    public DateTimeOffset ExpiresAt { get; }
+    Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:67:    public DateTimeOffset ExpiresAt { get; }
     Jellyfin.Plugin.Invites/Invitations/Invitation.cs:192:    public DateTimeOffset ExpiresAt { get; }
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:265:        var lasts = validity ?? DefaultValidity;
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:272:        if (lasts <= TimeSpan.Zero)

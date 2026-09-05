@@ -270,6 +270,18 @@ invitation identifier, the state, the uses remaining, the expiry and what the
 invitation created, which are the fields
 [docs/personal-data.md](personal-data.md) already holds.
 
+Each row also carries the grant the invitation was minted with, under `grant`.
+It is the copy taken at minting rather than the configured template of the same
+name, which is #61's rule and is what makes the row answer #94's question months
+later: what this plugin applied, not what that name means today. It is `null` on
+a record minted before the copy existed, which the store brings forward from its
+first version with the grant absent rather than guessing one; such an invitation
+creates no account.
+
+`grant` is what was applied and never what the account carries now. Whether an
+account still has it is a different fact, this plugin cannot read it, and #94 is
+where the difference between the two is settled.
+
 Each account the invitation created is an entry carrying its identifier and what
 became of it, rather than an identifier on its own. #45 decided that a record
 keeps its pointer at an account somebody has since deleted instead of clearing
