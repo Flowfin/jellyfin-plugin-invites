@@ -23,8 +23,8 @@ because the count in this paragraph is the thing that went stale twice:
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:280:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:327:                expiresAt: now + lasts,
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:241:        if (now >= record.ExpiresAt)
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:668:        public DateTimeOffset ExpiresAt { get; set; }
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:967:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:682:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:981:        public DateTimeOffset ExpiresAt { get; set; }
 
 Nine lines rather than eight since #61. The store's stored record moved down by
 ninety-two as the store gained its second shape, and the ninth line is that

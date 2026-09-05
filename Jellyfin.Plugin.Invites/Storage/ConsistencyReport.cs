@@ -112,10 +112,21 @@ public sealed class ConsistencyReport
     /// </param>
     /// <returns>The report. Never null.</returns>
     /// <remarks>
+    /// <para>
     /// This is the load. <see cref="InvitationStore.Read"/> creates nothing when
     /// the file is not there and writes nothing in any case, so a report taken
     /// this way leaves the data directory exactly as it found it, and the suite
     /// asserts that against a real directory rather than trusting it.
+    /// </para>
+    /// <para>
+    /// THIS IS NO LONGER THE PATH <see cref="StoreLoad"/> TAKES, since #92. That
+    /// routine wants two facts out of one read - this comparison and what the
+    /// read had to do to bring an older document forward - and reading twice
+    /// would let them disagree about a file somebody wrote to in between. So it
+    /// reads once and calls <see cref="Of"/>. This one is the shorter spelling
+    /// for a caller that wants only the comparison, and the suite is what uses
+    /// it.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">Either argument is null.</exception>
     public static ConsistencyReport OfALoad(InvitationStore store, IReadOnlyCollection<Guid> accountsTheServerHas)

@@ -52,7 +52,7 @@ retention sweep all write the records file now:
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:449:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:513:            store.Write(kept);
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:445:            writer.Write(json);
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:459:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
 
 Six lines rather than five, and the two that were already there each moved by

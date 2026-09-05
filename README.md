@@ -193,6 +193,7 @@ drifts from it.
 | [docs/disaster-cases.md](docs/disaster-cases.md) | Restore from backup, a cloned server, two servers on one store |
 | [docs/migration-from-jfa-go.md](docs/migration-from-jfa-go.md) | Whether this replaces jfa-go, answered in both directions |
 | [docs/versioning.md](docs/versioning.md) | Where the version number lives and which part moves when |
+| [docs/migrations.md](docs/migrations.md) | What upgrading does to the configuration and the store, and why a downgrade is refused |
 | [docs/RELEASING.md](docs/RELEASING.md) | What a tag does and what a person does |
 | [docs/tests-not-written.md](docs/tests-not-written.md) | The tests this repository refuses, and what covers each risk instead |
 | [docs/manual-checks.md](docs/manual-checks.md) | Where a run of the two unautomatable checks is recorded |

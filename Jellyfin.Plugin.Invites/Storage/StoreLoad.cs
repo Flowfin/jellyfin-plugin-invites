@@ -44,11 +44,12 @@ public sealed class StoreLoad : IDisposable
 {
     private readonly StoreLock? _claim;
 
-    private StoreLoad(StoreLock? claim, StoreInUseException? refusal, ConsistencyReport? report)
+    private StoreLoad(StoreLock? claim, StoreInUseException? refusal, ConsistencyReport? report, StoreMigration? migration = null)
     {
         _claim = claim;
         Refusal = refusal;
         Report = report;
+        Migration = migration;
     }
 
     /// <summary>
@@ -73,6 +74,20 @@ public sealed class StoreLoad : IDisposable
     /// list was handed in to compare against.
     /// </summary>
     public ConsistencyReport? Report { get; }
+
+    /// <summary>
+    /// Gets what the read had to do to bring an older document forward, and
+    /// <c>null</c> where the document was already the shape this build writes or
+    /// where nothing was read.
+    /// </summary>
+    /// <remarks>
+    /// It is carried rather than acted on for the reason the report is: what a
+    /// load does is claim and read, and who tells an operator anything is the
+    /// caller. #92 asks that a value that cannot be mapped forward produce the
+    /// strict option and that the plugin say what it did, and this is the half
+    /// of that sentence a load can hold.
+    /// </remarks>
+    public StoreMigration? Migration { get; }
 
     /// <summary>
     /// Claims the store directory and reads it once.
@@ -121,10 +136,17 @@ public sealed class StoreLoad : IDisposable
 
         try
         {
+            // One read rather than two. The comparison and the migration
+            // observation are two facts about the same load of the same file,
+            // and reading twice would let them disagree about a store somebody
+            // wrote to in between.
+            var contents = new InvitationStore(directory).Read();
+
             return new StoreLoad(
                 claim,
                 refusal: null,
-                ConsistencyReport.OfALoad(new InvitationStore(directory), accountsTheServerHas));
+                ConsistencyReport.Of(contents.Invitations, accountsTheServerHas),
+                contents.Migration);
         }
         catch
         {

@@ -177,6 +177,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
             return Task.CompletedTask;
         }
 
+        ReportAMigration(load.Migration);
         Report(load.Report!);
         return Task.CompletedTask;
     }
@@ -296,6 +297,42 @@ public sealed class LoadOnStart : IHostedService, IDisposable
         _logger.LogError(
             "A number this plugin is configured with cannot be used, so the routine that would act on it refuses instead. {Why} The setting is on this plugin's own configuration page.",
             why);
+    }
+
+    /// <summary>
+    /// Says what the read had to do to bring an older store forward, where it
+    /// had to do anything.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #92 asks that a value which cannot be mapped forward produce the strict
+    /// option and that the plugin say what it did rather than silently choosing.
+    /// The strict option is what the store produces; this is the saying, and it
+    /// is here rather than in the store because nothing on the redemption path
+    /// may hold a logger.
+    /// </para>
+    /// <para>
+    /// A warning rather than an error, and the distinction is the point. Nothing
+    /// failed: a store written by an older build is exactly what a forward
+    /// migration is for, and the file is untouched by the read. What is worth an
+    /// operator's attention is the cost, which the sentence carries - records
+    /// that came forward with no grant create no account.
+    /// </para>
+    /// <para>
+    /// The line carries a count and two version numbers and nothing out of a
+    /// record, so docs/logging.md's rule about which values may reach a log is
+    /// met by the shape rather than by care.
+    /// </para>
+    /// </remarks>
+    /// <param name="migration">What the read did, or null where it read the current shape.</param>
+    private void ReportAMigration(StoreMigration? migration)
+    {
+        if (migration is null)
+        {
+            return;
+        }
+
+        _logger.LogWarning("{Finding}", migration.Summary);
     }
 
     private void Report(ConsistencyReport report)

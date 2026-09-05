@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.Invites.Accounts;
@@ -269,11 +270,24 @@ public sealed class InvitationStore
         // before any record is parsed. A document declaring the older shape
         // while carrying a member from the newer one is read as the shape it
         // declares, which loses the member rather than trusting it.
-        var invitations = declared <= VersionWithoutAGrant
-            ? MigrateFromVersionOne(text)
-            : ReadTheCurrentShape(text);
+        if (declared > VersionWithoutAGrant)
+        {
+            return new StoreContents(ReadTheCurrentShape(text), permissions);
+        }
 
-        return new StoreContents(invitations, permissions);
+        // Read forward, and the observation travels back with the records
+        // rather than being written to a log here. #92 asks that a value which
+        // cannot be mapped produce the strict option AND that the plugin say
+        // what it did; the strict option is what MigrateFromVersionOne
+        // produces, and the saying is the caller's, because nothing on this
+        // path may hold a logger.
+        var migrated = MigrateFromVersionOne(text);
+        var withoutAGrant = migrated.Count(record => record.Template is null);
+
+        return new StoreContents(
+            migrated,
+            permissions,
+            new StoreMigration(declared, Version, withoutAGrant));
     }
 
     /// <summary>
