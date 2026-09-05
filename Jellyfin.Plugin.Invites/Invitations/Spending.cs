@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace Jellyfin.Plugin.Invites.Invitations;
 
@@ -84,11 +85,22 @@ public static class Spending
     /// see by reference that there is nothing to write.
     /// </returns>
     /// <remarks>
+    /// <para>
     /// The empty identifier is refused for the reason <see cref="Revocation"/>
     /// refuses it on its own field: a claim recorded against nobody answers the
     /// question the field exists for with a value that reads like an answer, and
     /// the operator's view of which invitation produced which account is the one
     /// place that costs the most.
+    /// </para>
+    /// <para>
+    /// <b>The claim is recorded with no expiry, and that is a decided value
+    /// rather than a gap.</b> #468 gives the claim somewhere to carry one and
+    /// deliberately owns nothing that sets one: an expiry worked out here from
+    /// the invitation is the derivation #68 refuses, and the routine that
+    /// decides what an account's expiry should be does not exist. So an
+    /// account created today does not expire until something an operator can
+    /// see sets a value on it.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="account"/> is the empty identifier.</exception>
@@ -103,7 +115,7 @@ public static class Spending
                 nameof(account));
         }
 
-        if (invitation.AccountsProduced.Contains(account))
+        if (invitation.AccountsProduced.Any(claim => claim.Account == account))
         {
             return invitation;
         }
@@ -120,6 +132,6 @@ public static class Spending
             revokedBy: invitation.RevokedBy,
             templateLabel: invitation.TemplateLabel,
             template: invitation.Template,
-            accountsProduced: invitation.AccountsProduced.Add(account));
+            accountsProduced: invitation.AccountsProduced.Add(ProducedAccount.ThatDoesNotExpire(account)));
     }
 }

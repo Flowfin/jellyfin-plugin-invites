@@ -121,7 +121,7 @@ public class InvitationMintTests
             Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
             Guid.Parse("99999999-8888-7777-6666-555555555555"));
 
-        var afterTheAccountsWereDeleted = Without(spent, spent.AccountsProduced);
+        var afterTheAccountsWereDeleted = Without(spent, spent.AccountsProduced.Accounts());
 
         Assert.Empty(afterTheAccountsWereDeleted.AccountsProduced);
         Assert.Equal(spent.UsesRemaining, afterTheAccountsWereDeleted.UsesRemaining);
@@ -147,7 +147,7 @@ public class InvitationMintTests
     {
         var spent = ASpentRecordThatProduced(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
 
-        var afterTheAccountWasDeleted = Without(spent, spent.AccountsProduced);
+        var afterTheAccountWasDeleted = Without(spent, spent.AccountsProduced.Accounts());
 
         Assert.Equal(spent.UsesGranted, afterTheAccountWasDeleted.UsesGranted);
     }
@@ -190,7 +190,7 @@ public class InvitationMintTests
             revokedBy: null,
             templateLabel: minted.TemplateLabel,
             template: minted.Template,
-            accountsProduced: [.. accounts]);
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(accounts));
     }
 
     /// <summary>
@@ -217,6 +217,6 @@ public class InvitationMintTests
             revokedBy: record.RevokedBy,
             templateLabel: record.TemplateLabel,
             template: record.Template,
-            accountsProduced: [.. record.AccountsProduced.Where(account => !gone.Contains(account))]);
+            accountsProduced: [.. record.AccountsProduced.Where(claim => !gone.Contains(claim.Account))]);
     }
 }

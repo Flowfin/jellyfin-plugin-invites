@@ -195,7 +195,7 @@ public class TheSweepAndARedemptionTests
         Assert.Equal(Redeemed, stored.Length);
         Assert.Equal(
             accounts.OrderBy(id => id).ToArray(),
-            stored.SelectMany(record => record.AccountsProduced).OrderBy(id => id).ToArray());
+            stored.SelectMany(record => record.AccountsProduced.Accounts()).OrderBy(id => id).ToArray());
         Assert.All(stored, record => Assert.Equal(0, record.UsesRemaining));
     }
 
@@ -260,7 +260,7 @@ public class TheSweepAndARedemptionTests
                 revokedBy: null,
                 templateLabel: "Household",
                 template: TestTemplates.Household,
-                accountsProduced: ImmutableArray<Guid>.Empty));
+                accountsProduced: ImmutableArray<ProducedAccount>.Empty));
         }
 
         store.Write(writing.ToImmutable());

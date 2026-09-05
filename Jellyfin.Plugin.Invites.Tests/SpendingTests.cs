@@ -89,7 +89,9 @@ public class SpendingTests
         var after = Spending.With(before, _account);
 
         Assert.Equal(1, after.UsesRemaining);
-        Assert.Equal(before.AccountsProduced.Add(_account).ToArray(), after.AccountsProduced.ToArray());
+        Assert.Equal(
+            before.AccountsProduced.Add(ProducedAccount.ThatDoesNotExpire(_account)).ToArray(),
+            after.AccountsProduced.ToArray());
     }
 
     /// <summary>
@@ -154,5 +156,5 @@ public class SpendingTests
             revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")));
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")));
 }

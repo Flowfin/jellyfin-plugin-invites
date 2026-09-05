@@ -639,6 +639,6 @@ public class LoadOnStartTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: [.. accounts]);
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(accounts));
     }
 }

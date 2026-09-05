@@ -168,7 +168,7 @@ public class ARevocationDuringARedemptionTests
         Assert.Equal(asked, seam.Asked.Count);
 
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
-        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced));
+        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced).Account);
         Assert.Equal(1, stored.UsesRemaining);
         Assert.True(stored.IsRevoked);
     }

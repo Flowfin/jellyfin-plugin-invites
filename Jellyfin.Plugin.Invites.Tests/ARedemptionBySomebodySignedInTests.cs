@@ -131,7 +131,7 @@ public class ARedemptionBySomebodySignedInTests
 
         return (
             seam.Asked.ToList(),
-            stored.AccountsProduced.Single(),
+            stored.AccountsProduced.Single().Account,
             Assert.IsType<StatusCodeResult>(answer).StatusCode);
     }
 }

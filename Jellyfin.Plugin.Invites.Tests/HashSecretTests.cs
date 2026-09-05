@@ -361,7 +361,7 @@ public class HashSecretTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 
     private static Invitation AnotherInvitation()
@@ -378,6 +378,6 @@ public class HashSecretTests
             revokedBy: null,
             templateLabel: "Friends",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 }

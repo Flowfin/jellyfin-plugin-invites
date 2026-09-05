@@ -161,12 +161,12 @@ public sealed class ConsistencyReport
 
         foreach (var record in records)
         {
-            foreach (var account in record.AccountsProduced)
+            foreach (var claim in record.AccountsProduced)
             {
-                claimed.Add(account);
-                if (!present.Contains(account))
+                claimed.Add(claim.Account);
+                if (!present.Contains(claim.Account))
                 {
-                    absent.Add(new ClaimedAccount(record.Id, account));
+                    absent.Add(new ClaimedAccount(record.Id, claim.Account));
                 }
             }
         }

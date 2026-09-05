@@ -115,6 +115,7 @@ address a redemption arrived from.
 | Template name | Which grant this invitation carries, by the name the operator picked at minting. Kept as something an operator reads, and resolved by nothing afterwards, which is #61's rule. | The record |
 | Template grant | The grant itself, copied out of the configured template at minting under #61: the libraries, the permissions and the ceilings the account it creates gets. A copy rather than a reference, so an operator editing the named template afterwards changes the next invitation and not this one. Not data about a person; listed so the inventory is the whole record. Absent on a record minted before the copy existed, and such a record creates nothing. | The record |
 | Accounts produced | The link between an invitation and the accounts it created. This is the most identifying row here, and it is also the one an operator needs when an account they do not recognise appears. | The record |
+| Account expiry | When one of those accounts expires, kept on the claim itself since #468 rather than worked out from the invitation, so that an operator can extend one account. It is an instant about a named account, which makes it data about that person on the same footing as the row above. Absent means the account does not expire, and it is absent on every account this build has created and on every account brought forward from an older store. | The record |
 | Operator label | Failed the test. See below. | Not stored |
 | Contact address | Failed the test. See below. | Not stored |
 

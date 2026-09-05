@@ -126,7 +126,7 @@ public class AGoneAccountTests
             view.AccountsProduced.Select(account => account.Id));
 
         var onDisk = new InvitationStore(directory.Path).Read().Invitations;
-        Assert.Equal(new[] { _stillThere, _deleted }, Assert.Single(onDisk).AccountsProduced);
+        Assert.Equal(new[] { _stillThere, _deleted }, Assert.Single(onDisk).AccountsProduced.Accounts());
     }
 
     /// <summary>
@@ -231,7 +231,7 @@ public class AGoneAccountTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(_stillThere, _deleted));
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(_stillThere, _deleted));
 
         new InvitationStore(directory).Write(ImmutableArray.Create(record));
 

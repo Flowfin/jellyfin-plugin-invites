@@ -111,7 +111,7 @@ public class NoScriptFlowTests
 
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, stored.UsesRemaining);
-        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced));
+        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced).Account);
     }
 
     /// <summary>

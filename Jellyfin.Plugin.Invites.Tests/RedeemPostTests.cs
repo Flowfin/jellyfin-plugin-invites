@@ -88,7 +88,7 @@ public class RedeemPostTests
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(1, stored.UsesRemaining);
         Assert.Equal(2, stored.UsesGranted);
-        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced));
+        Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced).Account);
         Assert.Equal(minted.Invitation.Id, stored.Id);
     }
 
@@ -651,7 +651,10 @@ public class RedeemPostTests
         Assert.True(grantAt > 0 && afterGrant > grantAt, "The store no longer writes a grant this test can take back out.");
         File.WriteAllText(
             path,
-            (written[..grantAt] + written[afterGrant..]).Replace("\"version\": 2", "\"version\": 1", StringComparison.Ordinal));
+            (written[..grantAt] + written[afterGrant..]).Replace(
+                FormattableString.Invariant($"\"version\": {InvitationStore.Version}"),
+                FormattableString.Invariant($"\"version\": {InvitationStore.VersionWithoutAGrant}"),
+                StringComparison.Ordinal));
 
         var seam = new ARecordingWriteSeam();
         var controller = RedeemRoute.Over(directory.Path, clock, seam, RedeemRoute.Request());
