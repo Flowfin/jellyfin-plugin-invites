@@ -249,9 +249,12 @@ two routines refuse in the shape each of them has:
 Both directions are closed rather than convenient: a mistyped number costs
 redemptions or costs a sweep, and neither costs a bound.
 
-**Where an operator meets it.** The plugin reads all three when the server starts
-and writes one line naming the setting, the range and the direction the value went
-out of it, for the first fault in declaration order. The value that was typed is
+**Where an operator meets it.** Each of the three has a field on the plugin's own
+configuration page, stating its range, and the page refuses a save that would put
+one outside it rather than nudging it in - a clamp on a form is the same silent
+correction one step earlier than the load. The plugin also reads all three when
+the server starts and writes one line naming the setting, the range and the
+direction the value went out of it, for the first fault in declaration order. The value that was typed is
 never in the line, because `docs/logging.md` admits a value there only where it is
 a row in `docs/personal-data.md`, and a server setting is not one.
 
