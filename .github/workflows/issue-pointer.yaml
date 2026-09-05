@@ -1,10 +1,11 @@
 # A table column that points at work still to come, held to the tracker.
 #
-# `Produced by` on `docs/attempt-outcomes.md` and `Owned by` on
-# `docs/refusal-response.md` name the issue that will do a thing. A reader uses
-# such a column to find out whether the thing they are waiting for has arrived,
-# and an issue that has closed reads as arrived. The class has been repaired by
-# hand five times, each found by somebody reading a page against the tracker.
+# `Produced by` on `docs/attempt-outcomes.md` names the issue that will do a
+# thing, and `.github/lint/issue-pointer-columns.txt` is the register of every
+# column read here. A reader uses such a column to find out whether the thing
+# they are waiting for has arrived, and an issue that has closed reads as
+# arrived. The class has been repaired by hand five times, each found by
+# somebody reading a page against the tracker, and once by this job.
 #
 # WHY THIS IS ON A SCHEDULE RATHER THAN ON A PULL REQUEST, which is the design
 # and not a filing choice, and it is the same argument `tracker-claim.yaml`

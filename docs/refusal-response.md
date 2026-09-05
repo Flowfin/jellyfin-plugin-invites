@@ -62,7 +62,7 @@ somebody adds to rather than a paragraph somebody reimplements, and adding a
 refusal without adding it here is how the set quietly grows a distinguishable
 member.
 
-| Case | Owned by | Trail outcome |
+| Case | Decided in | Trail outcome |
 | --- | --- | --- |
 | The presented code matched no record | #28 | `NoSuchInvitation` |
 | The record's expiry had passed | #51 | `Expired` |
@@ -91,9 +91,32 @@ existed is answered exactly as one that was spent is #28's rather than the
 route's, and #51, #55 and #54 for the three states of a record that did exist.
 
 The post is named in this prose instead, where it can be written in the past
-tense. `.github/lint/issue-pointer.sh` reads this column against the tracker and
-refuses a cell naming a closed issue; it reads no prose, and a past-tense
-sentence is a claim about a moment rather than about this commit.
+tense.
+
+THE COLUMN IS OUT OF THE FORWARD REGISTER AND IS NAMED FOR WHAT IT HOLDS. Until
+2026-09-05 its heading read `Owned by`, `.github/lint/issue-pointer.sh` read it
+against the tracker as a column pointing at work still to come, and this
+paragraph said so. The paragraph above had already made the cells something
+else: the issue that decided a row's rule. A rule issue completes, and on the day
+it does a cell naming it is exactly right and the check refuses it, which is what
+happened to three of these six the first time the daily run read the page after
+#51, #54 and #31 completed:
+
+    gh run list --repo Flowfin/jellyfin-plugin-invites --workflow issue-pointer.yaml --limit 2 --json databaseId,headSha,conclusion --jq '.[]|"\(.databaseId) \(.headSha[0:8]) \(.conclusion)"'
+    33958314760 39213fa2 failure
+    33861415552 d5744a46 success
+
+The check's own header names this shape and says why it is not judged: on
+[docs/threat-model.md](threat-model.md) a completed issue in the last column
+means a mitigation that landed, and the bytes cannot tell that from a pointer
+that went stale. This column is that shape. So its heading says what a cell
+holds, `Decided in`, the register in `.github/lint/issue-pointer-columns.txt` no
+longer names it, and a completed issue in one of these cells is a rule that was
+decided rather than a pointer that went stale. Whether a case is SERVED is not
+read from this column at all: the post serves all six, and the test named under
+`## One assertion, not four` drives every one of them. `docs/attempt-outcomes.md`
+met the same run on four cells and took the other repair, because its column
+does point forward, at the one issue that will write an entry.
 
 THE COLUMN NAMED #74 ON THOSE FOUR ROWS AND THE POST HAS NOT BEEN #74 SINCE
 2026-08-31. #71 split the act in two that day, the post became #399 and the
