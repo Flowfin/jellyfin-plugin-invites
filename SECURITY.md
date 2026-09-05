@@ -427,9 +427,29 @@ answered with. What stops the future ones is
 above, and reading one test as holding both is how a property ends up with less
 behind it than the page says.
 
-Immediacy is not held. A revocation taking effect against a redemption that is
-already in flight follows from the lock covering read, decide and write as one
-unit, and nothing in this repository holds that lock because nothing redeems.
+Immediacy is not held, AND THE REASON WRITTEN HERE HAS STOPPED BEING THE REASON.
+It said that a revocation taking effect against a redemption already in flight
+follows from a lock covering read, decide and write as one unit, and that nothing
+in this repository holds that lock because nothing redeems. The reservation holds
+exactly that lock, and the three steps are inside one monitor:
+
+```
+git grep -n 'RedemptionDecision.Decide\|store.Write(contents.Invitations.Replace(matched' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:645:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:664:            store.Write(contents.Invitations.Replace(matched, reserved));
+```
+
+The sequential cases either side of a revocation are held with it:
+`ARevocationDuringARedemptionTests.AFormServedBeforeTheRevocationCannotBeSubmittedAfterIt`
+drives a form served before a revocation and submitted after it, and
+`ARevocationDuringARedemptionTests.AUseLeftOnARevokedInvitationCannotBeSpent`
+holds that a use left on a revoked record buys nothing.
+
+The claim is unchanged and only its reason is. What no test arranges is a
+revocation arriving while a redemption is BETWEEN its read and its write, because
+the reservation builds its store inside its own lock and there is nowhere for a
+test to block. That is #106, and until it is decided this property is held for
+the order the cases arrive in and not for the interleaving.
 
 ### No invitation mints an administrator or widens an existing account
 
@@ -464,9 +484,23 @@ What neither test reaches is worth as much here as what they hold. The first
 reads one field of one type at one moment, so a template that reached the
 server's administrator flag by a route that does not pass through the creation
 routine is outside it. The second says the routine cannot be pointed at an
-account; whether a redemption presented by somebody already signed in creates
-nothing is a question about a request, and there is no post on the redemption
-route, so nothing in this repository answers it.
+account.
+
+THAT SENTENCE WENT ON TO SAY THAT WHETHER A REDEMPTION PRESENTED BY SOMEBODY
+ALREADY SIGNED IN CREATES NOTHING IS UNANSWERED HERE, BECAUSE THERE IS NO POST ON
+THE REDEMPTION ROUTE. There is a post, and there is a reading of it.
+`ARedemptionBySomebodySignedInTests.BeingSignedInChangesNeitherWhatIsAskedOfTheServerNorWhatIsWritten`
+drives two redemptions differing only in whether the request identifies its
+caller, and requires the trail the write seam recorded and the record left on
+disk to be the same, which is what a branch reusing the caller's own account
+would break.
+`ARedemptionBySomebodySignedInTests.TheAccountRecordedIsTheOneTheServerMadeAndNotTheCallersOwn`
+holds the identifier that would move if it did.
+
+The bound belongs on this page rather than in the names. The route is declared
+anonymous and the identity is a principal the test puts on a context it owns, so
+what is read is that the route IGNORES an identity, not that it rejects one and
+not what a server's own authentication would put there.
 
 The half of the ceiling that is configuration is not held by anything and there
 is nothing for it to hold. #62 asks that a configuration asking for an
