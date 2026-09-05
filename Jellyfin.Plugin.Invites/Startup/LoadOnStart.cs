@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.Invites.Startup;
 /// backup shows up in.
 /// </para>
 /// <para>
-/// <b>It also reads two settings once.</b> #86 asks that a setting be judged
+/// <b>It also reads every setting once.</b> #86 asks that a setting be judged
 /// when the plugin loads rather than only where it is used, and this is the
 /// moment the plugin has for that. An address an operator mistyped is otherwise
 /// met by whoever mints next, holding half an invitation they cannot hand to
@@ -85,6 +85,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     private readonly IStoreDirectory _directory;
     private readonly IPublicAddress _address;
     private readonly IConfiguredTemplates _templates;
+    private readonly IConfiguredNumbers? _numbers;
     private readonly IServerAccounts _accounts;
     private readonly IClock _clock;
     private readonly ILogger<LoadOnStart> _logger;
@@ -100,12 +101,19 @@ public sealed class LoadOnStart : IHostedService, IDisposable
     /// <param name="accounts">The server's own account list.</param>
     /// <param name="clock">The time source the claim is stamped from.</param>
     /// <param name="logger">Where the answer goes.</param>
-    public LoadOnStart(ServerLineGate line, IStoreDirectory directory, IPublicAddress address, IConfiguredTemplates templates, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger)
+    /// <param name="numbers">
+    /// The three configured numbers, read once. Optional and defaulted to
+    /// nothing so that a test naming the settings it cares about is not made to
+    /// supply a seam for the ones it does not, and nothing configured is the
+    /// fresh install rather than a fault.
+    /// </param>
+    public LoadOnStart(ServerLineGate line, IStoreDirectory directory, IPublicAddress address, IConfiguredTemplates templates, IServerAccounts accounts, IClock clock, ILogger<LoadOnStart> logger, IConfiguredNumbers? numbers = null)
     {
         _line = line;
         _directory = directory;
         _address = address;
         _templates = templates;
+        _numbers = numbers;
         _accounts = accounts;
         _clock = clock;
         _logger = logger;
@@ -127,6 +135,7 @@ public sealed class LoadOnStart : IHostedService, IDisposable
 
         ReportTheConfiguredAddress();
         ReportTheConfiguredTemplates();
+        ReportTheConfiguredNumbers();
 
         var directory = _directory.Path;
         if (string.IsNullOrWhiteSpace(directory))
@@ -254,6 +263,38 @@ public sealed class LoadOnStart : IHostedService, IDisposable
         _logger.LogError(
             "The account templates this plugin is configured with cannot be used as they stand, so no invitation can carry a grant copied from them. The setting is {Setting} on this plugin's own configuration page. {Why} Nothing was corrected and nothing was dropped; every entry is read again once the setting is repaired.",
             TemplateSettings.SettingName,
+            why);
+    }
+
+    /// <summary>
+    /// Reads the three configured numbers and names the setting where one of
+    /// them cannot be used.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the half of #86 that the two settings above already had and these
+    /// three would otherwise not: an out-of-range number is otherwise met by
+    /// whoever redeems next, as a refusal with no reason attached, or by nobody
+    /// at all, because a retention period nothing may act on is a sweep that
+    /// quietly removes nothing for months.
+    /// </para>
+    /// <para>
+    /// One line for the first fault, in the order the settings are declared, for
+    /// the reason <see cref="ReportTheConfiguredTemplates"/> gives. The line
+    /// carries the setting, the range and the direction, and never the value
+    /// that was typed.
+    /// </para>
+    /// </remarks>
+    private void ReportTheConfiguredNumbers()
+    {
+        var why = NumberSettings.WhyRefused(_numbers);
+        if (why is null)
+        {
+            return;
+        }
+
+        _logger.LogError(
+            "A number this plugin is configured with cannot be used, so the routine that would act on it refuses instead. {Why} The setting is on this plugin's own configuration page.",
             why);
     }
 

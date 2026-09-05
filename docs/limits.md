@@ -48,9 +48,9 @@ made here rather than the paragraph deleted. A mint, a revocation and the
 retention sweep all write the records file now:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:323:            store.Write(contents.Invitations.Add(minted));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:440:            store.Write(contents.Invitations.Replace(found, revoked));
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:496:            store.Write(kept);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:332:            store.Write(contents.Invitations.Add(minted));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:449:            store.Write(contents.Invitations.Replace(found, revoked));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:513:            store.Write(kept);
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:445:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
@@ -86,7 +86,7 @@ code: once to take the use and once to record the account it produced.
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:645:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 What that does not change is the bound. Neither write adds a record, so the
 public side moves the values inside records an operator already minted and cannot

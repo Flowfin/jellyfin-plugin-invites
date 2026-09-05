@@ -59,5 +59,14 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddScoped<IOperatorIdentity, RequestOperatorIdentity>();
         serviceCollection.AddSingleton<IScheduledTask, RetentionSweep>();
         serviceCollection.AddHostedService<LoadOnStart>();
+
+        // Last rather than beside the other two configuration seams, so that no
+        // line above it moves. Documents in this repository paste line
+        // references into this method, .github/lint/pasted-line-reference.sh
+        // refuses one that has gone stale, and a registration inserted in the
+        // middle costs a repair to each of them for no reading anybody gains.
+        // Resolution does not depend on the order, so the cost of the ordinary
+        // placement here is paid in other files rather than in this one.
+        serviceCollection.AddSingleton<IConfiguredNumbers, PluginConfiguredNumbers>();
     }
 }

@@ -60,7 +60,7 @@ the refusal is a branch rather than a comment:
 
     $ git grep -n 'public const int LiveCeiling = \|if (live >= LiveCeiling)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:117:    public const int LiveCeiling = 500;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:305:            if (live >= LiveCeiling)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:314:            if (live >= LiveCeiling)
 
 Both lines moved under #61, the first by one and the second by fifty-five,
 because the mint resolves the template's grant above the ceiling check now.

@@ -289,9 +289,17 @@ public class AttemptLimiterTests
     /// resets by waiting and an operator resets by upgrading.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Read off the type's own members rather than off the source text, so a
     /// write reached through a helper in another file is seen too: the assertion
     /// is that nothing this type holds is a file, a stream or a path.
+    /// </para>
+    /// <para>
+    /// The second seam arrived with #86 and is read rather than written: the two
+    /// limits are settings an operator may lower, and the constructor is where
+    /// they are reached from. It is named here so that a third parameter, which
+    /// is where a durable one would arrive, reddens this rather than passing.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheCounterHoldsNothingThatCouldOutliveTheProcess()
@@ -313,7 +321,7 @@ public class AttemptLimiterTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(new[] { "IClock" }, reached);
+        Assert.Equal(new[] { "IClock", "IConfiguredNumbers" }, reached);
     }
 
     /// <summary>

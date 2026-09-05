@@ -23,7 +23,7 @@ ROUTINE DECIDING A REDEMPTION HAS NO CALLER. It has one:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:645:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 So an outcome is produced on every submission to the redemption post, and nothing
 appends to a trail on a running server. Both halves of this page exist and
