@@ -83,8 +83,32 @@ Nothing here is a claim about the strength of any particular password.
 
 ## What is not built
 
-The form has no post behind it. Nothing takes a password, nothing validates one
-on the server side, and no account is created, so the clauses about a refused
-password leaving no account behind and about what the response says are held by
-open issues rather than by this page. `PasswordRules` is what those will call so
-that the answer is one wording rather than two.
+THIS SECTION SAID THE FORM HAS NO POST BEHIND IT, THAT NOTHING TAKES A PASSWORD,
+THAT NOTHING VALIDATES ONE ON THE SERVER SIDE AND THAT NO ACCOUNT IS CREATED. A
+post landed under #399 on 2026-09-04, and it asks this file rather than a second
+copy of the rules:
+
+```
+$ git grep -n 'PasswordRules.WhyRefused(submission.Password)' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:117:        if (PasswordRules.WhyRefused(submission.Password) is not null)
+```
+
+So the rules above are what a submission is judged by, and the sentence at the
+head of this page - that the form and the server agree because there is one place
+the rules live - is a statement about a live route rather than a plan.
+
+**The clause about a refused password leaving no account behind is held.** The
+rules are asked out of the request alone, before any code is looked at and before
+any use is taken, and the assertion reads the store and the write seam rather than
+the response, which is what makes it a claim about what was left behind:
+
+```
+$ git grep -n 'public async Task APostWhoseAnswersAreRefusedIsAnsweredWithoutJudgingTheCode' -- Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs
+Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs:282:    public async Task APostWhoseAnswersAreRefusedIsAnsweredWithoutJudgingTheCode(
+```
+
+**What the response says is the one clause still not built.** `WhyRefused` answers
+with the sentence this page states and the route discards it: a refused submission
+is answered with the bare bad request, so somebody one field away from an account
+is told only that something was wrong. Serving the form again with a reason on it
+is #77's, and until that lands the wording exists here and reaches nobody.
