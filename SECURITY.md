@@ -252,13 +252,26 @@ Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code
 
 They are held on that route and the assertion is at the route level, which is
 where a response the server actually sends can be read:
-`RedeemPostTests.EveryRefusalThisRouteServesIsTheSameResponse` drives five of the
-six cases [docs/refusal-response.md](docs/refusal-response.md) lists through the
+`RedeemPostTests.EveryRefusalThisRouteServesIsTheSameResponse` drives all six
+cases [docs/refusal-response.md](docs/refusal-response.md) lists through the
 action and compares the status, the body, the content type and every header.
 
-Two bounds stay, and they are the halves that matter. The sixth case, a ceiling
-on what the plugin may create, is refused by nothing yet, so it is not in the
-comparison. And the GET still answers every code with the same setup page, so it
+THIS PARAGRAPH SAID FIVE OF THE SIX, AND THAT THE SIXTH - A CEILING ON WHAT THE
+PLUGIN MAY CREATE - WAS REFUSED BY NOTHING AND SO WAS NOT IN THE COMPARISON. It
+is refused on the same route, ahead of the record being read:
+
+```
+git grep -n 'MayCreate()' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Accounts/CreationCeiling.cs:125:    public bool MayCreate()
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:259:        if (!_ceiling.MayCreate())
+```
+
+So every row of that page is in the comparison, and
+`RedeemPostTests.ARedemptionOverTheCeilingTakesNoUseAndCreatesNothing` holds the
+half the comparison is not about: a redemption the ceiling refused leaves the
+invitation exactly as it found it.
+
+One bound stays. The GET still answers every code with the same setup page, so it
 distinguishes nothing and refuses nothing; its refusal half is #75 and #77.
 
 Timing is not held and no test in this repository will say otherwise. That claim
@@ -266,27 +279,36 @@ and its reason are in [docs/refusal-response.md](docs/refusal-response.md).
 
 ### Redemption is rate limited
 
-**Nothing is limited today.** That sentence is first because the paragraphs under
-it name a dozen tests, and a reader who takes the list for the property would be
-reading the opposite of what this section says. A counter exists and no route
-calls it:
+THIS SECTION OPENED **NOTHING IS LIMITED TODAY** AND RESTED THAT ON A COMMAND
+RETURNING ONE FILE, WHICH WAS THE COUNTER'S OWN DEFINITION. A route calls the
+counter now, and the same command over the same sources returns two:
 
 ```
-git grep -ln 'MayJudge' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
+git grep -n 'MayJudge' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:249:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:171:    public bool MayJudge(string sourceAddress)
 ```
 
-The one file is the definition. An attempt is a presented code being judged, and
-no route judges one: `GET /redeem/{code}` is reachable without an account, serves
-a page and reads no invitation, so there is nothing on it for a limiter to stand
-in front of. Every test named below drives the counter directly and not one of
-them is about a request.
+**What is limited is the post, and only the post.** An attempt is a presented
+code being judged, and `POST /redeem/{code}` is the one action that judges one.
+The counter is asked before the record is read and before any use is taken, so an
+attempt it refuses costs the invitation nothing; and it is asked after the
+request has been read for its form token and its answers, so a post carrying
+neither spends nobody's allowance.
+`RedeemPostTests.AnAttemptOverTheLimitIsRefusedBeforeTheCodeIsJudged` holds that
+order at the route rather than at the counter, and the refusal it gets back is
+one of the six the section above compares.
 
-This paragraph used to say that nothing in this repository limits anything and
-quoted a command over the plugin's sources returning only the clock seam. That
-stopped being true when `AttemptLimiter` landed, and the difference between "no
-counter" and "a counter nothing calls" is the whole reason this section is worth
-reading twice.
+`GET /redeem/{code}` is unlimited and reads no invitation. It serves the setup
+page for every code, so a browser loading a link spends nothing and there is
+nothing on that action to guess against.
+
+This section has now been wrong in both directions, which is why it opens with
+what it opens with. It first said nothing in this repository limits anything,
+and that stopped being true when `AttemptLimiter` landed and left a counter
+nothing called. It then said no route calls the counter, and went on saying it
+after the post landed - the more expensive direction, because a reader takes a
+bolded opening sentence for the property and stops there.
 
 What the counter does, and what holds each part of it.
 
@@ -340,8 +362,15 @@ back as a count rather than as the addresses.
 This property is on the list because the entropy calculation quotes a figure
 that assumes a limiter, and reading the code length as sufficient on its own
 would be reading the unthrottled row of that page, not the throttled one. Both
-rows are on it, and the unthrottled one is what holds today, because nothing
-calls the counter.
+rows are on it, and the throttled row is the one the post now stands on. THIS
+PARAGRAPH SAID THE UNTHROTTLED ROW HELD BECAUSE NOTHING CALLED THE COUNTER.
+
+What that does not buy is a weaker requirement on the code, and
+[docs/rate-limit.md](docs/rate-limit.md) is where the argument is: an attacker
+who resets an in-memory counter by waiting for a restart buys themselves the
+unthrottled row, and the unthrottled row is the one the code was sized against
+anyway. So the limiter is what makes the throttled row true on a running server,
+and it is not what the code's length rests on.
 
 ### An invitation expires, at an instant the plugin does not argue with
 
