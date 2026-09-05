@@ -454,7 +454,7 @@ public class RedemptionFuzzTests
                 revokedBy: revoked ? Guid.Parse("44445555-6666-7777-8888-99990000aaaa") : null,
                 templateLabel: "Household",
                 template: TestTemplates.Household,
-                accountsProduced: ImmutableArray<Guid>.Empty);
+                accountsProduced: ImmutableArray<ProducedAccount>.Empty);
 
             // The table's third count is "more than one" rather than a number,
             // so anything above one is that row.

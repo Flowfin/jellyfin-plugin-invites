@@ -46,12 +46,13 @@ it.
 | Template name | The invitation | The name of the set of grants the operator picked when the invitation was made | The record |
 | Template grant | The invitation | The set of grants itself, as it stood when the invitation was made: which libraries the account it creates may see, what it may do, and the quotas on it. It is a copy, so a change the operator makes to that set afterwards does not reach an invitation already sent | The record |
 | Accounts produced | You | The link between your account and the invitation it came from. This is the most identifying line on the page: it is what lets an operator who meets an account they do not recognise find out where it came from | The record |
+| Account expiry | You | When your account expires, where one was set. It is kept beside the link above rather than worked out from the invitation, so that it belongs to your account and an operator can extend that one account. It is empty today on every account this plugin has made, and empty means your account does not expire | The record |
 | Invitation identifier, where one matched | You, where the attempt was yours | Which invitation a redemption attempt was made against. It is empty where the presented code matched nothing, because there is nothing to name | The trail bound |
 | Outcome | You, where the attempt was yours | What happened to an attempt, as one value from a fixed set rather than as free text, so nothing anybody typed reaches it | The trail bound |
 | Time | You, where the attempt was yours | When the attempt happened | The trail bound |
 | Attempts covered | You, where the attempt was yours | How many attempts one line stands for. It is one on almost every line, and more where a rate limiter refused a run of attempts and the trail kept one line for the whole run, or where older failures were dropped and one line says how many went with them | The trail bound |
 
-Ten of those fifteen lines are about the operator or about the invitation and
+Ten of those sixteen lines are about the operator or about the invitation and
 not about you at all, and they are on this page anyway. An inventory showing only
 the lines that name the reader is one the reader cannot check, because the shape
 of what is kept is part of the answer.

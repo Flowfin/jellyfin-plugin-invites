@@ -64,7 +64,7 @@ public class MutationSurvivorTests
         int usesRemaining = 3,
         DateTimeOffset? revokedAt = null,
         Guid? revokedBy = null,
-        ImmutableArray<Guid>? accountsProduced = null) =>
+        ImmutableArray<ProducedAccount>? accountsProduced = null) =>
         new Invitation(
             id ?? new Guid("cccccccc-0000-0000-0000-000000000001"),
             ImmutableArray.Create(new byte[] { 1, 2, 3, 4 }),
@@ -77,7 +77,7 @@ public class MutationSurvivorTests
             revokedBy,
             "the template an operator picked",
             TestTemplates.Household,
-            accountsProduced ?? ImmutableArray<Guid>.Empty);
+            accountsProduced ?? ImmutableArray<ProducedAccount>.Empty);
 
     /// <summary>
     /// A template built the same way every time, with one named parameter per
@@ -220,7 +220,7 @@ public class MutationSurvivorTests
     [Fact]
     public void ARecordBuiltWithNoAccountsListCarriesAnEmptyOne()
     {
-        var record = Record(accountsProduced: default(ImmutableArray<Guid>));
+        var record = Record(accountsProduced: default(ImmutableArray<ProducedAccount>));
 
         Assert.False(record.AccountsProduced.IsDefault);
         Assert.Empty(record.AccountsProduced);

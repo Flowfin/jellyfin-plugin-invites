@@ -357,6 +357,6 @@ public class TemplateCopyTests
             revokedBy: null,
             templateLabel: "Household",
             template: template,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 }

@@ -75,7 +75,7 @@ public class ClockJumpTests
             revokedBy: revokedAt is null ? null : Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 
     private static RedemptionOutcome DecideAt(IReadOnlyList<Invitation> records, DateTimeOffset at) =>

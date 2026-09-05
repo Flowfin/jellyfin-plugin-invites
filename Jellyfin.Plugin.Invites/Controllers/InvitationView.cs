@@ -42,7 +42,7 @@ public sealed class InvitationView
         Template = invitation.TemplateLabel;
         Grant = invitation.Template;
         AccountsProduced = invitation.AccountsProduced
-            .Select(account => new AccountView(account, Presence(account, serverAccounts)))
+            .Select(claim => new AccountView(claim.Account, Presence(claim.Account, serverAccounts)))
             .ToArray();
     }
 

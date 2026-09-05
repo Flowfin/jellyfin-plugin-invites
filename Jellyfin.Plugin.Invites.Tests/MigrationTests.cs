@@ -21,11 +21,12 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// where it is held.
 /// </para>
 /// <para>
-/// The store's one transition is version one to version two and it already has
-/// a committed document read through the current reader, in
-/// <see cref="StoreShapeTests"/>. Nothing here repeats that. What is here is
-/// what that file does not assert: that the migration widens nothing, that it
-/// says what it did, and that the saying carries nothing out of a record.
+/// The store's transitions are version one to the current shape and version
+/// two to it, and each already has a committed document read through the
+/// current reader, in <see cref="StoreShapeTests"/>. Nothing here repeats
+/// that. What is here is what that file does not assert: that a migration
+/// widens nothing, that it says what it did, and that the saying carries
+/// nothing out of a record.
 /// </para>
 /// <para>
 /// The configuration half has no transition, because no shipped version has
@@ -58,6 +59,57 @@ public class MigrationTests
         Assert.Equal(InvitationStore.Version, migration.To);
         Assert.Equal(contents.Invitations.Length, migration.RecordsWithoutAGrant);
         Assert.NotEqual(0, migration.RecordsWithoutAGrant);
+        Assert.Equal(
+            contents.Invitations.Sum(record => record.AccountsProduced.Length),
+            migration.AccountsWithoutAnExpiry);
+        Assert.NotEqual(0, migration.AccountsWithoutAnExpiry);
+    }
+
+    /// <summary>
+    /// A version two document is read forward and says so, naming the version
+    /// it came from, the version it was read to, and how many account claims
+    /// came forward without an expiry.
+    /// </summary>
+    /// <remarks>
+    /// The count is of claims and not of records, because the expiry belongs
+    /// to an account and one record can claim several. The document here
+    /// claims three accounts across two records, so a count that had been
+    /// written per record would answer two and disagree.
+    /// </remarks>
+    [Fact]
+    public void AVersionTwoStoreIsReadForwardAndTheReadSaysSo()
+    {
+        using var directory = new OwnedDirectory();
+        CopyTheShape("version-2.json", directory.Path);
+
+        var contents = new InvitationStore(directory.Path).Read();
+
+        var migration = contents.Migration;
+        Assert.NotNull(migration);
+        Assert.Equal(InvitationStore.VersionWithoutAnAccountExpiry, migration!.From);
+        Assert.Equal(InvitationStore.Version, migration.To);
+        Assert.Equal(0, migration.RecordsWithoutAGrant);
+        Assert.Equal(
+            contents.Invitations.Sum(record => record.AccountsProduced.Length),
+            migration.AccountsWithoutAnExpiry);
+        Assert.NotEqual(contents.Invitations.Length, migration.AccountsWithoutAnExpiry);
+    }
+
+    /// <summary>
+    /// The migration invents no expiry, and the absence is what grants this
+    /// plugin least: an account with no expiry is one nothing here disables.
+    /// </summary>
+    [Fact]
+    public void TheMigrationInventsNoAccountExpiry()
+    {
+        using var directory = new OwnedDirectory();
+        CopyTheShape("version-2.json", directory.Path);
+
+        var records = new InvitationStore(directory.Path).Read().Invitations;
+        var claims = records.SelectMany(record => record.AccountsProduced).ToArray();
+
+        Assert.NotEmpty(claims);
+        Assert.All(claims, claim => Assert.Null(claim.ExpiresAt));
     }
 
     /// <summary>
@@ -70,7 +122,7 @@ public class MigrationTests
     public void AStoreInTheCurrentShapeIsNoMigration()
     {
         using var directory = new OwnedDirectory();
-        CopyTheShape("version-2.json", directory.Path);
+        CopyTheShape("version-3.json", directory.Path);
 
         Assert.Null(new InvitationStore(directory.Path).Read().Migration);
     }
@@ -149,6 +201,7 @@ public class MigrationTests
         var line = Assert.Single(logger.Lines, entry => entry.Message.Contains("read forward", StringComparison.Ordinal));
         Assert.Equal(LogLevel.Warning, line.Level);
         Assert.Contains("no grant", line.Message, StringComparison.Ordinal);
+        Assert.Contains("no expiry", line.Message, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -160,7 +213,7 @@ public class MigrationTests
     public async Task TheLoadSaysNothingWhereNothingWasMigrated()
     {
         using var directory = new OwnedDirectory();
-        CopyTheShape("version-2.json", directory.Path);
+        CopyTheShape("version-3.json", directory.Path);
         var logger = new RecordingLogger<LoadOnStart>();
 
         using var load = ALoad(directory.Path, logger);

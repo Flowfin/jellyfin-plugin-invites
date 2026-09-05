@@ -17,29 +17,38 @@ because the count in this paragraph is the thing that went stale twice:
 
     git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:67:    public DateTimeOffset ExpiresAt { get; }
-    Jellyfin.Plugin.Invites/Invitations/Invitation.cs:192:    public DateTimeOffset ExpiresAt { get; }
+    Jellyfin.Plugin.Invites/Invitations/Invitation.cs:222:    public DateTimeOffset ExpiresAt { get; }
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:265:        var lasts = validity ?? DefaultValidity;
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:272:        if (lasts <= TimeSpan.Zero)
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:280:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:327:                expiresAt: now + lasts,
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:241:        if (now >= record.ExpiresAt)
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:682:        public DateTimeOffset ExpiresAt { get; set; }
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:981:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:781:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:1134:        public DateTimeOffset ExpiresAt { get; set; }
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:1218:        public DateTimeOffset ExpiresAt { get; set; }
 
-Nine lines rather than eight since #61. The store's stored record moved down by
-ninety-two as the store gained its second shape, and the ninth line is that
-older shape's own copy of the member, kept so a version one document still
-reads; neither is a rule and neither acts. The four lines in the mint moved down
-by fifty-five as the mint gained the template seam above them, and the record
-type's member by four. None of the rules changed.
+Ten lines rather than nine since #468, and the arithmetic in this paragraph is
+what went stale each time rather than any rule. The tenth is a third stored copy
+of the member, on the shape version two wrote, kept so a version two document
+still reads; the eighth and ninth are the current shape's and version one's, and
+none of the three is a rule and none of them acts. The store's copies moved down
+as the store gained its third shape, the record type's member by thirty as the
+record gained the claim guard #468 gives it and the paragraph explaining it, and
+the four lines in the mint did not move. None of the rules changed.
 
 The clock starting at minting is the addition, `expiresAt: now + lasts`. The
 default validity acting is `validity ?? DefaultValidity`, and what waits on #86
 is an operator being able to change it rather than the default acting at all.
 The maximum is the comparison against `MaximumValidityDays`. A never-expiring
 invitation is refused twice over: `lasts <= TimeSpan.Zero` refuses one at
-minting, and `ExpiresAt` is not nullable in any of its three spellings, so there
-is no value meaning no expiry for a store to carry. The exclusive boundary is
+minting, and `ExpiresAt` is not nullable in any of the four spellings that name
+an invitation's expiry, so there is no value meaning no expiry for a store to
+carry. The name is now shared with something else, which is the thing to read
+carefully rather than a rule that moved: an account's expiry under #468 is
+spelled `ExpiresAt` too and IS nullable, on `ProducedAccount` and on the store's
+copy of it, because an account that does not expire is a value somebody decided.
+The two are different subjects, an invitation's and an account's, and nothing
+here says an invitation may carry no expiry. The exclusive boundary is
 `now >= record.ExpiresAt`, asserted at the exact instant.
 
 THIS PARAGRAPH SAID TWO OF THE SEVEN DO NOT ACT, THE ONE CLOCK READING AND THE

@@ -401,7 +401,7 @@ public sealed class InvitationOperations
         lock (_gate)
         {
             return Store().Read().Invitations
-                .Where(invitation => invitation.AccountsProduced.Contains(account))
+                .Where(invitation => invitation.AccountsProduced.Any(claim => claim.Account == account))
                 .ToImmutableArray();
         }
     }

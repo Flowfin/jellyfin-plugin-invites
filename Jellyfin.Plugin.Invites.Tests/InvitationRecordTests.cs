@@ -65,6 +65,12 @@ public class InvitationRecordTests
         ImmutableArray.Create(seed, (byte)(seed + 1), (byte)(seed + 2), (byte)(seed + 3));
 
     /// <summary>
+    /// The account the claim tests below name. Which account it is decides
+    /// nothing here; that a claim names one is what those tests are about.
+    /// </summary>
+    private static readonly Guid _account = new("77777777-7777-4777-8777-777777777777");
+
+    /// <summary>
     /// One record, built the same way every time so a test that changes a
     /// single field is changing a single field.
     /// </summary>
@@ -80,7 +86,7 @@ public class InvitationRecordTests
         revokedBy: null,
         templateLabel: "Household",
         template: TestTemplates.Household,
-        accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
+        accountsProduced: ProducedAccounts.ThatDoNotExpire(new Guid("55555555-5555-5555-5555-555555555555")));
 
     /// <summary>
     /// The type carries the inventory and nothing else. A field added here
@@ -166,7 +172,7 @@ public class InvitationRecordTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty));
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty));
     }
 
     /// <summary>
@@ -195,7 +201,88 @@ public class InvitationRecordTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty));
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty));
+    }
+
+    /// <summary>
+    /// A claim whose account expires before the invitation that produced it
+    /// was minted is refused. Delete the claim loop in the constructor and
+    /// this goes red.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An account cannot have been created before the invitation that produced
+    /// it existed, so an instant before the minting is before that account's
+    /// own creation whatever the creation instant was. That is #468's rule in
+    /// the strongest form this record can carry, and the paragraph in the
+    /// constructor says plainly what it is weaker than: the record does not
+    /// hold when each account was created, so an expiry sitting between the
+    /// minting and the creation is refused by nothing.
+    /// </para>
+    /// <para>
+    /// One tick before the minting rather than a value far in the past,
+    /// because the mistake worth catching is an off-by-one and a guard written
+    /// with the comparison the wrong way round passes a distant value just as
+    /// happily.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AClaimExpiringBeforeItsInvitationWasMintedIsRefused()
+    {
+        var minted = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+
+        Assert.Throws<ArgumentException>(() => ARecordMintedAtClaiming(
+            minted,
+            new ProducedAccount(_account, minted.AddTicks(-1))));
+    }
+
+    /// <summary>
+    /// A claim expiring at the instant of the minting is not refused, and
+    /// neither is one with no expiry at all. The boundary is inclusive, and
+    /// the absence is the value every claim this build writes carries.
+    /// </summary>
+    /// <remarks>
+    /// The pair is here rather than left implied because a guard written with
+    /// <c>&lt;=</c> instead of <c>&lt;</c> passes the test above and refuses an
+    /// honest record, and a guard that read an absent expiry as the start of
+    /// the calendar would refuse every record this plugin has ever written.
+    /// </remarks>
+    [Fact]
+    public void AClaimExpiringAtTheMintingOrNotAtAllIsKept()
+    {
+        var minted = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(
+            minted,
+            Assert.Single(ARecordMintedAtClaiming(minted, new ProducedAccount(_account, minted)).AccountsProduced)
+                .ExpiresAt);
+
+        Assert.Null(
+            Assert.Single(ARecordMintedAtClaiming(minted, ProducedAccount.ThatDoesNotExpire(_account)).AccountsProduced)
+                .ExpiresAt);
+    }
+
+    /// <summary>
+    /// One record minted at a given instant, claiming one account.
+    /// </summary>
+    /// <param name="minted">When it was minted.</param>
+    /// <param name="claim">The claim it carries.</param>
+    /// <returns>The record.</returns>
+    private static Invitation ARecordMintedAtClaiming(DateTimeOffset minted, ProducedAccount claim)
+    {
+        return new Invitation(
+            id: new Guid("11111111-1111-1111-1111-111111111111"),
+            codeHash: SomeHashBytes(0x30),
+            mintedBy: new Guid("22222222-2222-2222-2222-222222222222"),
+            mintedAt: minted,
+            expiresAt: minted.AddDays(7),
+            usesGranted: 1,
+            usesRemaining: 0,
+            revokedAt: null,
+            revokedBy: null,
+            templateLabel: "Household",
+            template: TestTemplates.Household,
+            accountsProduced: ImmutableArray.Create(claim));
     }
 
     /// <summary>
@@ -222,7 +309,7 @@ public class InvitationRecordTests
             revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(accounts));
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(accounts));
 
         var readBack = new Invitation(
             id: new Guid("11111111-1111-1111-1111-111111111111"),
@@ -236,7 +323,7 @@ public class InvitationRecordTests
             revokedBy: new Guid("66666666-6666-6666-6666-666666666666"),
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(accounts));
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(accounts));
 
         Assert.Equal(written, readBack);
         Assert.Equal(written.GetHashCode(), readBack.GetHashCode());
@@ -291,8 +378,8 @@ public class InvitationRecordTests
             // equality comparing these two fields by their length rather than
             // by their contents fails here instead of passing.
             accountsProduced: field == "AccountsProduced"
-                ? ImmutableArray.Create(other)
-                : ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
+                ? ProducedAccounts.ThatDoNotExpire(other)
+                : ProducedAccounts.ThatDoNotExpire(new Guid("55555555-5555-5555-5555-555555555555")));
 
         Assert.NotEqual(Baseline(), variant);
     }
@@ -323,7 +410,7 @@ public class InvitationRecordTests
             revokedBy: null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(new Guid("55555555-5555-5555-5555-555555555555")));
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(new Guid("55555555-5555-5555-5555-555555555555")));
 
         Assert.NotEqual(Baseline(), truncated);
         Assert.NotEqual(truncated, Baseline());
