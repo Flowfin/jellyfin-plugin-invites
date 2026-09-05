@@ -52,13 +52,13 @@ made.
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
 | `Accepted`             | The code was honoured and an account was created.                                                                 | #43         |
 | `NoSuchInvitation`     | The presented code matched no record. The entry carries no invitation identifier, because there is none to carry. | #43         |
-| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #43, #51    |
-| `Spent`                | The record was found and had no uses left.                                                                        | #43, #55    |
-| `Revoked`              | The record was found and the operator had revoked it.                                                             | #43, #54    |
-| `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #31         |
-| `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #33         |
-| `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #78         |
-| `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #75, #76    |
+| `Expired`              | The record was found and its expiry had passed at the single clock reading this redemption took.                  | #43         |
+| `Spent`                | The record was found and had no uses left.                                                                        | #43         |
+| `Revoked`              | The record was found and the operator had revoked it.                                                             | #43         |
+| `RefusedByRateLimit`   | The attempt was refused before or at the lookup because a limit was reached.                                      | #43         |
+| `RefusedByCeiling`     | The redemption was refused because a ceiling on what the plugin may create was reached.                           | #43         |
+| `RefusedByAntiForgery` | The submission failed the cross-site check.                                                                       | #43         |
+| `RefusedByValidation`  | The answers on the form did not validate on the server.                                                           | #43         |
 | `FailuresDropped`      | Failure entries went out of the bound below, and this entry says how many attempts went with them.                | #43         |
 
 `FailuresDropped` is the odd member and it is a member on purpose. It is the
@@ -101,10 +101,10 @@ whole redemption decision in one routine, and that routine reaches five states:
     Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:47:    Spent = 3,
     Jellyfin.Plugin.Invites/Redemption/RedemptionOutcome.cs:52:    Honoured = 4,
 
-What no issue has built is the caller that turns one of those into an entry. So
-the column names the issue that would write one on the five rows a decision
-reaches, and #51, #54 and #55 stay beside it because each of those still owns the
-rule its row is about.
+What no issue has built is the caller that turns one of those into an entry, so
+the column names that issue on every row and nothing else. The rule a row is
+about is read at the issue that introduced its member and is not named here,
+for the reason the last section on this page gives: a rule issue completes.
 
 ## The column named the post, the post landed, and it appends nothing
 
@@ -150,9 +150,9 @@ so that an issue adding a refusal adds its member here, and the column is how
 somebody checks whether the caller for a member has arrived. Sent to #74, they
 found an issue that had landed and would have read the caller as built.
 
-`docs/refusal-response.md` carries the same vocabulary in its own `Owned by`
-column and was carried over on 2026-09-02, so the two tables that share these
-names agree again rather than disagreeing about which issue writes the entry.
+`docs/refusal-response.md` carried the same vocabulary in a column then headed
+`Owned by`, carried over on 2026-09-02; that column now holds the issue that
+decided a case, and which issue writes the entry is said on this page alone.
 
 Nothing in this tree would have found it. `AttemptOutcomeSetTests` reads this
 table for the names in its first column and never for the last one, and
@@ -306,3 +306,35 @@ settled. What has no value is retention, meaning how long an entry is kept once
 it is inside the bound, and the reason has moved twice rather than once. It is
 not that decision 8 is open. It is not that the bound is unchosen. It is that
 decision 8 was about the other parameter and nobody has asked this one.
+
+## The column named the rule issues beside the appender, and they completed
+
+THREE ROWS ABOVE CARRIED A RULE ISSUE BESIDE #43 AND FOUR NAMED THE ISSUE THAT
+INTRODUCED THEIR MEMBER ALONE, and the section on where the column points said
+the rule issues stayed because each still owned its rule. Owning a rule is not
+what this column is for, and the difference showed the first time the daily run
+read the page after four of those issues completed:
+
+    gh run list --repo Flowfin/jellyfin-plugin-invites --workflow issue-pointer.yaml --limit 2 --json databaseId,headSha,conclusion --jq '.[]|"\(.databaseId) \(.headSha[0:8]) \(.conclusion)"'
+    33958314760 39213fa2 failure
+    33861415552 d5744a46 success
+
+Four cells of this column were named in that run: `Expired` beside #51, `Revoked`
+beside #54, `RefusedByRateLimit` naming #31 and `RefusedByAntiForgery` naming
+#78. Each of the four completed the rule its row is about, and none of them
+appended an entry, which the section on the post above measures and does not
+need measuring twice.
+
+So a cell that names the issue owning a row's rule is right on the day it is
+written and wrong on the day that issue completes, and the check refuses it on
+exactly that day, having been built to. Every cell names #43 now, including the
+rows whose issues had not completed, because a column that points forward holds
+the issue that will write the entry and no other, and the next rule issue to
+complete would otherwise have turned a correct cell red in the same way. The
+rule each outcome is about is read at the issue that introduced the member, and
+this page does not hold a second copy of that list.
+
+`docs/refusal-response.md` met the same run on three cells of its own column and
+took the other repair: its cells were already the issue that decided a case, so
+that column is named for what it holds and is out of the register, and the
+reason is written on that page.

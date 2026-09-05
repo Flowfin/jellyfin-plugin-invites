@@ -3,10 +3,16 @@
 #
 # Some tables on this board carry a column whose cells name the issue that will
 # do a thing. `Produced by` on docs/attempt-outcomes.md says which issue writes
-# a trail entry with that outcome; `Owned by` on docs/refusal-response.md says
-# which issue serves a case's response. A reader uses that column to find out
+# a trail entry with that outcome. A reader uses that column to find out
 # whether the thing they are waiting for has arrived. Sent to an issue that has
 # closed, they read it as arrived and either stop or build it a second time.
+#
+# `Owned by` on docs/refusal-response.md was the second registered column until
+# 2026-09-05. The post that serves every case landed, the page redefined the
+# cells as the issue that DECIDED each row, and the first rule issues to
+# complete turned three correct cells red. That column is the threat model's
+# shape below now, headed `Decided in`, and it is out of the register for the
+# reason given there.
 #
 # The class has been repaired by hand five times, each found by somebody reading
 # a page against the tracker rather than by anything in this tree:
