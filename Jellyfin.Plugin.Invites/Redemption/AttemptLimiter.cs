@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Jellyfin.Plugin.Invites.Configuration;
+using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Time;
 
 namespace Jellyfin.Plugin.Invites.Redemption;
@@ -63,6 +65,17 @@ namespace Jellyfin.Plugin.Invites.Redemption;
 /// anything about a presented code is looked up, and the counter it keeps is a
 /// counter of real attempts on a running server rather than of nothing.
 /// </para>
+/// <para>
+/// <b>THE TWO NUMBERS ARE SETTINGS SINCE #86, AND THE CONSTANTS BELOW ARE NOW
+/// THE MAXIMA RATHER THAN THE VALUES.</b> An operator may lower either and may
+/// raise neither, which <see cref="Invitations.NumberSettings"/> enforces by
+/// bounding each setting with the constant beside it. So every "at most"
+/// above still holds as written - the configured limit is at most the compiled
+/// one - and what has changed is that a server may be running under a smaller
+/// number than the one this file names. A configured value outside its range
+/// refuses the attempt rather than falling back to the constant, which is the
+/// only direction that keeps a bound a bound.
+/// </para>
 /// </remarks>
 public sealed class AttemptLimiter
 {
@@ -77,6 +90,7 @@ public sealed class AttemptLimiter
     public const int GlobalCeiling = 10;
 
     private readonly IClock _clock;
+    private readonly IConfiguredNumbers? _numbers;
     private readonly object _gate = new();
 
     private Dictionary<string, int> _perAddress = new(StringComparer.Ordinal);
@@ -89,9 +103,16 @@ public sealed class AttemptLimiter
     /// Initializes a new instance of the <see cref="AttemptLimiter"/> class.
     /// </summary>
     /// <param name="clock">The one time source, so a test can move it.</param>
-    public AttemptLimiter(IClock clock)
+    /// <param name="numbers">
+    /// The configured numbers, of which this reads two. Optional and defaulted
+    /// to nothing, which reads as the two constants above: a caller with no
+    /// configuration to offer gets exactly the limits this file compiles, which
+    /// is what every reading of this type meant before a setting existed.
+    /// </param>
+    public AttemptLimiter(IClock clock, IConfiguredNumbers? numbers = null)
     {
         _clock = clock;
+        _numbers = numbers;
     }
 
     /// <summary>
@@ -156,6 +177,28 @@ public sealed class AttemptLimiter
                 nameof(sourceAddress));
         }
 
+        int perAddressCeiling;
+        int globalCeiling;
+        try
+        {
+            perAddressCeiling = NumberSettings.AttemptsPerAddressInAnHour(_numbers);
+            globalCeiling = NumberSettings.AttemptsPerSecond(_numbers);
+        }
+        catch (ConfiguredNumbersRefusedException)
+        {
+            // Refused rather than counted, and refused rather than judged
+            // against the compiled constants. Substituting them would be the
+            // silent fallback #86 exists against, on the two numbers a
+            // configuration could otherwise be used to remove; and letting the
+            // refusal out of here would turn the one refusal
+            // docs/refusal-response.md keeps for every case into a fault page on
+            // the single public route. So the attempt is refused, nothing is
+            // counted against either window, and the setting is named where an
+            // operator is already looking, which is the line LoadOnStart writes
+            // when the server starts.
+            return false;
+        }
+
         var now = _clock.UtcNow;
 
         lock (_gate)
@@ -178,13 +221,13 @@ public sealed class AttemptLimiter
                 _perAddress = new Dictionary<string, int>(StringComparer.Ordinal);
             }
 
-            if (_global >= GlobalCeiling)
+            if (_global >= globalCeiling)
             {
                 return false;
             }
 
             _perAddress.TryGetValue(sourceAddress, out var forThisAddress);
-            if (forThisAddress >= PerAddressCeiling)
+            if (forThisAddress >= perAddressCeiling)
             {
                 return false;
             }

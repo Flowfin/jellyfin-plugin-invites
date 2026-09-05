@@ -120,6 +120,7 @@ public sealed class InvitationOperations
     private readonly IClock _clock;
     private readonly IPublicAddress _address;
     private readonly IConfiguredTemplates _templates;
+    private readonly IConfiguredNumbers? _numbers;
     private readonly object _gate = new();
 
     /// <summary>
@@ -140,8 +141,15 @@ public sealed class InvitationOperations
     /// address is one, and it is read at the mint and nowhere later: once the
     /// copy is on the record, nothing here looks a template up again.
     /// </param>
-    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
-    public InvitationOperations(IStoreDirectory directory, IClock clock, IPublicAddress address, IConfiguredTemplates templates)
+    /// <param name="numbers">
+    /// The configured numbers, of which this reads one: how long a record that
+    /// has stopped being usable is kept. Optional and defaulted to nothing,
+    /// which reads as the compiled default, because the only routine here that
+    /// wants a number is <see cref="Sweep"/> and every other caller would
+    /// otherwise be made to supply a seam it has no use for.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Any argument other than the numbers is null.</exception>
+    public InvitationOperations(IStoreDirectory directory, IClock clock, IPublicAddress address, IConfiguredTemplates templates, IConfiguredNumbers? numbers = null)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(clock);
@@ -152,6 +160,7 @@ public sealed class InvitationOperations
         _clock = clock;
         _address = address;
         _templates = templates;
+        _numbers = numbers;
     }
 
     /// <summary>
@@ -478,8 +487,16 @@ public sealed class InvitationOperations
     /// </para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">There is no store directory.</exception>
+    /// <exception cref="ConfiguredNumbersRefusedException">
+    /// The configured retention period is outside its range. The period is read
+    /// before the store is opened, so a sweep that meets this has read nothing
+    /// and written nothing, which is the direction to fail in: a run that
+    /// deleted on the compiled default instead would be removing records on a
+    /// period the operator did not ask for.
+    /// </exception>
     public ImmutableArray<Guid> Sweep()
     {
+        var period = NumberSettings.RetentionPeriod(_numbers);
         var now = _clock.UtcNow;
 
         lock (_gate)
@@ -487,7 +504,7 @@ public sealed class InvitationOperations
             var store = Store();
             var held = store.Read().Invitations;
 
-            var kept = held.Where(record => !Retention.MayBeRemoved(record, now)).ToImmutableArray();
+            var kept = held.Where(record => !Retention.MayBeRemoved(record, now, period)).ToImmutableArray();
             if (kept.Length == held.Length)
             {
                 return ImmutableArray<Guid>.Empty;
@@ -496,7 +513,7 @@ public sealed class InvitationOperations
             store.Write(kept);
 
             return held
-                .Where(record => Retention.MayBeRemoved(record, now))
+                .Where(record => Retention.MayBeRemoved(record, now, period))
                 .Select(record => record.Id)
                 .ToImmutableArray();
         }

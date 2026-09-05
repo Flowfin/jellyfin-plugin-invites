@@ -30,7 +30,7 @@ this limiter before it does:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:645:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
 
 What is unchanged is the GET. The same bytes still come back for a code that was
 never minted as for a live one, because that action reads no invitation, and its
@@ -297,8 +297,8 @@ pass every workflow in this repository. `AttemptLimiter` landed under #31 and tw
 of those three have moved.
 
     git grep -n 'public const int PerAddressCeiling\|public const int GlobalCeiling' -- Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs
-    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:72:    public const int PerAddressCeiling = 20;
-    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:77:    public const int GlobalCeiling = 10;
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:85:    public const int PerAddressCeiling = 20;
+    Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:90:    public const int GlobalCeiling = 10;
 
 Something reads this page as well. `AttemptLimiterTests` matches the sentence
 under `## The two numbers` above, resolves the words in it, and compares them

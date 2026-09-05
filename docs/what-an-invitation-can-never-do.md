@@ -466,7 +466,7 @@ THIS SAID THE LINE IS NOT REFUSED BECAUSE NOTHING CREATES AN ACCOUNT. The
 redemption post creates one, and part of the line is refused now:
 
     git grep -n 'var reserved = Spending.Of(matched);' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:646:            var reserved = Spending.Of(matched);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:663:            var reserved = Spending.Of(matched);
 
 The use is taken inside the monitor that read the records and decided against
 them, and it is taken BEFORE the account is created, so a request that gets an
