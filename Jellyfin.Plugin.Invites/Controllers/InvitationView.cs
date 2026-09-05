@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Jellyfin.Plugin.Invites.Accounts;
 using Jellyfin.Plugin.Invites.Invitations;
 
 namespace Jellyfin.Plugin.Invites.Controllers;
@@ -39,6 +40,7 @@ public sealed class InvitationView
         RevokedAt = invitation.RevokedAt;
         RevokedBy = invitation.RevokedBy;
         Template = invitation.TemplateLabel;
+        Grant = invitation.Template;
         AccountsProduced = invitation.AccountsProduced
             .Select(account => new AccountView(account, Presence(account, serverAccounts)))
             .ToArray();
@@ -93,6 +95,36 @@ public sealed class InvitationView
     /// Gets the name of the template it carries.
     /// </summary>
     public string Template { get; }
+
+    /// <summary>
+    /// Gets what the template granted at the moment this invitation was minted,
+    /// or <c>null</c> where the record carries no copy of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The copy rather than the configured template of the same name.</b>
+    /// #94 asks that an operator be able to see what this plugin did to an
+    /// account months later, and a name resolved against the configuration at
+    /// viewing time answers a different question: what that name means today,
+    /// which is not what was applied. The record carries the value since #61 and
+    /// this is that value rendered.
+    /// </para>
+    /// <para>
+    /// <b>Null is a record minted before the copy existed</b>, which the store
+    /// brings forward from version one with the grant absent rather than
+    /// guessing one, and it is the same absence
+    /// <see cref="Invitation.Template"/> already means. Such an invitation
+    /// creates no account, so a caller reading null here is reading a row that
+    /// can do nothing rather than a field somebody forgot to fill in.
+    /// </para>
+    /// <para>
+    /// <b>It is the grant and never the account's policy.</b> What the account
+    /// carries now is a different fact, it is not in this plugin's reach, and
+    /// #94's second clause is where the difference between the two is settled.
+    /// Nothing here should be read as saying the account still has this.
+    /// </para>
+    /// </remarks>
+    public AccountTemplate? Grant { get; }
 
     /// <summary>
     /// Gets the accounts it created, each with what became of it.
