@@ -335,8 +335,8 @@ in both:
 Passes, and both say what the plugin does today rather than what it is planned
 to do:
 
-    git grep -n '^overview:' -- build.yaml
-    build.yaml:8:overview: "Invitation links that let somebody set up their own account. Under development: an operator can mint and revoke a link, and no link can be redeemed yet."
+    git grep -n '^overview:' 09575a57 -- build.yaml
+    09575a57232540db83039f1a49acaf765d1bb6ad:build.yaml:8:overview: "Invitation links that let somebody set up their own account. Under development: an operator can mint and revoke a link, and no link can be redeemed yet."
 
 The description is two paragraphs under `description:` at line 9. The second
 names the half an operator drives, which runs, and then says that no link can be
@@ -552,3 +552,36 @@ underneath would have left the register carrying ten entries forever.
 
 It says nothing about the last failing item. What that waits on is the section
 above and is unchanged.
+
+## Read again on 2026-09-05, because the field this record quotes has moved
+
+No verdict on this page is re-judged here and no item is re-read. The overview
+and the description `build.yaml` carries have changed, under #484, and this
+section says so where a reader of the second pass would otherwise take a dated
+quotation for a current field.
+
+## What moved
+
+The second pass reads `overview` and paraphrases the second paragraph of
+`description`, and both said that no link can be redeemed and that no account is
+created by this plugin. The redemption post landed on 2026-09-04 and both
+sentences had stopped being true, so both were rewritten. What that pass recorded
+is what those fields said on 2026-08-16 and it stands.
+
+The quotation under that item now names the revision it was taken at, in the
+`<rev>:<path>:<line>:<content>` form the section of 2026-08-30 above introduced,
+and the command above it names the same revision so the paste is the output of
+the command printed beside it. That is the repair that section already made ten
+times, made once more for the same reason and by the same means.
+
+## What this section does not do
+
+It re-judges nothing. The item still reads `Passes`, on the day it says, and this
+section takes no position on whether it would pass today: whether the fields as
+they now read say what the plugin does is a reading, and #484 is where the
+rewrite is argued rather than here.
+
+It dates no other quotation on this page. The second pass carries several and one
+of them stopped agreeing with the tree; the others are left as they are, so a
+later change to a field they name will surface the same way this one did rather
+than being pre-empted by a sweep nobody asked for.
