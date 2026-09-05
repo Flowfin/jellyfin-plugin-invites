@@ -60,6 +60,9 @@ is what the review is for.
 | ------- | ------------ | ------- | ------ | ------------ | ------------------ |
 | `PublicBaseUrl` | The address invitation links are built from, as a stranger outside the network reaches this server. It is what the mint response writes its link against, and it is read from here and never from the request | Empty | An absolute `http` or `https` address, with an optional path prefix and no query or fragment | Empty mints as usual and returns the refusal in place of the link, naming this setting | Every link points somewhere the invited person cannot reach, or reaches a server that is not this one. Nothing is minted wrongly and no account is affected, because the address is used only to write the link down |
 | `Templates` | The named account templates an operator mints against. Each entry carries a label, the libraries the account may see, the ten permissions #64 decided and the three ceilings, and it is the value an invitation copies at minting rather than a name it looks up later | `[]` | A list. Every label is non-blank, unpadded and unique ignoring case, every library identifier is non-zero and named once, and every ceiling is absent or at least zero | Empty is a fresh install: no template exists, and once the mint copies a grant out of this list nothing can be minted until an operator writes one down | The list is refused whole when the plugin loads, with the position of the entry and the rule it missed named and no label quoted. Nothing is corrected, nothing is dropped and no account is affected, because a template is read only where a grant is copied |
+| `RecordRetentionDays` | How many days a record that has stopped being usable is kept before the nightly sweep removes it. A record still worth redeeming is never removed, whatever this says | 90 | A whole number of days from 1 to 3650 | At 1 a record is removed the day after it stops being usable, which is the shortest trace this plugin will keep; at 3650 it is kept for ten years, which is where an indefinite register of who was invited starts | Too short and the answer to where an account came from is gone before an operator asks it; too long and the plugin holds a list of who was invited for longer than the reason it kept one. Outside the range the sweep refuses to run at all and removes nothing, naming this setting when the plugin loads |
+| `RedemptionAttemptsPerAddressInAnHour` | How many presented codes one source address may have judged in an hour. Fetching the setup page is not one and a refused request is not one | 20 | A whole number from 1 to 20, the upper end being the constant `AttemptLimiter.PerAddressCeiling` compiles | At 1 one address judges one code an hour; at 20 it is the compiled limit and the setting changes nothing. A value above 20 is refused rather than accepted, because the entropy argument rests on that number | Set too low, people behind one shared address or one reverse proxy refuse each other. It cannot be set too high: the maximum is the ceiling, and an out-of-range value refuses every attempt rather than falling back to 20 |
+| `RedemptionAttemptsPerSecond` | How many presented codes all sources together may have judged in a second | 10 | A whole number from 1 to 10, the upper end being the constant `AttemptLimiter.GlobalCeiling` compiles | At 1 the whole server judges one code a second; at 10 it is the compiled limit and the setting changes nothing. A value above 10 is refused, for the reason the row above gives | The same shape as the row above, one limit along. It bounds everybody at once, so it is the one that keeps meaning something when an attacker has many addresses |
 
 ## The public base address
 
@@ -155,7 +158,7 @@ DOES. What stood here pasted the mint's signature and said a name that matches
 no entry was not refused at minting. Both halves moved with #61:
 
     git grep -n 'TemplateSettings.Named(_templates.Templates, templateLabel)' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:232:            template = TemplateSettings.Named(_templates.Templates, templateLabel);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:241:            template = TemplateSettings.Named(_templates.Templates, templateLabel);
 
 A name that matches no entry is refused at minting as a bad request naming this
 setting, and a list with a fault in it refuses every mint with a conflict
@@ -183,10 +186,74 @@ answer for the address is not a safe address, it is no address, and the reason
 is in the row above; the closed answer for the templates is none, and the
 reason is in the section above.
 
+THIS SECTION NAMED TWO SETTINGS AND THE TYPE HOLDS MORE THAN TWO SINCE #86. The
+three numbers arrive with a decided value rather than an empty one, and closed
+means something different for each: the retention period is the period somebody
+decided rather than either end of its range, and the two rate limits are the
+compiled maxima, which is the widest a server can run at and therefore the state
+every argument about them was written for. The section below is where that is
+argued; the sentence here is that the table naming what each is worth is not this
+page.
+
 `Jellyfin.Plugin.Invites.Tests.FreshInstallConfigurationTests` holds the type to
 that answer, which is what #87 asks for. It is a table every setting has to be
 in, so a setting arriving without a decided fresh-install value reds the suite
 rather than shipping whatever the default happened to be.
+
+## The retention period and the two rate limits
+
+These three are settings and the ceilings below are not, which is the decision
+taken on #86 on 2026-09-04 rather than an accident of which numbers were easy to
+move. A retention policy and how many people sit behind one address are things
+installations genuinely differ on. A ceiling is a promise this plugin makes about
+what it will not do, and a promise moves by a release rather than by a text field.
+
+**Every one of them has a compiled maximum, and the maximum is what carries the
+guarantee.** A configured value is an operator's own restraint and can be relaxed
+by whoever holds that account; the compiled maximum cannot be moved without
+shipping a new version. That distinction is the whole reason the two rate limits
+are lowerable and not raisable:
+
+    git grep -n 'MostAttemptsPerAddressInAnHour\|MostAttemptsPerSecond' Jellyfin.Plugin.Invites/Configuration/NumberSettings.cs
+
+Both name the constant beside them rather than restating its value, so the number
+an operator may not exceed is the number `docs/rate-limit.md` and
+`docs/code-entropy.md` reason about, and the two cannot drift apart.
+
+**The retention period is the one that is bounded at both ends and defaults to
+the middle.** Its maximum is decided in `NumberSettings` rather than taken from
+somewhere else, because there is no arithmetic to take it from: ten years is where
+an indefinite register of who was invited starts, which is the thing
+`docs/personal-data.md` argues against, and it is reasoned rather than measured
+exactly as the ninety days it bounds is.
+
+The bottom of that range is the half worth reading twice. Zero is not a stricter
+retention period. It is deletion at the moment a record stops being usable, which
+destroys the only link between an account and the invitation that produced it
+before anybody could read it, so one day is the floor and the rule keeps rounding
+towards keeping.
+
+**An out-of-range value refuses where it would be used, and nothing is
+substituted for it.** This is what #86 asks for and the reason is the same for all
+three: a silent fallback on a bound is the bound gone, and an operator who typed a
+number and quietly got the plugin's own has been corrected without being told. The
+two routines refuse in the shape each of them has:
+
+- the sweep reads the period before it opens the store, so a run that meets an
+  out-of-range value has read nothing and written nothing, and no record is
+  removed until the setting is repaired;
+- the redemption limiter refuses the attempt, with the one refusal
+  `docs/refusal-response.md` keeps for every case, rather than judging the code
+  against the compiled constants.
+
+Both directions are closed rather than convenient: a mistyped number costs
+redemptions or costs a sweep, and neither costs a bound.
+
+**Where an operator meets it.** The plugin reads all three when the server starts
+and writes one line naming the setting, the range and the direction the value went
+out of it, for the first fault in declaration order. The value that was typed is
+never in the line, because `docs/logging.md` admits a value there only where it is
+a row in `docs/personal-data.md`, and a server setting is not one.
 
 ## The ceilings
 
@@ -218,7 +285,7 @@ The default validity is a fourth number and is not a ceiling. Seven days, and it
 is what a mint that names no validity gets:
 
     git grep -n 'public static TimeSpan DefaultValidity' -- Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:165:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:174:    public static TimeSpan DefaultValidity => TimeSpan.FromDays(7);
 
 The three constants and the default each moved down under #61, by one, one
 and ten lines, as the mint gained the template seam above them. None of the
@@ -279,27 +346,36 @@ and the number is reasoned rather than counted: nobody has watched a real server
 and the reasoning is on the constant.
 
 It is not a setting. There is nothing on the configuration type an operator can
-move it with, which is deliberate for now: a ceiling an operator can raise is a
-ceiling an attacker who has the operator's session can raise, and #86 is where a
-configured value would have to be bounded by this constant rather than replace
-it.
+move it with, and that is now a decision rather than a thing nobody had got to:
+#86 settled on 2026-09-04 that the ceilings stay constants in the first version,
+because they are the bounds this plugin promises and a promise moves by a release
+rather than by a text field. What that reasoning bought elsewhere is the
+arrangement the section above describes - a setting bounded by the constant
+beside it rather than replacing it - and it was spent on the retention period and
+the two rate limits instead.
 
-**What is owed here and is not written.** #113 asks that this section say the
-ceilings are enforced when the configuration loads and that an out-of-range value
-refuses the load rather than being clamped. Neither half can be written truthfully
-today: there is no ceiling on the configuration type, so there is no load-time
-comparison to describe. That arrives with #86, and when it does, a configured
-value has to be bounded by the constant rather than replace it - a setting that
-can be raised without limit is not a ceiling. The paragraph above says what is
-enforced instead, at minting, which is a smaller claim than the one this section
-will eventually carry.
+**What is owed here and is not written, which is smaller than it was.** #113 asks
+that this section say the ceilings are enforced when the configuration loads and
+that an out-of-range value refuses the load rather than being clamped. THIS
+PARAGRAPH SAID NEITHER HALF COULD BE WRITTEN TRUTHFULLY BECAUSE THERE IS NO
+CEILING ON THE CONFIGURATION TYPE AND NO LOAD-TIME COMPARISON TO DESCRIBE. There
+is a load-time comparison, and the section above describes it, so what is left
+owed is only the part about these three numbers. They are still constants, so
+there is nothing about them for a load to compare, and the enforcement they have
+is the one the paragraphs above describe: at minting, with the limit and the value
+in the refusal, and nothing clamped. That is a smaller claim than the one this
+section will carry if any of the three ever becomes a setting, and #86 decided
+that none of them does yet.
 
 ## What is not in this file yet
 
-The ceilings as SETTINGS, which is the half the section above cannot write. What
-this page holds for them today is where the numbers are and what meeting one
+The three ceilings as SETTINGS, which is the half the section above cannot write.
+What this page holds for them today is where the numbers are and what meeting one
 looks like; what it does not hold is a row, because a row is a promise that an
-operator can change something and none of them can.
+operator can change something and none of the three can. THIS PARAGRAPH ONCE
+COVERED EVERY NUMBER IN THE PLUGIN AND NOW COVERS THREE. The retention period and
+the two rate limits have rows, a range and a section, and the reason they were
+separable from the ceilings is on #86 rather than restated here.
 
 The check refuses a setting with no row. It does not refuse a setting with no
 section, because which settings need more than a row is a judgement about what a

@@ -53,12 +53,14 @@ public sealed record FreshInstallValue(object? Value, string Source);
 /// direction it went missing.
 /// </para>
 /// <para>
-/// The table is empty today, because the configuration type carries no settings
-/// at all, and it is landed empty on purpose. Written now, the first setting
-/// added to the plugin turns this red and its author has to state the
-/// fresh-install value and the reason it is the closed one in the same change.
-/// Written afterwards, it starts as a snapshot of whatever the defaults happened
-/// to be, which is the thing it exists to refuse.
+/// THIS PARAGRAPH SAID THE TABLE IS EMPTY AND THE TYPE CARRIES NO SETTINGS. It
+/// was landed empty on purpose, before there was one, and every setting since
+/// has arrived through the red mark it exists to raise: written on the type, a
+/// failure naming it here, and the sentence written in the same change. Written
+/// afterwards instead, it would have started as a snapshot of whatever the
+/// defaults happened to be, which is the thing it exists to refuse. The count
+/// of rows is not restated here, because a number in a sentence beside a table
+/// drifts against the table; the table is below.
 /// </para>
 /// <para>
 /// This does not replace <c>.github/lint/configuration-reference.sh</c> and
@@ -79,10 +81,13 @@ public class FreshInstallConfigurationTests
     /// install is worth and why that is the closed answer.
     /// </summary>
     /// <remarks>
-    /// Two rows. The table was landed empty before #50 on purpose, so the first
-    /// setting to arrive turned this red and its author had to state the
-    /// fresh-install value and the reason it is the closed one in the same
-    /// change, and the second setting arrived the same way under #86.
+    /// The table was landed empty before #50 on purpose, so the first setting to
+    /// arrive turned this red and its author had to state the fresh-install
+    /// value and the reason it is the closed one in the same change, and every
+    /// setting since has arrived the same way under #86. It did what it was
+    /// landed for three times over on the change that added the three numbers:
+    /// they were written on the type, this went red naming all three, and the
+    /// sentences below were written to repair it.
     /// </remarks>
     private static readonly IReadOnlyDictionary<string, FreshInstallValue> FreshInstall =
         new Dictionary<string, FreshInstallValue>(StringComparer.Ordinal)
@@ -93,6 +98,15 @@ public class FreshInstallConfigurationTests
             [nameof(PluginConfiguration.Templates)] = new FreshInstallValue(
                 Array.Empty<ConfiguredTemplate>(),
                 "No template at all. The closed answer here is not a safe template, it is none: a template the plugin invented would be a grant nobody decided, carried onto every account minted against it, and the posture #64 decided is that every permission is closed unless an operator opens it with a sentence saying why. With no template written down, nothing can be minted against a name once the mint copies its grant out of this list, which is a refusal naming the setting rather than an account with a grant nobody chose."),
+            [nameof(PluginConfiguration.RecordRetentionDays)] = new FreshInstallValue(
+                90,
+                "Ninety days, which is decision 8 in #11 unchanged and is the value Retention already compiled before it became a setting. This is the row where closed and safe are not the same word, and the trade is stated rather than hidden: a shorter period holds less about who was invited, and a longer one keeps the answer to where an account came from available for longer. Neither direction is the closed one, so the fresh install is the decided period rather than an extreme of the range, and what defends the range is the bound at each end rather than the default in the middle."),
+            [nameof(PluginConfiguration.RedemptionAttemptsPerAddressInAnHour)] = new FreshInstallValue(
+                20,
+                "Twenty, which is the constant docs/rate-limit.md reasons about and the maximum this setting may take. The fresh install is the widest value the setting admits, and that is the closed answer rather than a permissive one: the number is a ceiling on a public endpoint and the compiled maximum is what the entropy argument rests on, so a server nobody configured is running under exactly the limit that argument was written for. An operator may only lower it, and a value above it is refused rather than accepted."),
+            [nameof(PluginConfiguration.RedemptionAttemptsPerSecond)] = new FreshInstallValue(
+                10,
+                "Ten, for the reason the setting above carries. This is the number the throttled rows of docs/code-entropy.md are computed at, so the fresh install is the state those rows describe, and every configured value is at most this one. A default below it would be a tighter server and a different plugin from the one those pages measure, which is a decision to take on that page rather than by moving an initialiser."),
         };
 
     /// <summary>

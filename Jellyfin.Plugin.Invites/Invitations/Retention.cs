@@ -39,13 +39,24 @@ public static class Retention
 {
     /// <summary>
     /// Gets how long a spent, expired or revoked record is kept after it stops
-    /// being usable.
+    /// being usable, on a server where nobody has changed the setting.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A property rather than a constant because <see cref="TimeSpan"/> cannot be
     /// one, and static readonly rather than computed per call so there is a single
     /// value to point at. docs/personal-data.md names it <c>record-retention</c>
     /// and that is the name to search for.
+    /// </para>
+    /// <para>
+    /// THIS IS THE DEFAULT RATHER THAN THE PERIOD EVERY SERVER USES, since #86.
+    /// <c>RecordRetentionDays</c> on the configuration type carries what this
+    /// server keeps, bounded at both ends, and the sweep asks
+    /// <see cref="NumberSettings"/> for it. This value is what a
+    /// server that never opened the configuration page runs on and what the
+    /// setting defaults to, and it is still the one number the argument above is
+    /// written about.
+    /// </para>
     /// </remarks>
     public static TimeSpan RecordRetention { get; } = TimeSpan.FromDays(90);
 
@@ -78,7 +89,41 @@ public static class Retention
     /// <see cref="RecordRetention"/> ago.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
-    public static bool MayBeRemoved(Invitation invitation, DateTimeOffset now)
+    public static bool MayBeRemoved(Invitation invitation, DateTimeOffset now) =>
+        MayBeRemoved(invitation, now, RecordRetention);
+
+    /// <summary>
+    /// Whether a retention period of this length has run out for this record.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The same arithmetic as the two-argument form against a period a caller
+    /// chose, which is how the setting #86 landed reaches the rule without the
+    /// rule reading a configuration. Everything the remarks above say about
+    /// direction, about the inclusive comparison and about a live record having
+    /// no instant to count from holds here unchanged, because there is one
+    /// comparison and this is it.
+    /// </para>
+    /// <para>
+    /// The period is not judged here. Whether a number an operator typed may be
+    /// used at all is
+    /// <see cref="NumberSettings"/>, which refuses one outside its
+    /// range rather than substituting the default, and a caller that reached this
+    /// with a period has already been past that.
+    /// </para>
+    /// </remarks>
+    /// <param name="invitation">The record to judge.</param>
+    /// <param name="now">
+    /// The clock reading, read once by the caller through
+    /// <see cref="Time.IClock"/> and used for every record in one sweep.
+    /// </param>
+    /// <param name="period">How long a record is kept after it stops being usable.</param>
+    /// <returns>
+    /// <c>true</c> where the record stopped being usable at least
+    /// <paramref name="period"/> ago.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="invitation"/> is null.</exception>
+    public static bool MayBeRemoved(Invitation invitation, DateTimeOffset now, TimeSpan period)
     {
         // Stryker disable once Statement : the same refusal stands one call
         // down. RedemptionDecision.RetentionStartsAt raises ArgumentNullException
@@ -91,6 +136,6 @@ public static class Retention
         ArgumentNullException.ThrowIfNull(invitation);
 
         return RedemptionDecision.RetentionStartsAt(invitation, now) is { } since
-            && since + RecordRetention <= now;
+            && since + period <= now;
     }
 }

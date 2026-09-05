@@ -18,10 +18,10 @@ because the count in this paragraph is the thing that went stale twice:
     git grep -nE 'var lasts = validity|if \(lasts <= TimeSpan\.Zero\)|if \(lasts > TimeSpan\.FromDays\(MaximumValidityDays\)\)|expiresAt: now \+ lasts|if \(now >= record\.ExpiresAt\)|public DateTimeOffset ExpiresAt' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Controllers/InvitationView.cs:65:    public DateTimeOffset ExpiresAt { get; }
     Jellyfin.Plugin.Invites/Invitations/Invitation.cs:192:    public DateTimeOffset ExpiresAt { get; }
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:256:        var lasts = validity ?? DefaultValidity;
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:263:        if (lasts <= TimeSpan.Zero)
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:271:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:318:                expiresAt: now + lasts,
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:265:        var lasts = validity ?? DefaultValidity;
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:272:        if (lasts <= TimeSpan.Zero)
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:280:        if (lasts > TimeSpan.FromDays(MaximumValidityDays))
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:327:                expiresAt: now + lasts,
     Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:241:        if (now >= record.ExpiresAt)
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:668:        public DateTimeOffset ExpiresAt { get; set; }
     Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:967:        public DateTimeOffset ExpiresAt { get; set; }
@@ -64,7 +64,7 @@ the decision:
     exit=0
 
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs'
-    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:628:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:645:            var verdict = RedemptionDecision.Decide(presented, hash, contents.Invitations, now);
     git grep -n 'RedemptionDecision.Decide' -- 'Jellyfin.Plugin.Invites/*.cs' | wc -l
     1
 
