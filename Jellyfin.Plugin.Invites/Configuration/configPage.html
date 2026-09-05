@@ -152,6 +152,85 @@
                             </div>
                         </div>
 
+                        <h3>Numbers</h3>
+                        <p class="fieldDescription">
+                            Three numbers an operator may set. Each has a maximum this plugin
+                            compiles, and the maximum is what carries the promise: a value you type
+                            can tighten what the plugin does and can never loosen it past the number
+                            the source already holds. A value outside its range is refused where it
+                            would be used rather than replaced by the plugin&rsquo;s own, so the
+                            sweep removes nothing or a redemption is refused until it is repaired,
+                            and the server log names the setting when the plugin loads.
+                        </p>
+                        <div class="inputContainer">
+                            <label
+                                class="inputLabel inputLabelUnfocused"
+                                for="InvitesSettingRecordRetentionDays"
+                                >Keep a finished invitation for, in days</label
+                            >
+                            <input
+                                is="emby-input"
+                                id="InvitesSettingRecordRetentionDays"
+                                data-setting="RecordRetentionDays"
+                                type="number"
+                                min="1"
+                                max="3650"
+                                required
+                            />
+                            <div class="fieldDescription">
+                                From 1 to 3650. How long a spent, expired or revoked invitation is
+                                kept before the nightly sweep removes it. An invitation that can
+                                still be redeemed is never removed, whatever this says. Shorter
+                                holds less about who was invited; longer keeps the answer to where
+                                an account came from available for longer. One day is the floor
+                                because zero would delete the record the day it stops being usable,
+                                before anybody could read it.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label
+                                class="inputLabel inputLabelUnfocused"
+                                for="InvitesSettingRedemptionAttemptsPerAddressInAnHour"
+                                >Redemption attempts one address may make in an hour</label
+                            >
+                            <input
+                                is="emby-input"
+                                id="InvitesSettingRedemptionAttemptsPerAddressInAnHour"
+                                data-setting="RedemptionAttemptsPerAddressInAnHour"
+                                type="number"
+                                min="1"
+                                max="20"
+                                required
+                            />
+                            <div class="fieldDescription">
+                                From 1 to 20, and 20 is the compiled maximum, so this can only be
+                                lowered. Opening the setup page is not an attempt and a refused
+                                request is not one. Set it low and people behind one shared address
+                                or one reverse proxy refuse each other.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label
+                                class="inputLabel inputLabelUnfocused"
+                                for="InvitesSettingRedemptionAttemptsPerSecond"
+                                >Redemption attempts everybody together may make in a second</label
+                            >
+                            <input
+                                is="emby-input"
+                                id="InvitesSettingRedemptionAttemptsPerSecond"
+                                data-setting="RedemptionAttemptsPerSecond"
+                                type="number"
+                                min="1"
+                                max="10"
+                                required
+                            />
+                            <div class="fieldDescription">
+                                From 1 to 10, and 10 is the compiled maximum, so this can only be
+                                lowered. It bounds every source at once, which is the limit that
+                                keeps meaning something when somebody has many addresses.
+                            </div>
+                        </div>
+
                         <h3>Account templates</h3>
                         <p class="fieldDescription">
                             The named grants an invitation is minted against. What an invitation
@@ -564,6 +643,63 @@
                     return templates;
                 }
 
+                // Why the three numbers cannot be saved as they stand, or an
+                // empty string where they can.
+                //
+                // The plugin refuses an out-of-range value where it would be
+                // used and substitutes nothing, which is the rule
+                // docs/configuration.md argues: a silent fallback on a bound is
+                // the bound gone. That refusal arrives in the server log and at
+                // a redemption, neither of which the operator who typed the
+                // number is looking at. So the page refuses first, and it
+                // refuses rather than correcting: a value nudged into range
+                // here would be the same silent correction one step earlier.
+                //
+                // The bounds are read off the fields rather than written here,
+                // so the two cannot disagree and the suite holds the fields to
+                // the settings.
+                //
+                // It judges numbers and no template rule, which is the
+                // distinction ConfigurationPageTests draws by refusing the
+                // spellings a template judgement would use. A number field
+                // hands back an empty string for anything a browser could not
+                // read as a number, so there is nothing here to trim and the
+                // emptiness is the whole of the shape check.
+                function invitesWhyTheNumbersCannotBeSaved() {
+                    var refusals = [];
+                    invitesSettingFields().forEach(function (field) {
+                        if (field.type !== "number") {
+                            return;
+                        }
+
+                        var name = field.getAttribute("data-setting");
+                        var least = Number(field.getAttribute("min"));
+                        var most = Number(field.getAttribute("max"));
+                        var typed = field.value;
+                        var value = Number(typed);
+
+                        if (typed === "" || !Number.isInteger(value)) {
+                            refusals.push(
+                                name + " wants a whole number from " + least + " to " + most + ".",
+                            );
+                            return;
+                        }
+
+                        if (value < least || value > most) {
+                            refusals.push(
+                                name +
+                                    " is outside the range it may take, which is " +
+                                    least +
+                                    " to " +
+                                    most +
+                                    ". Nothing was saved and nothing was changed for you.",
+                            );
+                        }
+                    });
+
+                    return refusals.join(" ");
+                }
+
                 function invitesLoadConfiguration() {
                     return ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                         function (config) {
@@ -665,10 +801,25 @@
                         e.preventDefault();
                         Dashboard.showLoadingMsg();
 
+                        var refusal = invitesWhyTheNumbersCannotBeSaved();
+                        if (refusal) {
+                            Dashboard.hideLoadingMsg();
+                            Dashboard.alert(refusal);
+                            return false;
+                        }
+
                         ApiClient.getPluginConfiguration(InvitesConfig.pluginUniqueId).then(
                             function (config) {
                                 invitesSettingFields().forEach(function (field) {
-                                    config[field.getAttribute("data-setting")] = field.value;
+                                    var name = field.getAttribute("data-setting");
+                                    // A number field sends a number. The plugin
+                                    // reads these three as whole numbers, and a
+                                    // string would be refused by the reader
+                                    // rather than by anything an operator can
+                                    // see, which is the same silence this page
+                                    // exists to remove.
+                                    config[name] =
+                                        field.type === "number" ? Number(field.value) : field.value;
                                 });
                                 config.Templates = invitesReadTemplates();
                                 ApiClient.updatePluginConfiguration(
