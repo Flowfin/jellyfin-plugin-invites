@@ -44,8 +44,9 @@ So a server running this plugin today does get a directory and a claim file in
 it. This paragraph said it does not get an invitations file, because the only
 call that writes the records file was inside the file that declares it. Both
 halves of that were overtaken without the sentence moving, and the correction is
-made here rather than the paragraph deleted. A mint, a revocation and the
-retention sweep all write the records file now:
+made here rather than the paragraph deleted. Several routines write the records
+file now, and which they are is the command's answer rather than this sentence's,
+because a list written here is the thing that went stale twice already:
 
     git grep -n '\.Write(' -- 'Jellyfin.Plugin.Invites/*.cs'
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:332:            store.Write(contents.Invitations.Add(minted));
@@ -75,13 +76,32 @@ line above it, so nothing pointed at the difference. The whole output is pasted
 rather than the one number corrected, because a paste that reproduces in part is
 the failure this check exists against.
 
-A MINT, A REVOCATION AND THE SWEEP ARE NO LONGER THE WHOLE SET, AND THE SENTENCE
-ABOVE THE PASTE STILL SAYS THEY ARE. It is left standing rather than rewritten
-here: what those two further callers do to this page's argument is a redemption
-question rather than a store one, and answering it inside a change about the
-store's shape would be the second topic this page's own rules refuse.
+A MINT, A REVOCATION AND THE SWEEP WERE NAMED AS THE WHOLE SET AND ARE NOT, AND
+THE SENTENCE ABOVE THE PASTE SAID SO UNTIL THIS EDIT. #474 is where that was
+recorded and this is the repair. Five callers reach the records file: the mint,
+the revocation, the retention sweep, and the two the redemption post added in
+#399, which are the reservation that takes a use and the claim that records the
+account it produced. The lead-in no longer names any of them, because a set
+written into a sentence beside the command that derives it is the enumeration
+this page has already had to correct twice.
 
-The second of those five was pasted at line 336 and the paste is re-run here
+WHAT THE TWO UNNAMED CALLERS DO NOT DO IS MOVE THIS PAGE'S ARGUMENT, and that is
+worth reading before it is assumed. The bound is re-taken further down, under the
+paragraph that opens by saying no redemption exists: it records that a redemption
+writes twice per honoured code and that neither write adds a record, so the
+public side moves values inside records an operator already minted. That
+paragraph describes both of these writes - taking the use, and recording the
+account - without naming the methods, which is why nothing pointed at the
+lead-in disagreeing with it. So the defect this section carried was that the
+lead-in named a set the page's own argument had already outgrown, rather than an
+argument resting on a set that was wrong.
+
+THE COUNTS IN THE PARAGRAPH ABOVE THIS ONE ARE LEFT AS THEY WERE WRITTEN. Six
+lines, five lines and three callers are what the page said on the day each was
+run, and this file's corrections are appended rather than edited over. What
+follows them is the current reading, and the paste above is the current output.
+
+The second of those callers was pasted at line 336 and the paste is re-run here
 rather than the number edited on its own. What moved it was the reverse lookup
 in #89 landing above it in the same file; the line it names is the same line of
 source and nothing this paragraph says about it has changed.
