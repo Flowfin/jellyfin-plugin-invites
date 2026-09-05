@@ -194,11 +194,25 @@ is a table somebody builds once and then reads every store they are ever handed.
 `MintedCodeOnDiskTests.NothingTheMintLeavesOnDiskIsShapedLikeACode` mints through
 that path and reads every file the mint left behind rather than the store alone.
 
-The other direction is not held. Nothing presents a code to this plugin, so no
-route reduces one and compares it against what is stored, and the property is
-held at the mint and at the record rather than across a redemption. Somebody who
-can read the store and the secret together is in the undefended list below, and
-none of this defends against them.
+THE OTHER DIRECTION WAS NOT HELD, BECAUSE NOTHING PRESENTED A CODE TO THIS
+PLUGIN. One route does. It reduces the presented code with the same keyed hash
+and compares the result against what is stored:
+
+```
+git grep -n 'FixedTimeEquals(record.CodeHash' -- 'Jellyfin.Plugin.Invites/*.cs'
+Jellyfin.Plugin.Invites/Redemption/RedemptionDecision.cs:285:            if (CryptographicOperations.FixedTimeEquals(record.CodeHash.AsSpan(), presentedHash.AsSpan()))
+```
+
+so the property is held across a redemption as well as at the mint and at the
+record, and the plain code is never written anywhere on that path.
+
+What the comparison is and is not belongs at the routine rather than here, and
+this page repeats only the bound: every record is compared, the loop returns
+early for none, and whether the whole redemption is constant time is a larger
+claim about everything the caller does that has not been measured.
+
+Somebody who can read the store and the secret together is in the undefended list
+below, and none of this defends against them.
 
 ### The four ways a redemption fails are one answer
 
@@ -502,11 +516,30 @@ anonymous and the identity is a principal the test puts on a context it owns, so
 what is read is that the route IGNORES an identity, not that it rejects one and
 not what a server's own authentication would put there.
 
-The half of the ceiling that is configuration is not held by anything and there
-is nothing for it to hold. #62 asks that a configuration asking for an
-administrator account be rejected at load; the configuration type carries one
-setting and it is an address, so there is no such value to reject. That is #86's
-ground and it is named here so the absence is not read as a refusal.
+THE HALF OF THE CEILING THAT IS CONFIGURATION WAS RECORDED HERE AS HOLDING
+NOTHING, ON THE GROUND THAT THE CONFIGURATION TYPE CARRIED ONE SETTING AND IT WAS
+AN ADDRESS. It carries five, and one of them is the list of account templates an
+operator writes:
+
+```
+git grep -nP '^    public [A-Za-z<>?\[\]]+ [A-Za-z]+ \{ get; set; \}' -- Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs:39:    public string PublicBaseUrl { get; set; } = string.Empty;
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs:62:    public ConfiguredTemplate[]? Templates { get; set; } = [];
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs:86:    public int RecordRetentionDays { get; set; } = 90;
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs:108:    public int RedemptionAttemptsPerAddressInAnHour { get; set; } = 20;
+Jellyfin.Plugin.Invites/Configuration/PluginConfiguration.cs:120:    public int RedemptionAttemptsPerSecond { get; set; } = 10;
+```
+
+The conclusion is unchanged and its ground is not. There is still no configured
+value asking for an administrator account, and it is now a statement about a
+template rather than about a type with nothing in it: a configured template names
+a label, a set of libraries, the permissions this page's own section lists and
+three numbers, and no member of it reaches the administrator flag or a server-wide
+grant. What refuses one being added is `administrator-flag-set` and
+`server-wide-grant-flag-set` in `.github/lint/invariants.sh`, which are described
+below and are a spelling refusal rather than a load-time one.
+
+So the absence is still not a refusal, which is why it is written out here.
 
 Beside the two, `administrator-flag-set` in `.github/lint/invariants.sh` refuses
 the administrator flag being written anywhere in the tree, in either direction,
@@ -534,10 +567,13 @@ placed against the issue that keeps it:
 > invitation had left, listed for the operator as a redemption of that
 > invitation, and removable by deleting that account.
 
-Nothing in this repository redeems an invitation yet, so today the sentence is
-what this plugin is being built to, and not a report of what it does. A report
-that the plugin exceeds this bound once the code exists is a report this policy
-wants, and the list above is what to measure it against.
+THAT SENTENCE WAS WHAT THIS PLUGIN WAS BEING BUILT TO, BECAUSE NOTHING HERE
+REDEEMED AN INVITATION. Something does, so the clauses above are now claims about
+a route a stranger can reach rather than a design. Each one is held by an
+assertion named elsewhere on this page - the template that invitation carried,
+the use it had left, the account the record claims - and none of them has been
+exercised against a running server. A report that the plugin exceeds this bound
+is a report this policy wants, and the list above is what to measure it against.
 
 The default validity is seven days, and a spent invitation is spent for good.
 The threat model carries the reasoning for both, and both are the shortest
@@ -597,8 +633,12 @@ it, and which value and where it comes from is not decided.
 [docs/setup-never-asks.md](docs/setup-never-asks.md) still asks for it and says
 in the same place that it is not done.
 
-Nothing posts to the form, so what a completed setup does is still what this
-plugin is being built to rather than a report of anything.
+THIS SECTION ENDED BY SAYING NOTHING POSTS TO THE FORM. A post takes what the
+form carries, so what a completed setup does is a report of what the route does
+with a submission rather than only what the plugin is being built to. The
+paragraph above it is untouched by that: the page still names no server, and
+[docs/setup-never-asks.md](docs/setup-never-asks.md) still asks for that and says
+in the same place that it is not done.
 
 ## What is not defended
 
@@ -609,11 +649,13 @@ against the attack it belongs to.
 This paragraph said every mitigation the threat model names is a promise held by
 an open issue rather than by code. That is no longer the reading. Some of them
 have landed, the keyed hash above being one, and the grid in that document names
-the issue each one sits on rather than this page repeating them. What is
-unchanged is that there is no redemption path here, so no mitigation in the grid
-has been exercised on a path a stranger can reach. Read this section as what will
-still not be defended once the rest land, and not as a claim that everything else
-already is.
+the issue each one sits on rather than this page repeating them. THAT PARAGRAPH THEN SAID THERE IS NO REDEMPTION PATH HERE AND SO NO MITIGATION IN
+THE GRID HAS BEEN EXERCISED ON A PATH A STRANGER CAN REACH. There is one, and the
+sentence has to be read the other way round now: the mitigations that have landed
+sit on a route a stranger can reach, they are exercised by this repository's own
+assertions and by nothing else, and no server has run any of them. Read this
+section as what will still not be defended once the rest land, and not as a claim
+that everything else already is.
 
 A leaked link within its validity, before the intended person uses it, is an
 account for whoever found it. This is what a bearer credential means and no
