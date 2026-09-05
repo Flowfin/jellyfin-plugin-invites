@@ -24,13 +24,16 @@ is refused, and the grant behind a name that matches is copied onto the
 invitation at that moment, so editing the entry afterwards changes the next
 invitation and not the ones already sent.
 
-**Watching an invitation get redeemed.** The redemption address serves the setup
-page and nothing posts back to it, so nobody can complete a setup and no account
-is created by this plugin at all. Whatever you mint today cannot be spent.
+**Watching an invitation get redeemed.** THIS PARAGRAPH SAID NOTHING POSTS BACK
+TO THE REDEMPTION ADDRESS AND THAT NO ACCOUNT IS CREATED BY THIS PLUGIN AT ALL.
+The address serves the setup page and takes the form back, and a code it honours
+creates the account the invitation was scoped for. Whatever you mint today can be
+spent by whoever holds the link.
 
-So the useful half of this guide is everything an operator does on their own
-side: install, address, mint, send, look, revoke. The other person's half does
-not run.
+So this guide covers both halves: install, address, mint, send, look and revoke
+on your side, and the setup a person you invited completes on theirs. The second
+has never been run against a Jellyfin server, and what stands behind every
+sentence about it is this repository's own suite.
 
 ## Before you start
 
@@ -208,14 +211,21 @@ the person you meant.
 
 ## Step 6: watch it get redeemed
 
-Not yet. The redemption address answers with the setup page and there is no post
-behind it, so following the link shows a person a form that cannot be submitted.
-Nothing is read, decided, spent or created by a request to it, and the same page
-comes back for a code that was never minted as for one you minted a minute ago.
+THIS STEP SAID NOT YET, ON THE GROUND THAT THE REDEMPTION ADDRESS HAS NO POST
+BEHIND IT AND THAT NOTHING IS READ, DECIDED, SPENT OR CREATED BY A REQUEST TO IT.
+The post landed on 2026-09-04. Refresh the table after somebody has followed a
+link and you see a use spent and an account listed against the invitation.
 
-When the post lands, this becomes the step where you refresh the table and see a
-use spent and an account listed against the invitation. Today the table answers
-the first half of that and the accounts column stays at zero.
+What has not changed is what the address gives away before a form comes back. A
+code that was never minted is served the same page as one you minted a minute
+ago, so nobody can ask the address which of your links exist, and every way a
+submitted code can fail is answered with one page for the same reason. You cannot
+tell an expired link from a spent one from a revoked one by looking at what the
+person was shown, and neither can anybody else.
+
+Nothing in this step has been run against a Jellyfin server. It is what this
+repository's suite asserts of the route, and whoever does it for real will be
+doing it for the first time.
 
 ## Step 7: revoke one
 

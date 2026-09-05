@@ -54,12 +54,13 @@ The first published version. It adds one page to the server dashboard, and on
 it an operator sets the public address, writes down the account templates an
 invitation is minted against, mints an invitation, reads the outstanding ones,
 revokes one and rotates the key the codes are stored under.
-No link can be redeemed and no account is created by this plugin, so an
-invitation minted from this version cannot be spent by anybody.
+A person following an invitation link is served a setup page, and posting it
+back creates the account that invitation was scoped for, so a link minted from
+this version can be spent by whoever holds it.
 
 It is compiled against 10.11.0, the oldest server of the line the manifest
 claims, so a server at the floor of that line loads it rather than refusing the
 assembly.
 
-Nothing changes about what an invitation can create, because an invitation
-cannot create anything.
+What an invitation can create is exactly the account its template names, and
+nothing in this version has been run against a Jellyfin server.

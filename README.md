@@ -12,16 +12,22 @@ and who would rather not be the one who knows everybody's password.
 
 > [!WARNING]
 >
-> The half an operator drives runs. The half an invited person drives does not.
-> What installs today adds one page to the server dashboard, and on it an
-> operator sets the public address, writes down the account templates an
-> invitation is minted against, mints an invitation, reads the outstanding
-> ones, revokes one and rotates the key the codes are stored under. **No link
-> can be redeemed and no account is created by this plugin**, so an invitation
-> minted today cannot be spent by anybody. Everything below describes what is
-> being built and says which part is written down and which part is running
-> code, and [docs/operator-guide.md](docs/operator-guide.md) walks the half that
-> runs.
+> THIS BLOCK SAID THE HALF AN INVITED PERSON DRIVES DOES NOT RUN, AND THAT NO
+> LINK CAN BE REDEEMED. It runs. What installs today adds one page to the server
+> dashboard, and on it an operator sets the public address, writes down the
+> account templates an invitation is minted against, mints an invitation, reads
+> the outstanding ones, revokes one and rotates the key the codes are stored
+> under. A person following an invitation link is served a setup page, and
+> posting it back creates the account that invitation was scoped for. **A link
+> you mint today can be spent by whoever holds it.**
+>
+> No version has been published, and nothing here has been run against a
+> Jellyfin server: what stands behind every sentence about the invited half is
+> this repository's own suite. Everything below describes what is being built and
+> says which part is written down and which part is running code,
+> [docs/operator-guide.md](docs/operator-guide.md) walks both halves, and
+> [SECURITY.md](SECURITY.md) is what to read before pointing anybody at a link
+> this makes.
 
 ## The shape of it
 
