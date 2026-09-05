@@ -12,9 +12,15 @@ lifetime nobody decided. Then the two thresholds, which are read off that
 lifetime and off the arithmetic in [docs/code-entropy.md](code-entropy.md)
 rather than chosen because they looked reasonable.
 
-Nothing here is built, and the reason has moved. This paragraph said there is no
-endpoint to limit, which was true when it was written and was overtaken without
-the sentence moving. There is an endpoint a stranger can reach:
+THIS PARAGRAPH OPENED "NOTHING HERE IS BUILT" AND WENT ON SAYING IT AFTER THE
+LIMITER LANDED AND AFTER THE POST BEGAN CALLING IT. Both are built, and the
+section `## What is written now, and what of this page it holds` below says so
+and says what holds each part. A page whose first paragraph contradicts a later
+one is read at the first, which is why this is the sentence that had to move.
+
+What the original claim rested on is kept, because the two reasons it was true
+stopped being true one after the other and each is worth seeing. First, there was
+no endpoint to limit, and there is an endpoint a stranger can reach:
 
     git grep -lE 'ControllerBase|ApiController|HttpGet|HttpPost' -- 'Jellyfin.Plugin.Invites/*.cs' ; echo "exit=$?"
     exit=0
@@ -343,9 +349,25 @@ loading a link spends nothing. The allowance is spent by a form being posted.
 ## What is still not claimed
 
 Nothing here has been measured against a running server, and no rate has been
-observed. The byte-identity requirement is not held by anything: what a refused
-attempt looks like is `docs/refusal-response.md`, and there is no ordinary
-refusal for a throttled one to be compared against yet.
+observed.
+
+THE BYTE-IDENTITY REQUIREMENT WAS RECORDED HERE AS HELD BY NOTHING, ON THE GROUND
+THAT THERE IS NO ORDINARY REFUSAL FOR A THROTTLED ONE TO BE COMPARED AGAINST.
+There is one, and the comparison is made:
+
+    git grep -n 'public async Task EveryRefusalThisRouteServesIsTheSameResponse' -- Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs
+    Jellyfin.Plugin.Invites.Tests/RedeemPostTests.cs:176:    public async Task EveryRefusalThisRouteServesIsTheSameResponse()
+
+It drives all six cases `docs/refusal-response.md` lists through the action - no
+such invitation, expired, spent, revoked, refused by the rate limit and refused
+by the ceiling - and compares the status, the body, the content type and every
+header, so a caller cannot tell a throttled attempt from a code that matched no
+record by reading what came back.
+
+What that leaves unheld is timing, and it is not a small residual on this page in
+particular: a throttled attempt is refused before the store is opened, so it is
+the case a clock would separate most easily. `docs/refusal-response.md` says why
+no test in this repository will measure it, and nothing here changes that.
 
 The arithmetic quoted above is re-run from `docs/code-entropy.md` and is the same
 model, with the same inputs and the same two assumptions it names about an
