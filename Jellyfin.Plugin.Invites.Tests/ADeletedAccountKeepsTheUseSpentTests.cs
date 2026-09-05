@@ -80,7 +80,7 @@ public class ADeletedAccountKeepsTheUseSpentTests
         var created = seam.Answers;
         var afterRedemption = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, afterRedemption.UsesRemaining);
-        Assert.Equal(created, Assert.Single(afterRedemption.AccountsProduced));
+        Assert.Equal(created, Assert.Single(afterRedemption.AccountsProduced).Account);
 
         // The operator deletes the account in the server's own user editor. To
         // this plugin that is the server no longer reporting the identifier, and
@@ -93,7 +93,7 @@ public class ADeletedAccountKeepsTheUseSpentTests
 
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, stored.UsesRemaining);
-        Assert.Equal(created, Assert.Single(stored.AccountsProduced));
+        Assert.Equal(created, Assert.Single(stored.AccountsProduced).Account);
         Assert.Equal(1, seam.Asked.Count(asked => asked.StartsWith("create ", StringComparison.Ordinal)));
     }
 
@@ -136,7 +136,7 @@ public class ADeletedAccountKeepsTheUseSpentTests
                 Guid.Parse("00000000-0000-4000-8000-00000000000a"),
                 Guid.Parse("00000000-0000-4000-8000-00000000000b"),
             },
-            stored.AccountsProduced.ToArray());
+            stored.AccountsProduced.Accounts().ToArray());
 
         var third = await RedeemRoute
             .Over(directory.Path, clock, seam, RedeemRoute.Request())
@@ -261,7 +261,7 @@ public class ADeletedAccountKeepsTheUseSpentTests
 
         var afterTheAccount = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, afterTheAccount.UsesRemaining);
-        Assert.Equal(seam.Answers, Assert.Single(afterTheAccount.AccountsProduced));
+        Assert.Equal(seam.Answers, Assert.Single(afterTheAccount.AccountsProduced).Account);
 
         var third = await RedeemRoute
             .Over(directory.Path, clock, seam, RedeemRoute.Request())

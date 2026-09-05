@@ -200,7 +200,7 @@ public class AnAccountTracedToItsInvitationTests
             revokedBy: null,
             templateLabel: template,
             template: TestTemplates.Household,
-            accountsProduced: accounts);
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(accounts));
 
     private static InvitesController ControllerOver(OwnedDirectory directory, IServerAccounts accounts)
         => new(

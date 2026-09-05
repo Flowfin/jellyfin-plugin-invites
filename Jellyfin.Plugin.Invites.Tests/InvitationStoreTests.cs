@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Jellyfin.Plugin.Invites.Invitations;
 using Jellyfin.Plugin.Invites.Storage;
 using Xunit;
@@ -109,7 +110,7 @@ public class InvitationStoreTests
             revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray.Create(
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(
                 Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
                 Guid.Parse("99999999-8888-7777-6666-555555555555")));
     }
@@ -136,7 +137,7 @@ public class InvitationStoreTests
             revokedBy: null,
             templateLabel: "Friends",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 
     /// <summary>
@@ -270,6 +271,58 @@ public class InvitationStoreTests
         File.WriteAllText(store.Path, contents);
 
         Assert.Throws<JsonException>(() => store.Read());
+    }
+
+    /// <summary>
+    /// A claim in the current shape that leaves out its expiry is refused
+    /// rather than read as an account that does not expire. Take
+    /// <c>JsonRequired</c> off the stored claim's expiry and this goes red.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #93's per-member rule pointed at the member #468 added. An absent
+    /// expiry parses as null, and null is the state in which this plugin never
+    /// disables the account, so the default is more permissive than the value
+    /// it stands in for could have been. Required here means present in the
+    /// document; carrying it as null is how a claim says the account does not
+    /// expire, and that still reads, which the case below holds.
+    /// </para>
+    /// <para>
+    /// The member is removed from a document this build wrote rather than from
+    /// one assembled here, so what is being read is the shape the writer
+    /// actually emits and the removal is the one an editor would make.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AClaimWithNoExpiryMemberIsRefused()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        store.Write(new[] { AnInvitation() });
+
+        var document = JsonNode.Parse(File.ReadAllText(store.Path))!;
+        var claim = document["invitations"]![0]!["accountsProduced"]![0]!.AsObject();
+        Assert.True(claim.Remove("expiresAt"), "The writer no longer emits an expiry on a claim.");
+        File.WriteAllText(store.Path, document.ToJsonString());
+
+        Assert.Throws<JsonException>(() => store.Read());
+    }
+
+    /// <summary>
+    /// And the claim carrying the member as null reads, which is the half the
+    /// rule above must not take with it: every claim this build writes carries
+    /// null there.
+    /// </summary>
+    [Fact]
+    public void AClaimCarryingItsExpiryAsNullReads()
+    {
+        using var directory = new OwnedDirectory();
+        var store = new InvitationStore(directory.Path);
+        var written = AnInvitation();
+        store.Write(new[] { written });
+
+        Assert.Contains("\"expiresAt\": null", File.ReadAllText(store.Path), StringComparison.Ordinal);
+        Assert.Equal(written, Assert.Single(store.Read().Invitations));
     }
 
     /// <summary>
@@ -506,7 +559,7 @@ public class InvitationStoreTests
             revokedBy: null,
             templateLabel: "Guest",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
 
         store.Write(new List<Invitation> { first, second });
 
@@ -689,6 +742,18 @@ public class InvitationStoreTests
     /// the first shape is treated as that shape rather than refused, because
     /// refusing it would leave a file on disk that no build can read.
     /// </para>
+    /// <para>
+    /// The record claims no account, and that is the shape of the trick rather
+    /// than a gap in it. This writes with the current writer and relabels the
+    /// version, which only produces a readable older document where every
+    /// member the current shape writes is one the older reader can parse. That
+    /// stopped being true of a claim in version three, which is an object
+    /// where the older shapes carried an identifier, so a record claiming an
+    /// account would fail here on the claim and never reach the grant this
+    /// test is about. The committed documents in
+    /// <see cref="StoreShapeTests"/> are where a claim written in an older
+    /// shape is read.
+    /// </para>
     /// </remarks>
     /// <param name="declared">The version the document declares.</param>
     [Theory]
@@ -698,7 +763,7 @@ public class InvitationStoreTests
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
-        var written = AnInvitation();
+        var written = ClaimingNoAccount(AnInvitation());
         store.Write(new[] { written });
         File.WriteAllText(
             store.Path,
@@ -723,14 +788,15 @@ public class InvitationStoreTests
     /// This was a default while one shape existed and it is a migration now,
     /// which is the day the earlier version of this test said it would notice.
     /// The record keeps every field the first shape carried; what it cannot
-    /// carry is a grant, because that shape never held one.
+    /// carry is a grant, because that shape never held one. It claims no
+    /// account for the reason the theory above gives.
     /// </remarks>
     [Fact]
     public void ADocumentWrittenBeforeTheVersionExistedIsReadAsTheFirstShape()
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
-        var written = AnInvitation();
+        var written = ClaimingNoAccount(AnInvitation());
         store.Write(new[] { written });
         var withoutAVersion = File.ReadAllText(store.Path).Replace(
             Declaring(InvitationStore.Version) + ",",
@@ -774,5 +840,33 @@ public class InvitationStoreTests
             templateLabel: record.TemplateLabel,
             template: null,
             accountsProduced: record.AccountsProduced);
+    }
+
+    /// <summary>
+    /// The same record claiming no account at all.
+    /// </summary>
+    /// <remarks>
+    /// For the two tests that relabel a document the current writer produced
+    /// as an older version. A claim is an object in the current shape and an
+    /// identifier in both older ones, so a relabelled document carrying one is
+    /// not a document either older reader can parse.
+    /// </remarks>
+    /// <param name="record">The record.</param>
+    /// <returns>The record with no accounts claimed.</returns>
+    private static Invitation ClaimingNoAccount(Invitation record)
+    {
+        return new Invitation(
+            id: record.Id,
+            codeHash: record.CodeHash,
+            mintedBy: record.MintedBy,
+            mintedAt: record.MintedAt,
+            expiresAt: record.ExpiresAt,
+            usesGranted: record.UsesGranted,
+            usesRemaining: record.UsesRemaining,
+            revokedAt: record.RevokedAt,
+            revokedBy: record.RevokedBy,
+            templateLabel: record.TemplateLabel,
+            template: record.Template,
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 }

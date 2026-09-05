@@ -38,10 +38,12 @@ namespace Jellyfin.Plugin.Invites.Invitations;
 /// <b>What this type does not decide.</b> Whether a use may be spent, whether
 /// the expiry has passed and whether a presented hash matches are the
 /// redemption decision, which is #56 and lives in one routine. Whether a count
-/// may be minted at all is #52 and #33. This type refuses only the two states
-/// that are not an invitation at all, in the constructor below, and it refuses
+/// may be minted at all is #52 and #33. This type refuses only the states that
+/// are not an invitation at all, in the constructor below, and it refuses
 /// nothing anybody else already refuses: a rule enforced in two places is a
-/// rule that drifts in one of them.
+/// rule that drifts in one of them. The count of those states is not written
+/// here, because it moved when #468 added one and a number in this paragraph
+/// would go stale the next time it moves.
 /// </para>
 /// </remarks>
 public sealed class Invitation : IEquatable<Invitation>
@@ -60,12 +62,16 @@ public sealed class Invitation : IEquatable<Invitation>
     /// <param name="revokedBy">Who revoked it, or <c>null</c>. See <see cref="RevokedBy"/>.</param>
     /// <param name="templateLabel">The template name the operator picked. See <see cref="TemplateLabel"/>.</param>
     /// <param name="template">The copy of the grant taken at minting, or <c>null</c> where none was. See <see cref="Template"/>.</param>
-    /// <param name="accountsProduced">The accounts it created. See <see cref="AccountsProduced"/>.</param>
+    /// <param name="accountsProduced">The accounts it created, each with when it expires. See <see cref="AccountsProduced"/>.</param>
     /// <exception cref="ArgumentException">
     /// The keyed hash is absent, the remaining count is outside the granted
-    /// one, or the two revocation fields disagree about whether there was one.
-    /// All three are states no invitation can be in rather than rules about
-    /// what may be minted or revoked.
+    /// one, the two revocation fields disagree about whether there was one, or
+    /// a claim carries an account expiry from before this invitation was
+    /// minted. All four are states no invitation can be in rather than rules
+    /// about what may be minted or revoked.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">
+    /// The template label is null, or one of the claims is.
     /// </exception>
     public Invitation(
         Guid id,
@@ -79,7 +85,7 @@ public sealed class Invitation : IEquatable<Invitation>
         Guid? revokedBy,
         string templateLabel,
         AccountTemplate? template,
-        ImmutableArray<Guid> accountsProduced)
+        ImmutableArray<ProducedAccount> accountsProduced)
     {
         // An invitation with no stored hash is one no presented code can ever
         // be checked against. It is not a usable record in some other state; it
@@ -116,6 +122,30 @@ public sealed class Invitation : IEquatable<Invitation>
                 revokedAt is null ? nameof(revokedBy) : nameof(revokedAt));
         }
 
+        var claims = accountsProduced.IsDefault ? ImmutableArray<ProducedAccount>.Empty : accountsProduced;
+
+        // An account cannot have been created before the invitation that
+        // produced it was minted, so an expiry earlier than the minting is
+        // earlier than that account's creation whatever the creation instant
+        // was. That is the strongest form of #468's rule this record can
+        // carry, and it is weaker than the rule as that issue words it: the
+        // record does not hold when each account was created, and a claim
+        // carrying a creation instant nobody decided would be the invention a
+        // migration is forbidden to make. So an expiry between the minting and
+        // the account's creation is not refused here and nothing else refuses
+        // it either.
+        foreach (var claim in claims)
+        {
+            ArgumentNullException.ThrowIfNull(claim, nameof(accountsProduced));
+
+            if (claim.ExpiresAt is { } expiry && expiry < mintedAt)
+            {
+                throw new ArgumentException(
+                    "An account expires after the invitation that produced it was minted. A claim expiring before its own invitation existed describes an account nobody could have created.",
+                    nameof(accountsProduced));
+            }
+        }
+
         Id = id;
         CodeHash = codeHash;
         MintedBy = mintedBy;
@@ -127,7 +157,7 @@ public sealed class Invitation : IEquatable<Invitation>
         RevokedBy = revokedBy;
         TemplateLabel = templateLabel ?? throw new ArgumentNullException(nameof(templateLabel));
         Template = template;
-        AccountsProduced = accountsProduced.IsDefault ? ImmutableArray<Guid>.Empty : accountsProduced;
+        AccountsProduced = claims;
     }
 
     /// <summary>
@@ -309,17 +339,26 @@ public sealed class Invitation : IEquatable<Invitation>
     public AccountTemplate? Template { get; }
 
     /// <summary>
-    /// Gets the accounts this invitation has created.
+    /// Gets the accounts this invitation has created, each with when it
+    /// expires.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The link between an invitation and the accounts that came out of it.
     /// This is the most identifying row in the inventory and it is also the one
     /// an operator needs when an account they do not recognise appears, which
     /// is the trade docs/personal-data.md argues rather than assumes. It is
     /// also what the load-time consistency report in #46 compares against the
     /// server's own user list.
+    /// </para>
+    /// <para>
+    /// A claim is an entry rather than a bare identifier, which is #468, so an
+    /// expiry belongs to one account and not to the invitation that made it.
+    /// <see cref="ProducedAccount"/> is where that is argued, and an absent
+    /// expiry there means the account does not expire.
+    /// </para>
     /// </remarks>
-    public ImmutableArray<Guid> AccountsProduced { get; }
+    public ImmutableArray<ProducedAccount> AccountsProduced { get; }
 
     /// <summary>
     /// Two invitations are equal when every field is.

@@ -51,8 +51,10 @@ retention sweep all write the records file now:
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:332:            store.Write(contents.Invitations.Add(minted));
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:449:            store.Write(contents.Invitations.Replace(found, revoked));
     Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:513:            store.Write(kept);
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:664:            store.Write(contents.Invitations.Replace(matched, reserved));
+    Jellyfin.Plugin.Invites/Invitations/InvitationOperations.cs:717:            store.Write(contents.Invitations.Replace(found, claiming));
     Jellyfin.Plugin.Invites/Storage/HashSecret.cs:291:            file.Write(value, 0, value.Length);
-    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:459:            writer.Write(json);
+    Jellyfin.Plugin.Invites/Storage/InvitationStore.cs:540:            writer.Write(json);
     Jellyfin.Plugin.Invites/Storage/StoreLock.cs:128:            writer.Write(written);
 
 Six lines rather than five, and the two that were already there each moved by
@@ -62,7 +64,22 @@ between them. The line-reference check refused the old numbers before this branc
 was pushed, which is how they came to be re-run rather than noticed. Re-run
 once more under #61: the three callers in the operations each moved down by
 fifty-six as the mint gained the template seam, and the store's by eighty-five
-as the store gained its second shape. The six lines are the same six.
+as the store gained its second shape. The six lines were the same six.
+
+EIGHT LINES RATHER THAN SIX, AND ONLY ONE OF THE TWO DRIFTS WAS THIS CHANGE'S.
+The store's line moved from 459 to 540 as the store gained its third shape under
+#468, which is what forced the re-run above. What the re-run also printed is two
+callers this paragraph had never named: the reservation and the claim the
+redemption post added in #399, which landed while the paste stood and moved no
+line above it, so nothing pointed at the difference. The whole output is pasted
+rather than the one number corrected, because a paste that reproduces in part is
+the failure this check exists against.
+
+A MINT, A REVOCATION AND THE SWEEP ARE NO LONGER THE WHOLE SET, AND THE SENTENCE
+ABOVE THE PASTE STILL SAYS THEY ARE. It is left standing rather than rewritten
+here: what those two further callers do to this page's argument is a redemption
+question rather than a store one, and answering it inside a change about the
+store's shape would be the second topic this page's own rules refuse.
 
 The second of those five was pasted at line 336 and the paste is re-run here
 rather than the number edited on its own. What moved it was the reverse lookup

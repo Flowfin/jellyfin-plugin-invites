@@ -144,6 +144,6 @@ public static class InvitationMint
             revokedBy: null,
             templateLabel: templateLabel,
             template: template,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 }

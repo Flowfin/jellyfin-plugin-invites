@@ -66,17 +66,29 @@ namespace Jellyfin.Plugin.Invites.Storage;
 /// and refuses one it does not know.
 /// </para>
 /// <para>
-/// <b>Two shapes have existed and one migration is written, forward only.</b>
-/// Version one carried the template's name and no grant; version two carries
-/// the grant #61 copies at minting beside the name. A version one document is
-/// read through the shape it was written in, kept here as its own class rather
-/// than as the current one with a member left optional, and each record is
-/// migrated into a record whose grant is absent. That is the strict answer
-/// #92 asks a migration for: the label cannot be resolved into a grant at read
-/// time without being the lookup #61 forbids, and a grant invented for it
-/// would widen what a record minted under version one is worth from nothing
-/// to something nobody decided. The migration writes nothing back; the next
-/// write, whatever causes it, is in the current shape.
+/// <b>Three shapes have existed and two migrations are written, forward
+/// only.</b> Version one carried the template's name and no grant; version two
+/// carries the grant #61 copies at minting beside the name; version three
+/// carries every account an invitation produced as an entry with its own
+/// expiry rather than as a bare identifier, which is #468. An older document is
+/// read through the shape it was written in, each kept here as its own class
+/// rather than as the current one with members left optional, and each record
+/// is migrated into a record whose newer members are absent.
+/// </para>
+/// <para>
+/// That is the strict answer #92 asks a migration for, and it is the same
+/// answer twice. A template label cannot be resolved into a grant at read time
+/// without being the lookup #61 forbids, and a grant invented for it would
+/// widen what a record minted under version one is worth from nothing to
+/// something nobody decided. An account expiry cannot be worked out from the
+/// invitation either, because that is exactly the derivation #68 refuses: it
+/// would move when the invitation moved and would apply to every account one
+/// invitation made, and a value derived at read time is a value nobody can
+/// extend. So a claim comes forward with no expiry, which is what
+/// <see cref="ProducedAccount"/> says an absence means and is the value that
+/// lets this plugin do least, since an account with no expiry is one nothing
+/// here ever disables. Neither migration writes anything back; the next write,
+/// whatever causes it, is in the current shape.
 /// </para>
 /// </remarks>
 public sealed class InvitationStore
@@ -122,18 +134,30 @@ public sealed class InvitationStore
     /// fields it did not understand are already defaults.
     /// </para>
     /// <para>
-    /// Two is the shape that carries the copied grant on every record, under
-    /// #61. One is the shape before it, which carried the template's name and
-    /// nothing else, and is still read: see <see cref="StoredInvitationOfVersionOne"/>.
+    /// Three is the shape that carries each produced account as an entry with
+    /// its own expiry, under #468. Two is the shape before it, which carried
+    /// the copied grant under #61 and claimed its accounts as bare
+    /// identifiers. One is the shape before that, which carried the template's
+    /// name and nothing else. Both older shapes are still read: see
+    /// <see cref="StoredInvitationOfVersionTwo"/> and
+    /// <see cref="StoredInvitationOfVersionOne"/>.
     /// </para>
     /// </remarks>
-    public const int Version = 2;
+    public const int Version = 3;
+
+    /// <summary>
+    /// The first version, which this build reads and never writes. It carried
+    /// a template name and no copy of what the template granted.
+    /// </summary>
+    public const int VersionWithoutAGrant = 1;
 
     /// <summary>
     /// The version before <see cref="Version"/>, which this build reads and
-    /// never writes.
+    /// never writes. It claimed the accounts an invitation produced as bare
+    /// identifiers, so there was nowhere on a record to put a per-account
+    /// expiry.
     /// </summary>
-    public const int VersionWithoutAGrant = 1;
+    public const int VersionWithoutAnAccountExpiry = 2;
 
     /// <summary>
     /// The mode the store file is created with on a platform that has file
@@ -267,10 +291,10 @@ public sealed class InvitationStore
 
         // The shape is chosen by the version the document declares and by
         // nothing in the records, because the version is the one field read
-        // before any record is parsed. A document declaring the older shape
-        // while carrying a member from the newer one is read as the shape it
+        // before any record is parsed. A document declaring an older shape
+        // while carrying a member from a newer one is read as the shape it
         // declares, which loses the member rather than trusting it.
-        if (declared > VersionWithoutAGrant)
+        if (declared >= Version)
         {
             return new StoreContents(ReadTheCurrentShape(text), permissions);
         }
@@ -278,16 +302,20 @@ public sealed class InvitationStore
         // Read forward, and the observation travels back with the records
         // rather than being written to a log here. #92 asks that a value which
         // cannot be mapped produce the strict option AND that the plugin say
-        // what it did; the strict option is what MigrateFromVersionOne
+        // what it did; the strict option is what each MigrateFrom routine
         // produces, and the saying is the caller's, because nothing on this
         // path may hold a logger.
-        var migrated = MigrateFromVersionOne(text);
+        var migrated = declared >= VersionWithoutAnAccountExpiry
+            ? MigrateFromVersionTwo(text)
+            : MigrateFromVersionOne(text);
+
         var withoutAGrant = migrated.Count(record => record.Template is null);
+        var withoutAnExpiry = migrated.Sum(record => record.AccountsProduced.Length);
 
         return new StoreContents(
             migrated,
             permissions,
-            new StoreMigration(declared, Version, withoutAGrant));
+            new StoreMigration(declared, Version, withoutAGrant, withoutAnExpiry));
     }
 
     /// <summary>
@@ -310,14 +338,60 @@ public sealed class InvitationStore
     }
 
     /// <summary>
+    /// Reads a version two document and migrates every record forward.
+    /// </summary>
+    /// <param name="text">The document as it was read off disk.</param>
+    /// <returns>
+    /// The records it holds, each claiming its accounts with no expiry.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Version two claimed an account as a bare identifier, so a record read
+    /// out of one says which accounts it produced and nothing about when any
+    /// of them expires. The value that comes forward is the absence, which is
+    /// what <see cref="ProducedAccount"/> declares means an account that does
+    /// not expire.
+    /// </para>
+    /// <para>
+    /// There is no other honest value. An expiry worked out from the
+    /// invitation is the derivation #68 refuses and #468 exists against, and
+    /// an expiry invented from anything else would be one nobody decided,
+    /// which is what #92 forbids a migration to write. The absence also grants
+    /// this plugin the least: an account with no expiry is one nothing here
+    /// disables, so a migration cannot disable an account by running.
+    /// </para>
+    /// <para>
+    /// The grant and the two revocation members are as required here as in the
+    /// current shape, because version two carried both, and a document that
+    /// leaves either out is refused rather than read forward.
+    /// </para>
+    /// </remarks>
+    private ImmutableArray<Invitation> MigrateFromVersionTwo(string text)
+    {
+        var document = JsonSerializer.Deserialize<StoredDocumentOfVersionTwo>(text, _format);
+        var stored = document?.Invitations ?? throw NoInvitationList();
+
+        var invitations = ImmutableArray.CreateBuilder<Invitation>(stored.Count);
+        foreach (var record in stored)
+        {
+            invitations.Add(record.ToInvitationWithNoAccountExpiry());
+        }
+
+        return invitations.ToImmutable();
+    }
+
+    /// <summary>
     /// Reads a version one document and migrates every record forward.
     /// </summary>
     /// <param name="text">The document as it was read off disk.</param>
-    /// <returns>The records it holds, each with its grant absent.</returns>
+    /// <returns>
+    /// The records it holds, each with its grant absent and each claiming its
+    /// accounts with no expiry.
+    /// </returns>
     /// <remarks>
     /// <para>
-    /// The one migration this store has. Version one carried the template's
-    /// name and no grant, and there is no honest value to migrate that into:
+    /// Version one carried the template's name and no grant, and there is no
+    /// honest value to migrate that into:
     /// resolving the name against the configuration now would be the lookup at
     /// read time that #61 forbids, and any grant written in without a name to
     /// resolve would be one nobody decided, which #92 refuses a migration to
@@ -330,6 +404,13 @@ public sealed class InvitationStore
     /// The two revocation members are as required here as in the current
     /// shape, for #93's reason, and the same fixture proves it against this
     /// reader rather than only against the other.
+    /// </para>
+    /// <para>
+    /// A version one document skips version two rather than being read through
+    /// it. There is nothing for a chain of two migrations to carry here: the
+    /// members version two added are absent in a record this produces, so
+    /// running it through the version two reader afterwards would arrive at
+    /// exactly the same record by a longer route.
     /// </para>
     /// </remarks>
     private ImmutableArray<Invitation> MigrateFromVersionOne(string text)
@@ -634,6 +715,24 @@ public sealed class InvitationStore
     }
 
     /// <summary>
+    /// The claims a record read out of a shape older than version three
+    /// carries: the accounts it named, and no expiry on any of them.
+    /// </summary>
+    /// <remarks>
+    /// One routine for both older shapes, because both of them claimed an
+    /// account the same way and both owe the same absence. What an absent
+    /// expiry means is decided on <see cref="ProducedAccount"/> and not here.
+    /// </remarks>
+    /// <param name="accounts">The identifiers the older shape carried.</param>
+    /// <returns>One claim per account, each with no expiry.</returns>
+    private static ImmutableArray<ProducedAccount> ClaimsWithNoExpiry(List<Guid>? accounts)
+    {
+        return accounts is null
+            ? ImmutableArray<ProducedAccount>.Empty
+            : ImmutableArray.CreateRange(accounts.Select(ProducedAccount.ThatDoesNotExpire));
+    }
+
+    /// <summary>
     /// The document as it sits on disk.
     /// </summary>
     private sealed class StoredDocument
@@ -759,8 +858,14 @@ public sealed class InvitationStore
         [JsonRequired]
         public StoredTemplate? Template { get; set; }
 
-        /// <summary>Gets or sets the accounts it created.</summary>
-        public List<Guid>? AccountsProduced { get; set; }
+        /// <summary>Gets or sets the accounts it created, each with its expiry.</summary>
+        /// <remarks>
+        /// An entry rather than an identifier since version three, which is
+        /// #468. The member keeps its name because it holds the same claim; it
+        /// is the shape of each entry that moved, which is why the version
+        /// moved with it rather than the member being read leniently.
+        /// </remarks>
+        public List<StoredProducedAccount>? AccountsProduced { get; set; }
 
         public static StoredInvitation From(Invitation invitation)
         {
@@ -777,7 +882,7 @@ public sealed class InvitationStore
                 RevokedBy = invitation.RevokedBy,
                 TemplateLabel = invitation.TemplateLabel,
                 Template = invitation.Template is null ? null : StoredTemplate.From(invitation.Template),
-                AccountsProduced = new List<Guid>(invitation.AccountsProduced),
+                AccountsProduced = invitation.AccountsProduced.Select(StoredProducedAccount.From).ToList(),
             };
         }
 
@@ -795,7 +900,55 @@ public sealed class InvitationStore
                 RevokedBy,
                 TemplateLabel ?? string.Empty,
                 Template?.ToTemplate(),
-                AccountsProduced is null ? ImmutableArray<Guid>.Empty : ImmutableArray.CreateRange(AccountsProduced));
+                AccountsProduced is null
+                    ? ImmutableArray<ProducedAccount>.Empty
+                    : ImmutableArray.CreateRange(AccountsProduced.Select(claim => claim.ToClaim())));
+        }
+    }
+
+    /// <summary>
+    /// One account an invitation produced, as it sits on disk.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The shape version three added. Before it the same claim was a bare
+    /// identifier in the list, so the two shapes cannot be told apart by a
+    /// lenient reader - a string where an object is expected is a parse error
+    /// rather than a member - and the version is what decides which reader
+    /// runs.
+    /// </para>
+    /// <para>
+    /// <b>The expiry is required to be present and allowed to be null.</b>
+    /// That is #93's per-member rule, and the direction it runs in here is
+    /// worth being explicit about. An absent expiry reads as null, which is an
+    /// account that does not expire, which is the more permissive of the two
+    /// states: a document whose expiry an editor dropped would quietly become
+    /// an account this plugin never disables. This build writes the member on
+    /// every claim, so a document in the current shape that leaves it out is
+    /// one this build did not write.
+    /// </para>
+    /// </remarks>
+    private sealed class StoredProducedAccount
+    {
+        /// <summary>Gets or sets the server's identifier for the account.</summary>
+        public Guid Account { get; set; }
+
+        /// <summary>Gets or sets when the account expires, or null where it does not.</summary>
+        [JsonRequired]
+        public DateTimeOffset? ExpiresAt { get; set; }
+
+        public static StoredProducedAccount From(ProducedAccount claim)
+        {
+            return new StoredProducedAccount
+            {
+                Account = claim.Account,
+                ExpiresAt = claim.ExpiresAt,
+            };
+        }
+
+        public ProducedAccount ToClaim()
+        {
+            return new ProducedAccount(Account, ExpiresAt);
         }
     }
 
@@ -1014,7 +1167,95 @@ public sealed class InvitationStore
                 RevokedBy,
                 TemplateLabel ?? string.Empty,
                 template: null,
-                AccountsProduced is null ? ImmutableArray<Guid>.Empty : ImmutableArray.CreateRange(AccountsProduced));
+                ClaimsWithNoExpiry(AccountsProduced));
+        }
+    }
+
+    /// <summary>
+    /// The document as version two wrote it.
+    /// </summary>
+    /// <remarks>
+    /// Kept as its own class for the reason
+    /// <see cref="StoredDocumentOfVersionOne"/> is: the current shape can
+    /// require members this one has never carried, and a member added to the
+    /// current shape later does not silently become readable out of a version
+    /// two file.
+    /// </remarks>
+    private sealed class StoredDocumentOfVersionTwo
+    {
+        /// <summary>Gets or sets the shape this document is in.</summary>
+        public int? Version { get; set; }
+
+        /// <summary>Gets or sets the invitations the file holds.</summary>
+        public List<StoredInvitationOfVersionTwo>? Invitations { get; set; }
+    }
+
+    /// <summary>
+    /// One invitation as version two wrote it: the copied grant, and the
+    /// accounts it produced as bare identifiers.
+    /// </summary>
+    /// <remarks>
+    /// The members are the ones that shape carried and no other. The grant and
+    /// the two revocation members are required here exactly as in the current
+    /// shape, because version two required them too, and a document dropping
+    /// one is refused rather than read forward with a default in its place.
+    /// </remarks>
+    private sealed class StoredInvitationOfVersionTwo
+    {
+        /// <summary>Gets or sets the identifier.</summary>
+        public Guid Id { get; set; }
+
+        /// <summary>Gets or sets the keyed hash, base64.</summary>
+        public string? CodeHash { get; set; }
+
+        /// <summary>Gets or sets the operator who minted it.</summary>
+        public Guid MintedBy { get; set; }
+
+        /// <summary>Gets or sets when it was minted.</summary>
+        public DateTimeOffset MintedAt { get; set; }
+
+        /// <summary>Gets or sets when it stops being usable.</summary>
+        public DateTimeOffset ExpiresAt { get; set; }
+
+        /// <summary>Gets or sets how many accounts it was good for.</summary>
+        public int UsesGranted { get; set; }
+
+        /// <summary>Gets or sets how many are left.</summary>
+        public int UsesRemaining { get; set; }
+
+        /// <summary>Gets or sets when it was revoked, or null.</summary>
+        [JsonRequired]
+        public DateTimeOffset? RevokedAt { get; set; }
+
+        /// <summary>Gets or sets the operator who revoked it, or null.</summary>
+        [JsonRequired]
+        public Guid? RevokedBy { get; set; }
+
+        /// <summary>Gets or sets the template the operator picked.</summary>
+        public string? TemplateLabel { get; set; }
+
+        /// <summary>Gets or sets the grant copied at minting, or null.</summary>
+        [JsonRequired]
+        public StoredTemplate? Template { get; set; }
+
+        /// <summary>Gets or sets the accounts it created.</summary>
+        public List<Guid>? AccountsProduced { get; set; }
+
+        public Invitation ToInvitationWithNoAccountExpiry()
+        {
+            return new Invitation(
+                Id,
+                ImmutableArray.Create(Convert.FromBase64String(CodeHash ?? string.Empty)),
+                MintedBy,
+                MintedAt,
+                ExpiresAt,
+                UsesGranted,
+                UsesRemaining,
+                RevokedAt,
+                RevokedBy,
+                TemplateLabel ?? string.Empty,
+                Template?.ToTemplate(),
+                ClaimsWithNoExpiry(AccountsProduced));
         }
     }
 }

@@ -192,7 +192,7 @@ public class TheAppliedGrantIsRenderedTests
                     revokedBy: null,
                     templateLabel: label,
                     template: grant,
-                    accountsProduced: ImmutableArray.Create(_account))));
+                    accountsProduced: ProducedAccounts.ThatDoNotExpire(_account))));
     }
 
     private static InvitesController ControllerOver(OwnedDirectory directory, IServerAccounts accounts)

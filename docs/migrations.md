@@ -37,8 +37,8 @@ here so nobody reads the store's refusal as covering both.
 Where an old shape carries no value for a new field, the migration writes the
 value that grants least, and never one it worked out.
 
-The store has one migration and it is exactly this case. Version one carried a
-template's name and no copy of what that template granted. Resolving the name
+The store has two migrations and each is exactly this case. Version one carried
+a template's name and no copy of what that template granted. Resolving the name
 against the configuration at read time would be the lookup #61 forbids, and any
 grant written in without a name to resolve would be a grant nobody decided. So
 the record comes forward with its grant absent, which is what an absent grant
@@ -47,9 +47,25 @@ nothing.
 
     git grep -n 'ToInvitationWithNoGrant' -- Jellyfin.Plugin.Invites/Storage/InvitationStore.cs
 
-**No migration widens a permission or a ceiling.** The one that exists cannot,
-because the strictest value for a grant is its absence and that is what it
-writes. A future migration that had to choose between two values would take the
+Version two claimed the accounts an invitation produced as bare identifiers, so
+there was nowhere on a record to keep an account's own expiry, which is what
+#468 gave it. An expiry worked out from the invitation is the derivation #68
+refuses - it would move when the invitation moved and would apply to every
+account one invitation made - and an expiry invented from anything else is a
+value nobody decided. So a claim comes forward with its expiry absent, which is
+what an absent expiry already means on that type: an account this plugin never
+disables until an operator says so.
+
+    git grep -n 'ClaimsWithNoExpiry' -- Jellyfin.Plugin.Invites/Storage/InvitationStore.cs
+
+Both are the same shape of answer, and the direction is worth stating once:
+neither migration can make the plugin do more than it did before the read. A
+record with no grant creates no account, and an account with no expiry is
+disabled by nothing here.
+
+**No migration widens a permission or a ceiling.** Neither of the two that exist
+can, because the strictest value for a grant is its absence and that is what one
+of them writes, and the other writes no grant at all. A future migration that had to choose between two values would take the
 one that grants less, and a migration that could not choose at all would refuse
 rather than pick.
 
@@ -107,13 +123,13 @@ zero:
 
 A rule about every shipped transition is met by a set with nothing in it, and
 that is worth saying out loud rather than leaving as a green mark: what holds the
-rules above is not that they have been exercised across a release, it is the one
-transition the tree already carries and the tests over it.
+rules above is not that they have been exercised across a release, it is the two
+transitions the tree already carries and the tests over them.
 
-That transition is store version one to store version two. It has a committed
-document of the old shape, read through the reader that has to go on reading it,
-and the fixtures are one per version the store has ever declared rather than one
-per shape the writer has produced:
+Those transitions are store version one to the current shape and store version
+two to it. Each has a committed document of the old shape, read through the
+reader that has to go on reading it, and the fixtures are one per version the
+store has ever declared rather than one per shape the writer has produced:
 
     git ls-files Jellyfin.Plugin.Invites.Tests/StoreShapes/
 

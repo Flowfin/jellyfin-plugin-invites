@@ -98,7 +98,7 @@ public class StoreFieldAbsenceTests
                 : null,
             templateLabel: "Household",
             template: TestTemplates.Household,
-            accountsProduced: ImmutableArray<Guid>.Empty);
+            accountsProduced: ImmutableArray<ProducedAccount>.Empty);
     }
 
     /// <summary>

@@ -54,21 +54,58 @@ public class StoreShapeTests
     private const string VersionOne = "version-1.json";
 
     /// <summary>
-    /// The committed document for the shape the store declares today, which
-    /// carries the grant #61 copies at minting.
+    /// The committed document for the second shape, which carries the grant
+    /// #61 copies at minting and claims its accounts as bare identifiers. This
+    /// build reads it and never writes it.
     /// </summary>
     private const string VersionTwo = "version-2.json";
+
+    /// <summary>
+    /// The committed document for the shape the store declares today, which
+    /// claims each account as an entry carrying its own expiry, under #468.
+    /// </summary>
+    private const string VersionThree = "version-3.json";
+
+    /// <summary>
+    /// The first account the live record claims.
+    /// </summary>
+    private static readonly Guid _firstAccount = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+
+    /// <summary>
+    /// The second account the live record claims.
+    /// </summary>
+    private static readonly Guid _secondAccount = Guid.Parse("99999999-8888-7777-6666-555555555555");
+
+    /// <summary>
+    /// The expiry the first account carries in the current shape, and the one
+    /// no older shape had anywhere to keep.
+    /// </summary>
+    /// <remarks>
+    /// It is after the record was minted, which the record type refuses the
+    /// other way round, and it is the only non-absent expiry in this
+    /// directory. Nothing in the plugin writes one yet, so a committed
+    /// document is the only place the member is exercised in the state that is
+    /// not its default, which is what makes it worth carrying here.
+    /// </remarks>
+    private static readonly DateTimeOffset _firstAccountExpires =
+        new(2027, 3, 4, 5, 6, 7, TimeSpan.FromHours(2));
 
     /// <summary>
     /// The first record in a committed document: never revoked, with uses
     /// left.
     /// </summary>
     /// <param name="template">
-    /// The grant it carries: the household grant in the current shape, and
+    /// The grant it carries: the household grant in the two later shapes, and
     /// nothing in the first shape, which had no member to carry one.
     /// </param>
+    /// <param name="firstAccountExpires">
+    /// When the first of the two accounts it claims expires, or <c>null</c>
+    /// where it does not. Every shape before the current one claimed an
+    /// account as a bare identifier, so a record read out of one carries the
+    /// absence here whatever the account's expiry ought to be.
+    /// </param>
     /// <returns>One invitation.</returns>
-    private static Invitation TheLiveRecord(AccountTemplate? template)
+    private static Invitation TheLiveRecord(AccountTemplate? template, DateTimeOffset? firstAccountExpires)
     {
         return new Invitation(
             id: Guid.Parse("0f1e2d3c-4b5a-4968-8776-65544332211a"),
@@ -83,8 +120,8 @@ public class StoreShapeTests
             templateLabel: "Household",
             template: template,
             accountsProduced: ImmutableArray.Create(
-                Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
-                Guid.Parse("99999999-8888-7777-6666-555555555555")));
+                new ProducedAccount(_firstAccount, firstAccountExpires),
+                ProducedAccount.ThatDoesNotExpire(_secondAccount)));
     }
 
     /// <summary>
@@ -114,7 +151,7 @@ public class StoreShapeTests
             revokedBy: Guid.Parse("44445555-6666-7777-8888-99990000aaaa"),
             templateLabel: "Friends",
             template: template,
-            accountsProduced: ImmutableArray.Create(
+            accountsProduced: ProducedAccounts.ThatDoNotExpire(
                 Guid.Parse("12345678-90ab-cdef-1234-567890abcdef")));
     }
 
@@ -168,17 +205,51 @@ public class StoreShapeTests
     }
 
     /// <summary>
-    /// The committed version two document reads, and every field of every
-    /// record in it, the grant included, comes back as it was written.
+    /// The committed version three document reads, and every field of every
+    /// record in it, the grant and each account's expiry included, comes back
+    /// as it was written.
     /// </summary>
     /// <remarks>
     /// The equality this leans on is the record type's own, which compares the
     /// keyed hash, the accounts and the grant by their contents rather than by
     /// the identity of the arrays behind them, so this is a field-by-field
-    /// assertion and not a reference one.
+    /// assertion and not a reference one. A claim is compared by both of its
+    /// members, so a reader that dropped every expiry disagrees here rather
+    /// than passing on the identifiers alone.
     /// </remarks>
     [Fact]
-    public void TheCommittedVersionTwoDocumentReadsFieldByField()
+    public void TheCommittedVersionThreeDocumentReadsFieldByField()
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, VersionThree);
+
+        var contents = store.Read();
+
+        Assert.Equal(
+            new[]
+            {
+                TheLiveRecord(TestTemplates.Household, _firstAccountExpires),
+                TheRevokedRecord(TestTemplates.Guest),
+            },
+            contents.Invitations);
+    }
+
+    /// <summary>
+    /// The committed version two document is migrated forward: every field it
+    /// carried comes back as it was written, and every account it claimed
+    /// comes back with no expiry, which that shape had nowhere to keep.
+    /// </summary>
+    /// <remarks>
+    /// The absence is asserted on its own beside the field comparison, because
+    /// the comparison would also pass for a migration that invented an expiry
+    /// equal to whatever this test happened to hand the builder. Nothing is
+    /// invented: an expiry worked out from the invitation is the derivation
+    /// #68 refuses and #468 exists against, and the absence is what
+    /// <see cref="ProducedAccount"/> declares means an account that does not
+    /// expire.
+    /// </remarks>
+    [Fact]
+    public void TheCommittedVersionTwoDocumentMigratesForwardWithNoAccountExpiry()
     {
         using var directory = new OwnedDirectory();
         var store = AStoreHolding(directory, VersionTwo);
@@ -186,8 +257,16 @@ public class StoreShapeTests
         var contents = store.Read();
 
         Assert.Equal(
-            new[] { TheLiveRecord(TestTemplates.Household), TheRevokedRecord(TestTemplates.Guest) },
+            new[]
+            {
+                TheLiveRecord(TestTemplates.Household, firstAccountExpires: null),
+                TheRevokedRecord(TestTemplates.Guest),
+            },
             contents.Invitations);
+        Assert.All(
+            contents.Invitations.SelectMany(record => record.AccountsProduced),
+            claim => Assert.Null(claim.ExpiresAt));
+        Assert.NotEmpty(contents.Invitations.SelectMany(record => record.AccountsProduced));
     }
 
     /// <summary>
@@ -220,9 +299,16 @@ public class StoreShapeTests
         var contents = store.Read();
 
         Assert.Equal(
-            new[] { TheLiveRecord(template: null), TheRevokedRecord(template: null) },
+            new[]
+            {
+                TheLiveRecord(template: null, firstAccountExpires: null),
+                TheRevokedRecord(template: null),
+            },
             contents.Invitations);
         Assert.All(contents.Invitations, record => Assert.Null(record.Template));
+        Assert.All(
+            contents.Invitations.SelectMany(record => record.AccountsProduced),
+            claim => Assert.Null(claim.ExpiresAt));
     }
 
     /// <summary>
@@ -238,6 +324,7 @@ public class StoreShapeTests
     [Theory]
     [InlineData(VersionOne)]
     [InlineData(VersionTwo)]
+    [InlineData(VersionThree)]
     public void ARevocationInTheCommittedDocumentSurvivesBeingRead(string shape)
     {
         using var directory = new OwnedDirectory();
@@ -251,7 +338,7 @@ public class StoreShapeTests
 
     /// <summary>
     /// What this build writes for the same records is the committed version
-    /// two document, byte for byte apart from line endings.
+    /// three document, byte for byte apart from line endings.
     /// </summary>
     /// <remarks>
     /// This is the direction that catches a rename. A member renamed in the
@@ -261,34 +348,41 @@ public class StoreShapeTests
     /// something to disagree with.
     /// </remarks>
     [Fact]
-    public void ThisBuildStillWritesTheCommittedVersionTwoShape()
+    public void ThisBuildStillWritesTheCommittedVersionThreeShape()
     {
         using var directory = new OwnedDirectory();
         var store = new InvitationStore(directory.Path);
 
-        store.Write(new[] { TheLiveRecord(TestTemplates.Household), TheRevokedRecord(TestTemplates.Guest) });
+        store.Write(new[]
+        {
+            TheLiveRecord(TestTemplates.Household, _firstAccountExpires),
+            TheRevokedRecord(TestTemplates.Guest),
+        });
 
         Assert.Equal(
-            WithOneKindOfLineEnding(TheCommitted(VersionTwo)),
+            WithOneKindOfLineEnding(TheCommitted(VersionThree)),
             WithOneKindOfLineEnding(File.ReadAllText(store.Path)));
     }
 
     /// <summary>
-    /// A version one document is never written back as version one. Reading
-    /// one and writing what was read produces the current shape, with the
-    /// grant member present and null on every migrated record.
+    /// An older document is never written back in the shape it was read from.
+    /// Reading one and writing what was read produces the current shape, with
+    /// every member the older shape lacked present and carrying its absence.
     /// </summary>
     /// <remarks>
     /// The migration runs forward and only forward, which is #92's rule. A
     /// store that wrote the older shape back would leave a file that the next
-    /// read migrates again, and a record that had gained a grant in the
-    /// meantime would lose it on the way.
+    /// read migrates again, and a record that had gained a grant or an account
+    /// expiry in the meantime would lose it on the way.
     /// </remarks>
-    [Fact]
-    public void AMigratedDocumentIsWrittenBackInTheCurrentShape()
+    /// <param name="shape">Which committed document was read.</param>
+    [Theory]
+    [InlineData(VersionOne)]
+    [InlineData(VersionTwo)]
+    public void AMigratedDocumentIsWrittenBackInTheCurrentShape(string shape)
     {
         using var directory = new OwnedDirectory();
-        var store = AStoreHolding(directory, VersionOne);
+        var store = AStoreHolding(directory, shape);
 
         store.Write(store.Read().Invitations);
 
@@ -298,7 +392,31 @@ public class StoreShapeTests
         foreach (var record in document["invitations"]!.AsArray())
         {
             Assert.True(record!.AsObject().ContainsKey("template"));
-            Assert.Null(record["template"]);
+
+            foreach (var claim in record["accountsProduced"]!.AsArray())
+            {
+                Assert.True(claim!.AsObject().ContainsKey("expiresAt"));
+                Assert.Null(claim["expiresAt"]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A version one document loses its grant as well, which the theory above
+    /// cannot assert for both shapes because version two carries one.
+    /// </summary>
+    [Fact]
+    public void AVersionOneDocumentIsWrittenBackWithItsGrantAbsent()
+    {
+        using var directory = new OwnedDirectory();
+        var store = AStoreHolding(directory, VersionOne);
+
+        store.Write(store.Read().Invitations);
+
+        var document = JsonNode.Parse(File.ReadAllText(store.Path));
+        foreach (var record in document!["invitations"]!.AsArray())
+        {
+            Assert.Null(record!["template"]);
         }
     }
 
