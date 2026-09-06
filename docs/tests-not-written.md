@@ -89,8 +89,12 @@ tests are where every branch of `docs/redemption-flow.md` is asserted. What they
 cannot see is whether the page renders, which is what the manual check is for
 and the only thing it is for.
 
-Status: neither part exists. #107 is open, and no manual check has been recorded
-because nothing has been released.
+Status: the suite half exists and the manual half does not. THIS LINE SAID
+NEITHER PART EXISTS AND THAT #107 IS OPEN. #107 is closed: every case its
+done-condition lists is driven at the route, the four refusals are compared byte
+for byte in one assertion rather than four, the five headers are asserted on
+every action the route declares, and a header weakened on purpose reddens two
+tests. No manual check has been recorded, because nothing has been released.
 
 ### A test that proves the plugin loads into a real Jellyfin server
 
@@ -434,8 +438,9 @@ more than one replacement and the rows are no longer all in one state, so a
 single count hides which half of a row is missing.
 
 Row by row, which is the same thing each status line above says at more length.
-The setup page has neither of its two, because #107 is open and no manual check
-has been recorded. The real-server row has its ABI floor build, its
+The setup page has its route-level replacement and not its manual check. THIS
+SENTENCE SAID IT HAS NEITHER, ON THE GROUND THAT #107 IS OPEN, and that issue is
+closed; the manual check is unrecorded because nothing has been released. The real-server row has its ABI floor build, its
 packaging job and the jobs that install the packaged artefact into a published
 server, and not its manual install. The sign-in row has both of its suite
 replacements and not its manual step, and it is the row whose two halves are
