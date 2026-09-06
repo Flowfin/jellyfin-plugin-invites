@@ -10,25 +10,29 @@ Where a step of the sequence has no screen behind it yet, the step says so and
 names what is missing, because a guide that walks you into a page that does not
 exist costs more than the paragraph it saved.
 
-## What is not walkable yet, said before you start rather than after
+## What the seven steps point at, said before you start rather than after
 
-One step of the seven has nothing to point at.
+THIS SECTION WAS HEADED "What is not walkable yet" AND OPENED "One step of the
+seven has nothing to point at." Neither line is true now, and the count under the
+heading disagreed with its own two paragraphs on the day it was last edited: both
+of them already said the step they were about had a screen. Every step below
+points at something that is in this tree, so the sequence is walked rather than
+walked around, and the two paragraphs are kept for what they say about those two
+screens rather than for an absence.
 
-THIS SECTION SAID TWO STEPS HAD NOTHING TO POINT AT, AND ONE OF THEM HAS A
-SCREEN NOW. Defining an account template is done under Settings on the plugin's
-own page since #435: each template is a block of fields with the rules it has
-to satisfy stated above it, a template is added, edited or removed there, and
-the list is saved with the Save button the address uses. Step 3 below walks it.
-What the mint form takes is the label of such an entry; a name that matches none
-is refused, and the grant behind a name that matches is copied onto the
-invitation at that moment, so editing the entry afterwards changes the next
-invitation and not the ones already sent.
+**Defining an account template.** It is done under Settings on the plugin's own
+page since #435: each template is a block of fields with the rules it has to
+satisfy stated above it, a template is added, edited or removed there, and the
+list is saved with the Save button the address uses. Step 3 below walks it. What
+the mint form takes is the label of such an entry; a name that matches none is
+refused, and the grant behind a name that matches is copied onto the invitation
+at that moment, so editing the entry afterwards changes the next invitation and
+not the ones already sent.
 
-**Watching an invitation get redeemed.** THIS PARAGRAPH SAID NOTHING POSTS BACK
-TO THE REDEMPTION ADDRESS AND THAT NO ACCOUNT IS CREATED BY THIS PLUGIN AT ALL.
-The address serves the setup page and takes the form back, and a code it honours
-creates the account the invitation was scoped for. Whatever you mint today can be
-spent by whoever holds the link.
+**Watching an invitation get redeemed.** The redemption address serves the setup
+page and takes the form back, and a code it honours creates the account the
+invitation was scoped for. Step 6 below is what you look at afterwards. Whatever
+you mint today can be spent by whoever holds the link.
 
 So this guide covers both halves: install, address, mint, send, look and revoke
 on your side, and the setup a person you invited completes on theirs. The second
