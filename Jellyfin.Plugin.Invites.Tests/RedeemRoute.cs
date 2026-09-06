@@ -58,6 +58,48 @@ internal static class RedeemRoute
         "0f1e2d3c4b5a69788796a5b4c3d2e1f00123456789abcdeffedcba9876543210";
 
     /// <summary>
+    /// The names seam every factory here hands in unless a caller asks for
+    /// another: a server holding no account under any name.
+    /// </summary>
+    /// <remarks>
+    /// A test about anything else must not be driving the collision refusal, and
+    /// a seam that answered yes by accident would leave every post below
+    /// answering a bad request. The one test class that is about a collision
+    /// hands in its own.
+    /// </remarks>
+    public static IServerAccountNames NothingIsTaken { get; } = new NoNameIsTaken();
+
+    /// <summary>
+    /// The controller over a names seam the caller holds, for the tests that are
+    /// about a name the server already has.
+    /// </summary>
+    /// <param name="store">Where the store sits.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="accounts">The write seam.</param>
+    /// <param name="names">The seam that says which names are taken.</param>
+    /// <param name="context">The request and response.</param>
+    /// <returns>The controller.</returns>
+    public static RedeemController Over(
+        string? store,
+        IClock clock,
+        IServerAccountWrites accounts,
+        IServerAccountNames names,
+        HttpContext context) =>
+        new(
+            new InvitationOperations(
+                new StubStoreDirectory(store),
+                clock,
+                new StubPublicAddress("https://media.example.org"),
+                TestTemplates.AsConfigured),
+            new AttemptLimiter(clock),
+            new CreationCeiling(clock),
+            accounts,
+            names)
+        {
+            ControllerContext = new ControllerContext { HttpContext = context },
+        };
+
+    /// <summary>
     /// A context carrying a source address, so an attempt from it can be
     /// counted.
     /// </summary>
@@ -148,7 +190,8 @@ internal static class RedeemRoute
                 TestTemplates.AsConfigured),
             new AttemptLimiter(clock),
             new CreationCeiling(clock),
-            accounts)
+            accounts,
+            NothingIsTaken)
         {
             ControllerContext = new ControllerContext { HttpContext = context },
         };
@@ -177,7 +220,40 @@ internal static class RedeemRoute
                 TestTemplates.AsConfigured),
             limiter,
             new CreationCeiling(clock),
-            accounts)
+            accounts,
+            NothingIsTaken)
+        {
+            ControllerContext = new ControllerContext { HttpContext = context },
+        };
+
+    /// <summary>
+    /// The controller with both a limiter and a names seam the caller holds, for
+    /// the test about which of the two is asked first.
+    /// </summary>
+    /// <param name="store">Where the store sits.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="limiter">The limiter, shared with whatever else the test does.</param>
+    /// <param name="accounts">The write seam.</param>
+    /// <param name="names">The seam that says which names are taken.</param>
+    /// <param name="context">The request and response.</param>
+    /// <returns>The controller.</returns>
+    public static RedeemController Over(
+        string? store,
+        IClock clock,
+        AttemptLimiter limiter,
+        IServerAccountWrites accounts,
+        IServerAccountNames names,
+        HttpContext context) =>
+        new(
+            new InvitationOperations(
+                new StubStoreDirectory(store),
+                clock,
+                new StubPublicAddress("https://media.example.org"),
+                TestTemplates.AsConfigured),
+            limiter,
+            new CreationCeiling(clock),
+            accounts,
+            names)
         {
             ControllerContext = new ControllerContext { HttpContext = context },
         };
@@ -206,7 +282,8 @@ internal static class RedeemRoute
                 TestTemplates.AsConfigured),
             new AttemptLimiter(clock),
             ceiling,
-            accounts)
+            accounts,
+            NothingIsTaken)
         {
             ControllerContext = new ControllerContext { HttpContext = context },
         };
@@ -290,4 +367,13 @@ internal static class RedeemRoute
     public static Minting Mint(string store, IClock clock, int uses) =>
         Operations(store, clock)
             .Mint(Guid.Parse("11111111-1111-4111-8111-111111111111"), "Household", null, uses);
+}
+
+/// <summary>
+/// A server that holds no account under any name.
+/// </summary>
+internal sealed class NoNameIsTaken : IServerAccountNames
+{
+    /// <inheritdoc />
+    public bool IsTaken(string? username) => false;
 }

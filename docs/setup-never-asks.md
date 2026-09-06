@@ -19,15 +19,17 @@ server's own expression, and every key in the body against the fields the form
 defines:
 
     git grep -n 'var answers = SetupAnswers.Accept(submission, Request);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:271:        var answers = SetupAnswers.Accept(submission, Request);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:287:        var answers = SetupAnswers.Accept(submission, Request);
 
 THIS PARAGRAPH SAID THE ANTI-FORGERY TOKEN IS STILL ABSENT. #78 landed it, and
 it is asked before any of the judgements above: a post carries the token the
 page was served with and the cookie written on the same response, or it is
-refused out of the request alone with no code read and no use taken. What is
-still open is two things #75 and #67 hold: the person is not told which rule
-they missed, and a name that collides with an existing account is not seen until
-the server refuses it, by which time the use is spent.
+refused out of the request alone with no code read and no use taken. THIS PARAGRAPH THEN SAID A NAME THAT COLLIDES IS NOT SEEN UNTIL THE SERVER
+REFUSES IT, BY WHICH TIME THE USE IS SPENT. #67 landed the seam that asks the
+server before the use is reserved, so a taken name now costs the invitation
+nothing. What is still open is the one thing #75 and #76 hold: the person is not
+told which rule they missed, because the response to every answer the post
+refuses is one bad request rather than the form again.
 
 The token is not one of the questions this page governs. It is a hidden control
 this plugin fills in for itself, it is derived from nothing anybody typed, and

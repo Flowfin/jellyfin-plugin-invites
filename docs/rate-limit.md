@@ -259,7 +259,7 @@ trail does not carry it. Seeing a value and holding it are different things, and
 only the first happens here.
 
     git grep -n 'memory for as long as its window' -- docs/personal-data.md
-    docs/personal-data.md:216:memory for as long as its window and no longer, and that the trail does not
+    docs/personal-data.md:248:memory for as long as its window and no longer, and that the trail does not
 
 The line moved from 149 to 174 when the paragraph above it was repaired, from
 174 to 175 when #61 added the template grant's row above it, from 175 to 186
@@ -325,7 +325,7 @@ presented code being judged, the post on the redemption route judges one on ever
 submission, and it asks here first:
 
     git grep -n 'if (!_limiter.MayJudge(from)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:292:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:308:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
 
 So this page no longer describes a component that is built and unreached. Three
 things about the call are worth having here rather than in the route, because

@@ -87,11 +87,13 @@ public static class SetupAnswers
     /// <para>
     /// The username is judged for the shape the server would accept, by
     /// <see cref="UsernameRules"/>, which is a copy of the server's own
-    /// expression rather than a rule invented here. What is NOT judged is
-    /// whether the name collides with one the server already holds: answering
-    /// that needs a reading of the server's usernames that this plugin has no
-    /// seam for, so a colliding name still costs the use before the server
-    /// refuses it. That half is #67's and is unmet.
+    /// expression rather than a rule invented here. WHAT IS NOT JUDGED HERE IS
+    /// WHETHER THE NAME COLLIDES, AND THIS PARAGRAPH SAID THAT HALF WAS UNMET.
+    /// It is met one step further on, in the post, because the question needs a
+    /// seam over the server's accounts and this routine is handed the request
+    /// and nothing else. <see cref="Accounts.IServerAccountNames"/> answers it,
+    /// and the post asks it before the use is reserved, so a colliding name no
+    /// longer costs the use.
     /// </para>
     /// <para>
     /// The two copies of the password are compared ordinally. A comparison that

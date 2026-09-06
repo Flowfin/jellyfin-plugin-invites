@@ -20,15 +20,15 @@ THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
 TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:172:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:269:    [HttpPost("{code}")]
 
 The post asks the limiter, asks the decision and calls the creation routine, and
 it reaches the password rules too, through the judgement it makes about the
 answers before it looks at any code:
 
     git grep -n 'PasswordRules.WhyRefused(submission.Password)' -- Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs
-    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:117:        if (PasswordRules.WhyRefused(submission.Password) is not null)
+    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:119:        if (PasswordRules.WhyRefused(submission.Password) is not null)
 
 THIS PARAGRAPH SAID THE FOURTH IS REACHED BY NOTHING. All four have a caller.
 
@@ -41,10 +41,11 @@ NOTHING. #79 landed it: a finished redemption is sent to a page this plugin
 serves, which reads no invitation and can therefore be refreshed. The anti-forgery
 token in `Form` and `Posted` was named here as one of them and is not one any
 more; #78 landed it, and `AntiForgeryTests` drives both states. The `Validated` state is reached: the post
-judges the answers it was sent before it judges the code, and the one answer it
-cannot fully judge is the username, whose shape it refuses against the server's
-own expression and whose collision with an existing account it cannot see. That
-half is #67's, and branch 3 of the table below is the branch it leaves standing.
+judges the answers it was sent before it judges the code. THIS SENTENCE SAID THE
+USERNAME IS THE ONE ANSWER THE POST CANNOT FULLY JUDGE, BECAUSE IT COULD NOT SEE
+A COLLISION. #67 landed the seam that asks the server, so both halves of the
+name are judged before the use is reserved. What branch 3 of the table below is
+still waiting for is the response rather than the refusal.
 
 It is written now for one reason. The interesting parts of this flow are not the
 happy path, they are the eight ways it goes sideways, and a controller written
@@ -137,7 +138,7 @@ exist before.
 | --- | --- | --- | --- | --- | --- |
 | 1 | Code absent, expired, spent or revoked at the first check | `Start` | The single indistinguishable refusal, byte for byte the same in all four cases | Nothing | #28, #55 |
 | 2 | Live at the first check, gone by the post | `Locked` | The same single refusal as branch 1, and for the same reason: the person who reached this point cannot be told apart from an attacker who timed it | Nothing. The lock is released and no write has happened | #28, #40, #56 |
-| 3 | Username already taken | `Posted` | The form again, with the username field marked and the answers the person already typed still in it | Nothing | #67, #62 |
+| 3 | Username already taken | `Posted` | The bad request a post this route read nothing usable out of already gets. THIS CELL PROMISED THE FORM AGAIN WITH THE USERNAME FIELD MARKED AND THE ANSWERS STILL IN IT, AND THAT PAGE IS NOT SERVED: it is the same one branch 4 waits for and it is #76's. What #67 landed is the refusal, ahead of the reservation | Nothing | #67, #62, #76 |
 | 4 | Password refused by the rules | `Posted` | The form again, naming which rule was missed and never echoing the password | Nothing. The rules were checked before anything was created, which is what makes this branch cheap | #76 |
 | 5 | Account created, setting the credential failed | `Created` | The single refusal, plus the operator-facing reason recorded against the invitation's non-secret identifier | Nothing, after the unwind below | #66, #32 |
 | 6 | Applying the template failed | `Credentialed` | As branch 5 | Nothing, after the unwind below | #64, #69 |
@@ -225,7 +226,7 @@ count, all inside one monitor, and only then does the route call the creation
 routine:
 
     git grep -n 'var reservation = _operations.Reserve(code);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:307:        var reservation = _operations.Reserve(code);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:337:        var reservation = _operations.Reserve(code);
 
 That is the first of the two answers #53 offers, writing the intent before the
 account exists, and it is chosen for the reason that issue gives: prefer the

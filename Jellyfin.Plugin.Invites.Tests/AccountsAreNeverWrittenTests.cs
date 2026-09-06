@@ -51,13 +51,17 @@ public class AccountsAreNeverWrittenTests
 {
     /// <summary>
     /// The types that may be handed the server's user manager, with what each
-    /// one is for. A third entry is a third place a write could be made from,
-    /// and it arrives without touching either interface below.
+    /// one is for. A FOURTH entry is a fourth place a write could be made from,
+    /// and it arrives without touching any interface below. THIS SENTENCE SAID
+    /// A THIRD ENTRY AND THERE ARE THREE: #67 added a seam that asks whether one
+    /// name is taken, and it is read-only for the same reason the first is.
     /// </summary>
     private static readonly Dictionary<string, string> Seams = new(StringComparer.Ordinal)
     {
         [typeof(ServerAccounts).FullName!] =
             "reads the account identifiers and nothing else",
+        [typeof(ServerAccountNames).FullName!] =
+            "asks whether one name is already taken, and is the seam #67 asked for",
         [typeof(ServerAccountWrites).FullName!] =
             "makes the three writes a redemption needs, and is the seam #398 asked for",
     };
@@ -165,9 +169,12 @@ public class AccountsAreNeverWrittenTests
     }
 
     /// <summary>
-    /// Two types in the plugin can be handed the server's user manager, and they
-    /// are the two declared seams. A third is a third place a write could be
-    /// made from, and it arrives without touching either interface.
+    /// The types in the plugin that can be handed the server's user manager are
+    /// the declared seams and nothing else. One more is one more place a write
+    /// could be made from, and it arrives without touching any of the
+    /// interfaces. THIS SENTENCE COUNTED TWO AND THE POPULATION IS READ OFF THE
+    /// DICTIONARY RATHER THAN COUNTED HERE NOW, so it does not go stale the next
+    /// time a seam is argued for.
     /// </summary>
     [Fact]
     public void OnlyTheDeclaredSeamsCanBeHandedTheServersUserManager()
@@ -231,6 +238,84 @@ public class AccountsAreNeverWrittenTests
     }
 
     /// <summary>
+    /// The names seam reaches one member of the server's user manager, and it is
+    /// a question rather than a command.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The same reading as the write seam's leg above and the same bound: it
+    /// judges the member spelled out in the source, and a name assembled at run
+    /// time walks past it. What it buys is that the seam #67 added cannot grow a
+    /// second reach without somebody saying so here, which matters more on this
+    /// one than on the read seam over identifiers, because this one is the only
+    /// place in the plugin that takes an argument from an unauthenticated
+    /// stranger and hands it to the server's user table.
+    /// </para>
+    /// <para>
+    /// <b>It reads the code and not the comments, which the leg above does
+    /// not.</b> That seam's argument does not have to name a member it may not
+    /// reach; this one's does, because the reason to trust a collision answer is
+    /// that it asks the same question <c>CreateUserAsync</c> asks. A leg reading
+    /// the whole file would refuse that evidence, which is the shape of a
+    /// checker refusing its own documentation. The bound it adds is that a reach
+    /// hidden in a comment is not seen, and a comment does not call anything.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheNamesSeamReachesOnlyTheOneQuestionItAsks()
+    {
+        var source = WithoutComments(NamesSeamSource());
+
+        var named = typeof(IUserManager)
+            .GetMembers(BindingFlags.Public | BindingFlags.Instance)
+            .Where(member => !(member is MethodInfo method && method.IsSpecialName))
+            .Select(member => member.Name)
+            .Distinct(StringComparer.Ordinal)
+            .Where(name => Regex.IsMatch(source, @"\b" + Regex.Escape(name) + @"\b"))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(new[] { ServerAccountNames.TheMember }, named);
+
+        var reached = typeof(IUserManager)
+            .GetMethods()
+            .Where(method => string.Equals(method.Name, ServerAccountNames.TheMember, StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.NotEmpty(reached);
+        Assert.All(reached, method => Assert.True(
+            method.ReturnType != typeof(void),
+            ServerAccountNames.TheMember + " hands nothing back, which is the shape of a command rather than a question."));
+    }
+
+    /// <summary>
+    /// The names seam declares one member and it answers with a yes or a no.
+    /// </summary>
+    /// <remarks>
+    /// A member handing back an account, a name or a list of either would be
+    /// this plugin reading the server's user table rather than comparing one
+    /// value against it, and docs/personal-data.md's row for this seam rests on
+    /// the answer being a boolean.
+    /// </remarks>
+    [Fact]
+    public void TheNamesSeamAnswersWithNothingButAYesOrANo()
+    {
+        var declared = typeof(IServerAccountNames)
+            .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .OfType<MethodInfo>()
+            .Where(method => !method.IsSpecialName)
+            .ToArray();
+
+        var only = Assert.Single(declared);
+        Assert.Equal(typeof(bool), only.ReturnType);
+        Assert.Equal(typeof(string), Assert.Single(only.GetParameters()).ParameterType);
+
+        Assert.Empty(typeof(IServerAccountNames)
+            .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .OfType<PropertyInfo>());
+    }
+
+    /// <summary>
     /// Every parameter type of every constructor and method a type declares.
     /// </summary>
     /// <param name="type">The type to read.</param>
@@ -247,7 +332,29 @@ public class AccountsAreNeverWrittenTests
     }
 
     /// <summary>
+    /// One seam's source with its comment lines removed.
+    /// </summary>
+    /// <param name="source">The file's text.</param>
+    /// <returns>The lines that are not comments, joined again.</returns>
+    private static string WithoutComments(string source) =>
+        string.Join(
+            Environment.NewLine,
+            source.Split('\n').Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+
+    /// <summary>
+    /// Reads the names seam's own source out of the working tree.
+    /// </summary>
+    /// <returns>The text of the file.</returns>
+    private static string NamesSeamSource() => SeamSource("ServerAccountNames.cs");
+
+    /// <summary>
     /// Reads the write seam's own source out of the working tree.
+    /// </summary>
+    /// <returns>The text of the file.</returns>
+    private static string WriteSeamSource() => SeamSource("ServerAccountWrites.cs");
+
+    /// <summary>
+    /// Reads one seam's source out of the working tree.
     /// </summary>
     /// <remarks>
     /// The file is found by walking up from the test binary until a directory
@@ -257,13 +364,14 @@ public class AccountsAreNeverWrittenTests
     /// nothing outside the repository is read, so this stays inside the headless
     /// rule.
     /// </remarks>
+    /// <param name="file">The file name under the accounts directory.</param>
     /// <returns>The text of the file.</returns>
-    private static string WriteSeamSource()
+    private static string SeamSource(string file)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var seam = Path.Combine(directory.FullName, "Jellyfin.Plugin.Invites", "Accounts", "ServerAccountWrites.cs");
+            var seam = Path.Combine(directory.FullName, "Jellyfin.Plugin.Invites", "Accounts", file);
             var solution = Path.Combine(directory.FullName, "Jellyfin.Plugin.Invites.sln");
             if (File.Exists(seam) && File.Exists(solution))
             {
@@ -276,6 +384,8 @@ public class AccountsAreNeverWrittenTests
         throw new FileNotFoundException(
             "No ancestor of "
             + AppContext.BaseDirectory
-            + " holds both Jellyfin.Plugin.Invites.sln and the write seam's source, so this comparison read nothing. Failing rather than passing over an empty file.");
+            + " holds both Jellyfin.Plugin.Invites.sln and "
+            + file
+            + ", so this comparison read nothing. Failing rather than passing over an empty file.");
     }
 }

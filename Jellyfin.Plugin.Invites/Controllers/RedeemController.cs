@@ -61,8 +61,14 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// which is served, rather than about the invitation, which is what was refused.
 /// </para>
 /// <para>
-/// <b>What the post does not do yet.</b> It cannot tell a name already taken from one
-/// the server refuses, which is #67's.
+/// <b>The two ways a name is refused are both answered before anything is
+/// spent.</b> THIS PARAGRAPH SAID THE POST COULD NOT TELL A NAME ALREADY TAKEN
+/// FROM ONE THE SERVER REFUSES. The shape is judged out of the request alone,
+/// before any code is read; the collision is judged against
+/// <see cref="IServerAccountNames"/> after the limiter and before the use is
+/// reserved. Both answer the same bad request, so somebody one field from an
+/// account is told to try again rather than told the link is dead, and neither
+/// says anything about the code.
 /// </para>
 /// <para>
 /// <b>The completion address is served here, by an action that reads nothing.</b>
@@ -114,6 +120,7 @@ public sealed class RedeemController : ControllerBase
     private readonly AttemptLimiter _limiter;
     private readonly CreationCeiling _ceiling;
     private readonly IServerAccountWrites _accounts;
+    private readonly IServerAccountNames _names;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RedeemController"/> class.
@@ -130,22 +137,30 @@ public sealed class RedeemController : ControllerBase
     /// one: a ceiling handed out per request counts to one and bounds nothing.
     /// </param>
     /// <param name="accounts">The write seam over the server's user table.</param>
+    /// <param name="names">
+    /// The read seam that answers whether a name is already taken. It is asked
+    /// before the use is reserved, so a name the server would refuse costs the
+    /// invitation nothing.
+    /// </param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public RedeemController(
         InvitationOperations operations,
         AttemptLimiter limiter,
         CreationCeiling ceiling,
-        IServerAccountWrites accounts)
+        IServerAccountWrites accounts,
+        IServerAccountNames names)
     {
         ArgumentNullException.ThrowIfNull(operations);
         ArgumentNullException.ThrowIfNull(limiter);
         ArgumentNullException.ThrowIfNull(ceiling);
         ArgumentNullException.ThrowIfNull(accounts);
+        ArgumentNullException.ThrowIfNull(names);
 
         _operations = operations;
         _limiter = limiter;
         _ceiling = ceiling;
         _accounts = accounts;
+        _names = names;
     }
 
     /// <summary>
@@ -244,9 +259,10 @@ public sealed class RedeemController : ControllerBase
     /// use stays taken.</b> That is the fail-closed direction and it is stated
     /// rather than hidden: an invitation that produced nothing costs a fresh
     /// mint, and one that produced an account while still reading as unused is a
-    /// single-use link that works again. Telling a taken username from a server
-    /// that refused the write is #67's and is not done here, so both arrive as
-    /// the same refusal.
+    /// single-use link that works again. A NAME ALREADY TAKEN NO LONGER REACHES
+    /// THIS WINDOW: it is refused before the use is reserved, so what is left
+    /// here is a server refusing a write for a reason this plugin cannot see,
+    /// and that arrives as the refusal.
     /// </para>
     /// </remarks>
     [AllowAnonymous]
@@ -292,6 +308,20 @@ public sealed class RedeemController : ControllerBase
         if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
         {
             return Refusal();
+        }
+
+        if (_names.IsTaken(answers.Username))
+        {
+            // After the limiter, so an unauthenticated caller cannot ask the
+            // server's user table an unbounded number of questions, and before
+            // the ceiling and the reservation, so a name that is taken leaves
+            // the invitation exactly as it found it. The answer is the bad
+            // request a post this route read nothing usable out of already gets:
+            // by this point the code has been accepted, so the answer says
+            // nothing about it, and what it does disclose is that the name
+            // exists on this server, which docs/threat-model.md carries under
+            // what is not defended.
+            return Malformed();
         }
 
         // Asked before the use is taken, so a redemption this refuses leaves the

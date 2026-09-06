@@ -16,7 +16,9 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// what arrived and makes no judgement about it; whether the answers are
 /// acceptable is decided by <see cref="SetupAnswers"/>, which is what the post
 /// asks before it looks at any code. A username the server's own expression
-/// would reject is among those rules; one that COLLIDES is not, and is #67's.
+/// would reject is among those rules; one that COLLIDES is not, because that
+/// question needs a seam over the server's accounts rather than the request. The
+/// post asks it separately, before any use is reserved.
 /// </para>
 /// <para>
 /// <b>The anti-forgery token is here and something validates it.</b> The

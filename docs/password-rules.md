@@ -90,7 +90,7 @@ copy of the rules:
 
 ```
 $ git grep -n 'PasswordRules.WhyRefused(submission.Password)' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:117:        if (PasswordRules.WhyRefused(submission.Password) is not null)
+Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:119:        if (PasswordRules.WhyRefused(submission.Password) is not null)
 ```
 
 So the rules above are what a submission is judged by, and the sentence at the
