@@ -19,7 +19,7 @@ server's own expression, and every key in the body against the fields the form
 defines:
 
     git grep -n 'var answers = SetupAnswers.Accept(submission, Request);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:228:        var answers = SetupAnswers.Accept(submission, Request);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:271:        var answers = SetupAnswers.Accept(submission, Request);
 
 THIS PARAGRAPH SAID THE ANTI-FORGERY TOKEN IS STILL ABSENT. #78 landed it, and
 it is asked before any of the judgements above: a post carries the token the

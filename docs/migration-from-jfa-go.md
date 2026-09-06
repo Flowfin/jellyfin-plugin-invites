@@ -15,13 +15,14 @@ and it creates the account the invitation grants.
     git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
     80
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 What is still missing around it is worth having in front of a reader comparing
 this plugin with the one they are leaving: the form is not validated on the
-server, which is #75 and #76, and the page a finished redemption is sent to is
-served by nothing, which is #79. No server has run any of it.
+server, which is #75 and #76. THIS SENTENCE ALSO SAID THE PAGE A FINISHED
+REDEMPTION IS SENT TO IS SERVED BY NOTHING; #79 landed it and it is served. No
+server has run any of it.
 
 THIS PARAGRAPH SAID THE FORM CARRIES NO ANTI-FORGERY TOKEN, AND THE COUNT ABOVE
 WAS ALREADY FOUR OUT BEFORE THIS EDIT. #78 landed the token, so that clause is

@@ -102,15 +102,16 @@ THIS PARAGRAPH SAID TWO OF THOSE THREE STEPS CANNOT BE RUN, BECAUSE THE ROUTE
 HAD NO POST BEHIND IT. It has one:
 
     $ git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 So a link can be turned into an account on a running server, and these steps are
-runnable rather than waiting. What is still not runnable is what comes after a
-finished redemption: the completion address the post sends the person to is
-served by nothing until #79 lands, so a run of these steps ends at the server's
-own not-found page with the account already created, and a `Notes` cell that
-records the run says so.
+runnable rather than waiting. THIS PARAGRAPH SAID WHAT COMES AFTER A FINISHED
+REDEMPTION IS NOT RUNNABLE, BECAUSE THE COMPLETION ADDRESS WAS SERVED BY
+NOTHING. #79 landed it, so a run of these steps ends at a page this plugin
+serves rather than at the server's own not-found page, and what a `Notes` cell
+has to record about that step is what the person was shown rather than that
+there was nothing to show.
 
 Nothing here has been run. This is the form rather than the run, and a row for a
 step that cannot be run says so in `Notes` and stays in the table. Taking it out

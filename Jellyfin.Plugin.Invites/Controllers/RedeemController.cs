@@ -62,10 +62,17 @@ namespace Jellyfin.Plugin.Invites.Controllers;
 /// </para>
 /// <para>
 /// <b>What the post does not do yet.</b> It cannot tell a name already taken from one
-/// the server refuses, which is #67's. The
-/// completion address a finished redemption is sent to is fixed by docs/api.md
-/// and is served by nothing until #79 lands, so a person who finishes today has
-/// an account and meets the server's own not-found page.
+/// the server refuses, which is #67's.
+/// </para>
+/// <para>
+/// <b>The completion address is served here, by an action that reads nothing.</b>
+/// THIS PARAGRAPH SAID NOTHING SERVED IT AND THAT A PERSON WHO FINISHED MET THE
+/// SERVER'S OWN NOT-FOUND PAGE. <see cref="Done"/> answers it now. It takes no
+/// parameter, asks no store and touches neither the limiter nor the ceiling, so
+/// a refresh of it and a back button onto it both re-render a page instead of
+/// meeting the record the redemption just spent. The literal segment cannot
+/// shadow a code: a code is
+/// <see cref="Codes.InvitationCode.Length"/> characters and this one is four.
 /// </para>
 /// <para>
 /// <b>The headers.</b> Every response this route sends carries the same five,
@@ -97,7 +104,9 @@ public sealed class RedeemController : ControllerBase
 
     /// <summary>
     /// Where a finished redemption is sent. docs/api.md fixes the address and
-    /// #79 owns what answers there.
+    /// <see cref="Done"/> is what answers there, so the constant and the route
+    /// template are the same two segments written once each rather than a
+    /// redirect pointing at an address nothing serves.
     /// </summary>
     private const string Completion = "/" + InvitationLink.Segment + "/done";
 
@@ -163,6 +172,40 @@ public sealed class RedeemController : ControllerBase
             FormToken.OptionsFor(Request.IsHttps));
 
         return Content(SetupPage.For(minted), SetupPage.ContentType);
+    }
+
+    /// <summary>
+    /// Serves the completion page a finished redemption is sent to.
+    /// </summary>
+    /// <response code="200">The page. It is the same bytes for every caller.</response>
+    /// <returns>The page, as HTML.</returns>
+    /// <remarks>
+    /// <para>
+    /// It reads nothing. No route parameter, no query, no store, no limiter and
+    /// no ceiling, which is what docs/api.md fixes about this address and what
+    /// makes the answer to a refresh a page rather than a decision. A completion
+    /// that re-read the invitation would meet the spent record its own
+    /// redemption produced and refuse, turning a correct redemption into an
+    /// error at the last step.
+    /// </para>
+    /// <para>
+    /// It is anonymous for the reason the other two actions here are: the person
+    /// has just been given an account and has not signed into it, so requiring
+    /// authentication would refuse exactly the caller the page exists for.
+    /// </para>
+    /// <para>
+    /// It mints no anti-forgery token, because there is no form on the page and
+    /// a token minted for nothing to post is a cookie set for no reason.
+    /// </para>
+    /// </remarks>
+    [AllowAnonymous]
+    [HttpGet("done")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ContentResult Done()
+    {
+        Secure(CompletionPage.ContentSecurityPolicy);
+
+        return Content(CompletionPage.Html, CompletionPage.ContentType);
     }
 
     /// <summary>

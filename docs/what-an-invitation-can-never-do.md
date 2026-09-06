@@ -66,7 +66,7 @@ THIS PARAGRAPH SAID THE CALLER IS STILL MISSING AND THAT NOTHING IN THE PLUGIN
 REACHES THAT ROUTINE OUTSIDE THE SUITE. The post reaches it:
 
     git grep -n 'account = await AccountCreation.CreateAsync' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:275:            account = await AccountCreation.CreateAsync(
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:318:            account = await AccountCreation.CreateAsync(
 
 So the path is walked from a request now, and this line is put to the case it was
 written for. What still holds it undefended is the half below rather than the
@@ -427,8 +427,8 @@ form reddens all three.
 THIS PASSAGE SAID THE POST THAT RECEIVES THEM IS ABSENT, AND IT IS NOT:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 So this half of the line can be broken now, and it is held rather than left to
 the weakest of reasons. What the passage named as the gap was that the field list

@@ -20,8 +20,8 @@ THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
 TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 The post asks the limiter, asks the decision and calls the creation routine, and
 it reaches the password rules too, through the judgement it makes about the
@@ -35,9 +35,10 @@ THIS PARAGRAPH SAID THE FOURTH IS REACHED BY NOTHING. All four have a caller.
 So this document is no longer a page of promises, and the states below are worth
 reading with that in mind. What a reader should not take from the landing is that
 the flow is walked end to end. Which transitions act and which are still promises
-is written at the branch table rather than counted here, and three of the states
-below name work no route does: `Done` is #79 and is served by nothing, so a
-finished redemption ends at the server's own not-found page. The anti-forgery
+is written at the branch table rather than counted here. THIS SENTENCE SAID
+THREE OF THE STATES BELOW NAME WORK NO ROUTE DOES AND THAT `Done` IS SERVED BY
+NOTHING. #79 landed it: a finished redemption is sent to a page this plugin
+serves, which reads no invitation and can therefore be refreshed. The anti-forgery
 token in `Form` and `Posted` was named here as one of them and is not one any
 more; #78 landed it, and `AntiForgeryTests` drives both states. The `Validated` state is reached: the post
 judges the answers it was sent before it judges the code, and the one answer it
@@ -224,7 +225,7 @@ count, all inside one monitor, and only then does the route call the creation
 routine:
 
     git grep -n 'var reservation = _operations.Reserve(code);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:264:        var reservation = _operations.Reserve(code);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:307:        var reservation = _operations.Reserve(code);
 
 That is the first of the two answers #53 offers, writing the intent before the
 account exists, and it is chosen for the reason that issue gives: prefer the

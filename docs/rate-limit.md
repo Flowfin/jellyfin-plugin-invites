@@ -325,7 +325,7 @@ presented code being judged, the post on the redemption route judges one on ever
 submission, and it asks here first:
 
     git grep -n 'if (!_limiter.MayJudge(from)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:249:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:292:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
 
 So this page no longer describes a component that is built and unreached. Three
 things about the call are worth having here rather than in the route, because

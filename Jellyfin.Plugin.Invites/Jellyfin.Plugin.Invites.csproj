@@ -39,6 +39,8 @@
     <EmbeddedResource Include="Setup\setupPage.html" />
     <None Remove="Setup\refusalPage.html" />
     <EmbeddedResource Include="Setup\refusalPage.html" />
+    <None Remove="Setup\completionPage.html" />
+    <EmbeddedResource Include="Setup\completionPage.html" />
   </ItemGroup>
 
   <!--

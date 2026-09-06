@@ -152,10 +152,11 @@ landed, so the form can now be submitted and a screenshot of it would show a
 working page rather than a dead one.
 
 THIS PARAGRAPH SAID A SCREENSHOT OF THE SETUP PAGE WOULD SHOW A FORM THAT CANNOT
-BE SUBMITTED. What a run of it stops at now is one step further on: the page a
-finished redemption is sent to is served by nothing until #79 lands, so somebody
-photographing the whole flow gets the form, the account, and then the server's
-own not-found page.
+BE SUBMITTED, AND THEN THAT A RUN STOPPED AT THE SERVER'S OWN NOT-FOUND PAGE
+BECAUSE THE COMPLETION ADDRESS WAS SERVED BY NOTHING. #79 landed it, so somebody
+photographing the whole flow gets the form, the account, and a completion page
+telling them where to sign in. Nobody has photographed it: no server has run any
+of this.
 
 ## Security
 
