@@ -19,7 +19,7 @@ what [docs/api.md](api.md) says at that route: the setup page is served there fo
 every code, because that route reads no invitation.
 
     git grep -n 'var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:365:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:395:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
 
 This document is still what the rest is built against, and it is a decision
 rather than a description of behaviour: the wording, the case list and the
@@ -183,8 +183,15 @@ about which accounts exist:
     git grep -n 'public static string? WhyRefused' -- Jellyfin.Plugin.Invites/Setup/UsernameRules.cs
     Jellyfin.Plugin.Invites/Setup/UsernameRules.cs:122:    public static string? WhyRefused(string? username)
 
-What is unbuilt is the collision, and it is the half that carries the
-disclosure.
+THIS SENTENCE SAID THE COLLISION IS UNBUILT. It is built, under #67, and it is
+still the half that carries the disclosure. It is asked of the server rather
+than reimplemented, after the limiter so the user table cannot be questioned
+without an attempt being counted, and before the use is reserved so a name that
+is taken costs the invitation nothing. The answer is the same bad request a
+refused shape gets, which is inside this section's rule rather than an exception
+to it: the case is not folded into the single indistinguishable refusal, and by
+the time a name is judged the code has already been accepted, so the answer says
+nothing about the code.
 
 ## What "identical" covers
 
@@ -199,11 +206,11 @@ description of one:
   are read off the route rather than listed from memory:
 
       git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:397:        headers.ContentSecurityPolicy = policy;
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:398:        headers.XFrameOptions = "DENY";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:399:        headers.XContentTypeOptions = "nosniff";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:400:        headers.CacheControl = "no-store";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:401:        headers[ReferrerPolicy] = "no-referrer";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:427:        headers.ContentSecurityPolicy = policy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:428:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:429:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:430:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:431:        headers[ReferrerPolicy] = "no-referrer";
 
   EVERY LINE NUMBER IN THAT PASTE MOVED BY THREE WHEN THE ROUTE TOOK THE
   CEILING ON HOW MANY ACCOUNTS MAY BE CREATED IN A WINDOW, and none of the five
@@ -320,7 +327,7 @@ It belonged to the route that first serves a refusal, that route is the post, an
 the post picked `403 Forbidden`:
 
     git grep -n 'refusal.StatusCode = StatusCodes.Status403Forbidden;' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:366:        refusal.StatusCode = StatusCodes.Status403Forbidden;
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:396:        refusal.StatusCode = StatusCodes.Status403Forbidden;
 
 Why that one, in the terms this page argues everything else in. It is true of
 every case in the table without narrowing any of them: the server understood the

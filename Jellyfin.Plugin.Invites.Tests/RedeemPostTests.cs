@@ -597,8 +597,10 @@ public class RedeemPostTests
     /// This is the fail-closed direction stated as an assertion rather than as a
     /// sentence in a comment. The other direction, giving the use back, is a
     /// route that hands an attacker a way to make a write fail and keep trying.
-    /// Telling a taken username from a server that refused for another reason is
-    /// #67's and is not done here, which is why both arrive as this response.
+    /// A NAME ALREADY TAKEN IS NO LONGER ONE OF THE WRITES THAT CAN FAIL HERE:
+    /// #67 landed the collision refusal ahead of the reservation, so what
+    /// reaches this window is a server refusing for a reason this plugin cannot
+    /// see, and <c>ACollidingUsernameTests</c> is where the other case lives.
     /// </remarks>
     /// <returns>Nothing a caller reads.</returns>
     [Fact]

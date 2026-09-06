@@ -66,7 +66,7 @@ THIS PARAGRAPH SAID THE CALLER IS STILL MISSING AND THAT NOTHING IN THE PLUGIN
 REACHES THAT ROUTINE OUTSIDE THE SUITE. The post reaches it:
 
     git grep -n 'account = await AccountCreation.CreateAsync' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:318:            account = await AccountCreation.CreateAsync(
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:348:            account = await AccountCreation.CreateAsync(
 
 So the path is walked from a request now, and this line is put to the case it was
 written for. What still holds it undefended is the half below rather than the
@@ -140,34 +140,46 @@ no shape in which the routine reaches an account that was already there.
 
 This paragraph said the plugin named the server's user operations nowhere, and
 that stopped being true. The command it offered as evidence returned two lines
-when it was written, returned five after #91, and returns nine:
+when it was written, returned five after #91, returned nine after #398, and
+returns fourteen:
 
     git grep -n 'IUserManager' -- '*.cs' ':!.github'
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:141:            foreach (var property in typeof(IUserManager).GetProperties().Where(candidate => candidate.Name == name))
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:148:            foreach (var method in typeof(IUserManager).GetMethods().Where(candidate => candidate.Name == name && !candidate.IsSpecialName))
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:177:            .Where(type => Members(type).Any(parameter => typeof(IUserManager).IsAssignableFrom(parameter)))
-    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:221:        var named = typeof(IUserManager)
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:145:            foreach (var property in typeof(IUserManager).GetProperties().Where(candidate => candidate.Name == name))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:152:            foreach (var method in typeof(IUserManager).GetMethods().Where(candidate => candidate.Name == name && !candidate.IsSpecialName))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:184:            .Where(type => Members(type).Any(parameter => typeof(IUserManager).IsAssignableFrom(parameter)))
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:228:        var named = typeof(IUserManager)
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:269:        var named = typeof(IUserManager)
+    Jellyfin.Plugin.Invites.Tests/AccountsAreNeverWrittenTests.cs:280:        var reached = typeof(IUserManager)
     Jellyfin.Plugin.Invites.Tests/RevocationTests.cs:132:    /// something after the next edit. Add an <c>IUserManager</c> parameter and
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountNames.cs:31:/// <c>GetUserByName(string)</c> is declared on <c>IUserManager</c> at both tags,
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountNames.cs:54:    private readonly IUserManager _users;
+    Jellyfin.Plugin.Invites/Accounts/ServerAccountNames.cs:61:    public ServerAccountNames(IUserManager users)
     Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:41:/// implement <see cref="IUserManager"/>, and <c>ChangePassword</c> is a member
     Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:75:    private readonly IUserManager _users;
     Jellyfin.Plugin.Invites/Accounts/ServerAccountWrites.cs:81:    public ServerAccountWrites(IUserManager users)
     Jellyfin.Plugin.Invites/Accounts/ServerAccounts.cs:56:    public ServerAccounts(IUserManager users)
 
-Five of the nine are in the suite and four are the plugin, and the direction the
-count moved in has changed meaning. The three that arrived under #91 were the
+Seven of the fourteen are in the suite and seven are the plugin, and the direction
+the count moved in has changed meaning. The three that arrived under #91 were the
 refusal naming the type in order to refuse it, so that move was the capability
 being held. Three of the four that arrived under #398 are the write seam itself,
-and that move is the plugin reaching further.
+and that move is the plugin reaching further. THIS PARAGRAPH SAID FIVE OF NINE
+AND FOUR OF NINE. The five that arrived under #67 are both moves at once: three
+are a third seam, which is the plugin reaching further, and two are the leg that
+holds that seam to one member of the user manager, which is the capability being
+held.
 
 The last line is the plugin. `ServerAccounts` asks the user manager for the
 identifier of every account and for nothing else, which is what
 `IServerAccounts` declares and what the load-time comparison landed under #46
-reads. It is not a type waiting for a caller: it is registered, and the hosted
+reads. The three lines above it are `ServerAccountNames`, which asks it whether
+one name is taken and for nothing else, and which #67 landed for the redemption
+route rather than for the load-time comparison. It is not a type waiting for a caller: it is registered, and the hosted
 service that reads it runs when the server starts.
 
     git grep -n 'IServerAccounts, ServerAccounts\|AddHostedService<LoadOnStart>' -- Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs
     Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:50:        serviceCollection.AddSingleton<IServerAccounts, ServerAccounts>();
-    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:61:        serviceCollection.AddHostedService<LoadOnStart>();
+    Jellyfin.Plugin.Invites/Startup/PluginServiceRegistrator.cs:62:        serviceCollection.AddHostedService<LoadOnStart>();
 
 Both numbers moved twice in one night and this paste is the second re-run: first
 by two, when the retention sweep from #59 was registered and its namespace
@@ -427,8 +439,8 @@ form reddens all three.
 THIS PASSAGE SAID THE POST THAT RECEIVES THEM IS ABSENT, AND IT IS NOT:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:172:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:269:    [HttpPost("{code}")]
 
 So this half of the line can be broken now, and it is held rather than left to
 the weakest of reasons. What the passage named as the gap was that the field list
@@ -452,7 +464,7 @@ code, and comparing the two copies ordinally is one of the rules that judgement
 applies:
 
     git grep -n 'public static AcceptedAnswers? Accept' -- Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs
-    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:102:    public static AcceptedAnswers? Accept(SetupSubmission? submission, HttpRequest? request)
+    Jellyfin.Plugin.Invites/Controllers/SetupAnswers.cs:104:    public static AcceptedAnswers? Accept(SetupSubmission? submission, HttpRequest? request)
 
 What has not changed is the response. A disagreement is answered with the bare
 bad request every malformed post gets, rather than with the form again carrying
