@@ -76,7 +76,8 @@ archive, hashed one, or put a package to a server; whether a package a manifest
 offers loads is #123's recorded manual check and is a person at a machine.
 
 It does not say the freshness run reaches anybody. A red scheduled run sits in a
-run list on this repository and raises nothing an operator or a maintainer sees.
+run list on this repository, raises nothing an operator of a server sees, and
+reaches me only if I go and look at it.
 Building a notifier is not proposed here and no issue is opened for it by this
 page.
 
