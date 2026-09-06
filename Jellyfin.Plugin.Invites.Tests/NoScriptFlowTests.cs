@@ -36,10 +36,12 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// weakness the issue's own notes record: it cannot say a browser with script
 /// off behaves the same. What it CAN say is the half that matters, that nothing
 /// in the request needed anything but the page and the person. The other half is
-/// closed by the page carrying no script at all, which
+/// closed by the pages carrying no script at all, which
 /// <c>SetupPageTests.ThePageRunsNoScript</c> and
 /// <c>RefusalPageTests.ThePageLoadsNothingAndRunsNothing</c> hold for the two
-/// pages this route serves.
+/// pages this route serves under a code, and
+/// <c>CompletionRouteTests.TheCompletionPageCarriesNoCodeAndNoPassword</c> for
+/// the one the redirect lands on.
 /// </para>
 /// <para>
 /// <b>No web host and no browser.</b> The controller is an ordinary object and
@@ -78,14 +80,24 @@ public class NoScriptFlowTests
     /// <summary>
     /// A person who never ran a line of script gets an account: one request for
     /// the page, one request carrying back what the page gave them plus what
-    /// they typed, and the redirect that ends the flow.
+    /// they typed, the redirect, and the page it lands on, which is where the
+    /// flow ends and which carries no script either.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The cookie is carried the way a browser carries one, taken off the
     /// <c>Set-Cookie</c> the first response wrote and cut at the first
     /// attribute. Nothing else crosses between the two requests, so a flow that
     /// needed a value neither the page nor the person supplied could not be
     /// completed here at all.
+    /// </para>
+    /// <para>
+    /// The third request carries nothing at all, not even what the browser
+    /// kept. A browser reaches the completion by following the see-other with a
+    /// plain request, and #79 chose that address to read no invitation, so a
+    /// completion that needed the cookie, the code or the body to answer would
+    /// be one this flow could not end at.
+    /// </para>
     /// </remarks>
     /// <returns>Nothing a caller reads.</returns>
     [Fact]
@@ -108,6 +120,14 @@ public class NoScriptFlowTests
 
         Assert.Equal(StatusCodes.Status303SeeOther, Assert.IsType<StatusCodeResult>(answer).StatusCode);
         Assert.Equal("/redeem/done", posting.Response.Headers.Location.ToString());
+
+        var following = new DefaultHttpContext();
+        var completion = RedeemRoute.Over(directory.Path, clock, seam, following).Done();
+
+        Assert.Null(completion.StatusCode);
+        Assert.Equal(CompletionPage.ContentType, completion.ContentType);
+        Assert.Equal(CompletionPage.Html, completion.Content);
+        Assert.DoesNotContain("<script", completion.Content!, StringComparison.OrdinalIgnoreCase);
 
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, stored.UsesRemaining);
