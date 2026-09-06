@@ -20,9 +20,10 @@ what nothing serves, `ApiDocumentTests` holds it against the assembly on every
 run, and a count in a sentence is read by nobody.
 
 The administrator operations landed under #82, and the fifth of them, rotation
-of the hash secret, under #30. Two of the three redemption routes answer: the
-page landed under #74 and the post that receives its form landed after it. The
-completion address is #79 and is served by nothing.
+of the hash secret, under #30. All three redemption routes answer: the page
+landed under #74, the post that receives its form landed after it, and the
+completion address landed under #79. THIS LAST SENTENCE SAID THE COMPLETION
+ADDRESS WAS SERVED BY NOTHING.
 
 THIS SENTENCE SAID THE REDEMPTION ROUTES ARE #74 AND #75, AND THEN THAT ONE OF
 THE THREE ANSWERS. The first was written on 2026-08-21, ten days before #71 split
@@ -157,6 +158,14 @@ message. A route with nothing to look up cannot do that.
 
 It follows that the page says nothing specific to the account that was just
 created. Whatever it says, it says to anybody who visits it.
+
+What it says is that setting up is finished and where to sign in, and the
+sign-in is the server's own: this plugin mints no session, which is
+[docs/redemption-flow.md](redemption-flow.md)'s decision under what that flow
+does not cover. The link on the page is relative and points at the address the
+server's web client is served from, so a server started without one answers
+nothing there; such a server has no sign-in page at all, and whoever invited the
+person has to tell them where to go instead.
 
 ## The administrator routes
 
@@ -454,13 +463,15 @@ the plugin assembly does not register, so a route that starts answering while
 its line is still here reds, and so does a heading with neither a controller nor
 a line behind it.
 
-- `GET /redeem/done`
+The register is empty. `GET /redeem/done` was its last line and it left with the
+route that serves it, under #79, so every heading above is answered by the
+assembly.
 
 A line leaves in the change that lands its route, and the last one to leave
 empties the section rather than deleting it. This is not the heading list said
 twice: a heading says the route is decided, a line here says nothing serves it,
 and the day those two stop agreeing is the day this page starts lying about the
-plugin.
+plugin. The section stays for the next route that is decided before it is built.
 
 ## What is not claimed
 
@@ -468,13 +479,13 @@ Nothing here has been measured against a running server. That much is unchanged
 and it is the sentence worth keeping.
 
 The reason given for it was that none of these routes exists, and that stopped
-being true without the sentence moving. Six of the seven headings above are
-served by the assembly now, and the one that is not is the one the section
-above lists, which the suite holds rather than a reader. So the claim is
+being true without the sentence moving. THIS PARAGRAPH THEN SAID SIX OF THE
+SEVEN HEADINGS WERE SERVED. All seven are, since #79 landed the completion
+route, and the register above is empty rather than short by one. So the claim is
 narrowed rather than dropped: what has not been measured is this page against a
-server, and what is now source rather than intention is whatever the register
-above does not name. A sentence saying every heading is a decision about what
-will be built was true when it was written and is not true now.
+server, and every heading above is source rather than intention. A sentence
+saying every heading is a decision about what will be built was true when it was
+written and is not true now.
 
 What holds this page against the source is `ApiDocumentTests`, and it reads
 routes rather than files: the controllers are discovered through the same

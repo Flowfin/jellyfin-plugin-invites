@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Your account is ready</title>
+        <!--
+      The end of the flow, and an address of its own. docs/api.md fixes it as a
+      route that takes no parameters and reads no invitation, which is what makes
+      a refresh and a back button harmless: there is nothing here to look up, so
+      a finished redemption cannot be turned into a refusal by meeting the spent
+      record it produced.
+
+      Nothing on this page is specific to the account that was just created. It
+      says the same thing to anybody who visits it, which follows from the route
+      reading nothing, and it is also why it may sit in a browser history on a
+      shared machine. There is no code on it and no password on it, and
+      CompletionPageTests asserts both rather than leaving it to a reader.
+
+      The sign-in is the server's own. This plugin mints no session: the first
+      authentication of the new account goes through exactly the path every later
+      one will, which is docs/redemption-flow.md's decision under what this flow
+      does not cover. The link is relative, so it stays on the server the person
+      already reached rather than on an address this page would have to be told.
+
+      One stylesheet, in the page, for the reason the other two served pages give:
+      a second file would be a second route. The content security policy carries
+      the hash of exactly this element, computed from these bytes as they are
+      served.
+    -->
+        <style>
+            :root {
+                color-scheme: light dark;
+            }
+
+            body {
+                margin: 0;
+                padding: 2rem 1rem;
+                font-family: system-ui, sans-serif;
+                line-height: 1.5;
+            }
+
+            main {
+                max-width: 26rem;
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Your account is ready</h1>
+            <p>
+                Setting up is finished. Sign in with the name and the password you just chose, the
+                same way you will every time after this one.
+            </p>
+            <p><a href="/web/">Go to the sign-in page</a></p>
+            <p>
+                The invitation link you followed has done its work and is not needed again. This
+                page shows nothing about your account, so it is safe to leave open.
+            </p>
+        </main>
+    </body>
+</html>

@@ -35,9 +35,10 @@ THIS PARAGRAPH SAID THE FOURTH IS REACHED BY NOTHING. All four have a caller.
 So this document is no longer a page of promises, and the states below are worth
 reading with that in mind. What a reader should not take from the landing is that
 the flow is walked end to end. Which transitions act and which are still promises
-is written at the branch table rather than counted here, and three of the states
-below name work no route does: `Done` is #79 and is served by nothing, so a
-finished redemption ends at the server's own not-found page. The anti-forgery
+is written at the branch table rather than counted here. THIS SENTENCE SAID
+THREE OF THE STATES BELOW NAME WORK NO ROUTE DOES AND THAT `Done` IS SERVED BY
+NOTHING. #79 landed it: a finished redemption is sent to a page this plugin
+serves, which reads no invitation and can therefore be refreshed. The anti-forgery
 token in `Form` and `Posted` was named here as one of them and is not one any
 more; #78 landed it, and `AntiForgeryTests` drives both states. The `Validated` state is reached: the post
 judges the answers it was sent before it judges the code, and the one answer it
