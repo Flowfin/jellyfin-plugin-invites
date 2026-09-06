@@ -69,7 +69,7 @@ type. The old command now exits 0 and would have read as this claim being
 refuted rather than as a proxy that had stopped fitting:
 
     $ git grep -n 'Append(' -- 'Jellyfin.Plugin.Invites/*.cs' ':!*AttemptTrail.cs'
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:160:        Response.Cookies.Append(
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:169:        Response.Cookies.Append(
 
 What the sentence claims did not move. The replacement names the entry type
 rather than a verb, so it answers the question the sentence asks and no other
@@ -162,7 +162,7 @@ THIS PARAGRAPH SAID NOTHING TAKES A SUBMISSION YET. Something does:
     exit=0
 
     $ git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 So these rows describe values that reach the plugin on a running server, and
 each one is now a claim about behaviour rather than a plan.

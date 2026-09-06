@@ -20,8 +20,8 @@ THAT PARAGRAPH THEN SAID NONE OF THEM HAS A CALLER, BECAUSE THE POST THIS FLOW
 TURNS ON DOES NOT EXIST. It exists, and three of the four have a caller:
 
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 The post asks the limiter, asks the decision and calls the creation routine, and
 it reaches the password rules too, through the judgement it makes about the
@@ -225,7 +225,7 @@ count, all inside one monitor, and only then does the route call the creation
 routine:
 
     git grep -n 'var reservation = _operations.Reserve(code);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:264:        var reservation = _operations.Reserve(code);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:307:        var reservation = _operations.Reserve(code);
 
 That is the first of the two answers #53 offers, writing the intent before the
 account exists, and it is chosen for the reason that issue gives: prefer the

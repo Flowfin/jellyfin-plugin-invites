@@ -15,8 +15,8 @@ and it creates the account the invitation grants.
     git ls-files 'Jellyfin.Plugin.Invites/*.cs' | grep -c '\.cs$'
     80
     git grep -nE '\[Http(Get|Post)' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:148:    [HttpGet("{code}")]
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:157:    [HttpGet("{code}")]
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 
 What is still missing around it is worth having in front of a reader comparing
 this plugin with the one they are leaving: the form is not validated on the

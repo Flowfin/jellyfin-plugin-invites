@@ -19,7 +19,7 @@ what [docs/api.md](api.md) says at that route: the setup page is served there fo
 every code, because that route reads no invitation.
 
     git grep -n 'var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:322:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:365:        var refusal = Content(RefusalPage.Html, RefusalPage.ContentType);
 
 This document is still what the rest is built against, and it is a decision
 rather than a description of behaviour: the wording, the case list and the
@@ -199,11 +199,11 @@ description of one:
   are read off the route rather than listed from memory:
 
       git grep -nE 'headers\.(ContentSecurityPolicy|XFrameOptions|XContentTypeOptions|CacheControl)|headers\[ReferrerPolicy\]' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:354:        headers.ContentSecurityPolicy = policy;
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:355:        headers.XFrameOptions = "DENY";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:356:        headers.XContentTypeOptions = "nosniff";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:357:        headers.CacheControl = "no-store";
-      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:358:        headers[ReferrerPolicy] = "no-referrer";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:397:        headers.ContentSecurityPolicy = policy;
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:398:        headers.XFrameOptions = "DENY";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:399:        headers.XContentTypeOptions = "nosniff";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:400:        headers.CacheControl = "no-store";
+      Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:401:        headers[ReferrerPolicy] = "no-referrer";
 
   EVERY LINE NUMBER IN THAT PASTE MOVED BY THREE WHEN THE ROUTE TOOK THE
   CEILING ON HOW MANY ACCOUNTS MAY BE CREATED IN A WINDOW, and none of the five
@@ -320,7 +320,7 @@ It belonged to the route that first serves a refusal, that route is the post, an
 the post picked `403 Forbidden`:
 
     git grep -n 'refusal.StatusCode = StatusCodes.Status403Forbidden;' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:323:        refusal.StatusCode = StatusCodes.Status403Forbidden;
+    Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:366:        refusal.StatusCode = StatusCodes.Status403Forbidden;
 
 Why that one, in the terms this page argues everything else in. It is true of
 every case in the table without narrowing any of them: the server understood the

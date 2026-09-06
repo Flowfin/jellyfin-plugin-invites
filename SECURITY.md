@@ -261,7 +261,7 @@ exit=0
 
 ```
 git grep -n 'HttpPost' -- Jellyfin.Plugin.Invites/Controllers/RedeemController.cs
-Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:210:    [HttpPost("{code}")]
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:253:    [HttpPost("{code}")]
 ```
 
 They are held on that route and the assertion is at the route level, which is
@@ -277,7 +277,7 @@ is refused on the same route, ahead of the record being read:
 ```
 git grep -n 'MayCreate()' -- 'Jellyfin.Plugin.Invites/*.cs'
 Jellyfin.Plugin.Invites/Accounts/CreationCeiling.cs:125:    public bool MayCreate()
-Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:259:        if (!_ceiling.MayCreate())
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:302:        if (!_ceiling.MayCreate())
 ```
 
 So every row of that page is in the comparison, and
@@ -299,7 +299,7 @@ counter now, and the same command over the same sources returns two:
 
 ```
 git grep -n 'MayJudge' -- 'Jellyfin.Plugin.Invites/*.cs'
-Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:249:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
+Jellyfin.Plugin.Invites/Controllers/RedeemController.cs:292:        if (!_limiter.MayJudge(from) || !_operations.StoreIsAvailable)
 Jellyfin.Plugin.Invites/Redemption/AttemptLimiter.cs:171:    public bool MayJudge(string sourceAddress)
 ```
 
