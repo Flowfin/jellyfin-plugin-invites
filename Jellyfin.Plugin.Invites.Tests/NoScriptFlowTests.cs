@@ -37,9 +37,11 @@ namespace Jellyfin.Plugin.Invites.Tests;
 /// off behaves the same. What it CAN say is the half that matters, that nothing
 /// in the request needed anything but the page and the person. The other half is
 /// closed by the page carrying no script at all, which
-/// <c>SetupPageTests.ThePageRunsNoScript</c> and
-/// <c>RefusalPageTests.ThePageLoadsNothingAndRunsNothing</c> hold for the two
-/// pages this route serves.
+/// <c>SetupPageTests.ThePageRunsNoScript</c>,
+/// <c>RefusalPageTests.ThePageLoadsNothingAndRunsNothing</c> and
+/// <c>CompletionRouteTests.TheCompletionPageRunsNoScript</c> hold for the three
+/// pages this route serves. That sentence named two of them and this route has
+/// served three since the completion landed.
 /// </para>
 /// <para>
 /// <b>No web host and no browser.</b> The controller is an ordinary object and
@@ -112,6 +114,71 @@ public class NoScriptFlowTests
         var stored = Assert.Single(new InvitationStore(directory.Path).Read().Invitations);
         Assert.Equal(0, stored.UsesRemaining);
         Assert.Equal(seam.Answers, Assert.Single(stored.AccountsProduced).Account);
+    }
+
+    /// <summary>
+    /// The same person reaches the end of the flow: the address the post wrote
+    /// is followed, and what is served there is a page of this plugin's that
+    /// runs nothing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The test above stops at the see-other, which is where #80's remaining
+    /// clause sat: a flow whose last hop lands on the server's own not-found
+    /// page completes for nobody, and a redirect asserted alone cannot tell the
+    /// two apart. So the location is read OFF the response rather than typed
+    /// here, and the last request is built bare rather than by the helper the
+    /// two requests before it use: no cookie, no body, no code. A browser does
+    /// send its cookies when it follows a see-other, so this is stronger than
+    /// what a browser would do rather than a copy of it, and what it says is
+    /// that the page at the end of the flow needs nothing the person kept.
+    /// </para>
+    /// <para>
+    /// <b>What holds the join.</b> That the address the redirect names is the
+    /// one the completion action answers is
+    /// <c>CompletionRouteTests.TheAddressThePostRedirectsToIsOneThisRouteAnswers</c>,
+    /// read off the action's own attributes; it is referenced rather than
+    /// restated, so there is one place that goes red when a template moves.
+    /// What this adds is the half that belongs to this file: the whole sequence
+    /// driven from the served bytes, ending at a page that runs nothing.
+    /// </para>
+    /// <para>
+    /// <b>What it does not say.</b> No router resolved the address and no
+    /// browser followed it. The suite has no web host, which is the headless
+    /// rule, so the last hop is the completion action called directly over a
+    /// context this test owns.
+    /// </para>
+    /// </remarks>
+    /// <returns>Nothing a caller reads.</returns>
+    [Fact]
+    public async Task APersonWhoRanNoScriptReachesTheLastPageAndItRunsNothing()
+    {
+        using var directory = new OwnedDirectory();
+        var clock = new TestClock(_minted);
+        var minted = RedeemRoute.Mint(directory.Path, clock, uses: 1);
+        var seam = new ARecordingWriteSeam();
+
+        var serving = RedeemRoute.Request();
+        var page = RedeemRoute.Over(directory.Path, clock, seam, serving).Page();
+
+        var body = WhatABrowserWouldSend(page.Content!);
+        var posting = Carrying(WhatABrowserWouldKeep(serving.Response.Headers), body);
+
+        var answer = await RedeemRoute
+            .Over(directory.Path, clock, seam, posting)
+            .Submit(minted.Code, Bound(body));
+
+        Assert.Equal(StatusCodes.Status303SeeOther, Assert.IsType<StatusCodeResult>(answer).StatusCode);
+
+        var following = new DefaultHttpContext();
+        following.Request.Path = posting.Response.Headers.Location.ToString();
+        Assert.Equal(0, following.Request.Headers.Cookie.Count);
+
+        var last = RedeemRoute.Over(directory.Path, clock, seam, following).Done();
+
+        Assert.Equal(CompletionPage.Html, last.Content);
+        Assert.Null(last.StatusCode);
+        Assert.DoesNotContain("<script", last.Content, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

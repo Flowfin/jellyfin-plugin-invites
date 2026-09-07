@@ -267,6 +267,48 @@ public class CompletionRouteTests
     }
 
     /// <summary>
+    /// There is no script on the completion page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The neighbours of this assertion are
+    /// <c>SetupPageTests.ThePageRunsNoScript</c> and
+    /// <c>RefusalPageTests.ThePageLoadsNothingAndRunsNothing</c>, and this route
+    /// serves three pages rather than the two those two cover. #80 asks that the
+    /// whole flow work with script disabled, and the flow's last page had no
+    /// assertion named for that property.
+    /// </para>
+    /// <para>
+    /// <b>One of its three spellings was already refused, and this says which.</b>
+    /// <see cref="TheCompletionPageCarriesNoCodeAndNoPassword"/> ends on a
+    /// script element, so that spelling reds there today; what nothing held is
+    /// the other two, and both were put to a fault at this commit. A handler
+    /// attribute and a <c>javascript:</c> address were each added to the page in
+    /// turn, and each time this test was the only one in either file that went
+    /// red. So what is added is those two spellings and a home named for the
+    /// property, rather than cover where there was none.
+    /// </para>
+    /// <para>
+    /// It matches spellings, which is the same bound the two neighbours carry: a
+    /// handler attribute spelled outside the list below, or script reached in
+    /// some form nobody anticipated, walks through it. What stands behind it in
+    /// the browser is the page's own policy, which admits no script at all.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheCompletionPageRunsNoScript()
+    {
+        string[] handlers =
+            ["onclick", "onload", "onsubmit", "onerror", "onfocus", "oninput", "onchange"];
+
+        Assert.DoesNotContain("<script", CompletionPage.Html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("javascript:", CompletionPage.Html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            handlers,
+            handler => CompletionPage.Html.Contains(handler, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// The literal segment cannot shadow a code.
     /// </summary>
     /// <remarks>
