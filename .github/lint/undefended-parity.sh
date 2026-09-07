@@ -55,6 +55,19 @@
 # carries one today and the rule would otherwise refuse the first one somebody
 # adds to a single page.
 #
+# A third leg reads neither document. It reads the tracked path list and refuses
+# a path other than SECURITY.md whose basename an analysis reads as the security
+# policy. The check that scores this repository matches the basename and stops
+# at the first path it finds, so a fixture named after the real file is the
+# document an outside reader is scored on, and the two legs above stay green
+# while it happens - they read the path they are given and never ask which path
+# somebody else would have read.
+#
+# What it does not refuse. Whether the policy it protects says anything worth
+# reading; that is the two legs above and the review. And a basename outside the
+# list it carries: the list is the one the analysis matches today, so a name
+# added upstream tomorrow walks through until the list moves.
+#
 # Two modes:
 #   check             read the two tracked documents and judge them
 #   selftest          fail unless the rule fires on each tripping fixture, names
@@ -68,6 +81,20 @@ FIXTURES=".github/lint/fixtures/undefended-parity"
 THREAT_MODEL='docs/threat-model.md'
 POLICY='SECURITY.md'
 HEADING='## What is not defended'
+
+# The fixture policy is NOT named after the real one, and the reason is the
+# third leg below. A supply-chain analysis looks for the policy by basename and
+# reads the first path it matches, so a fixture called SECURITY.md six
+# directories down is the file an outside reader is scored on. That is not a
+# hypothetical: it scored this repository on 842 bytes of fixture prose for a
+# month. The fixture mirrors the real document in everything except its name.
+FIXTURE_POLICY='policy.md'
+
+# The basenames an analysis reads as this repository's security policy, lower
+# case. Taken from the set the OpenSSF Scorecard check matches; a name added
+# there later is a name this list does not hold, which is what the leg's own
+# output says rather than claiming coverage.
+POLICY_BASENAMES='security.md security.markdown security.adoc security.rst'
 
 fail=0
 
@@ -200,6 +227,37 @@ judge() {
   return 0
 }
 
+# Every tracked path whose basename an analysis would read as this repository's
+# security policy, except the policy itself. Reads the path list on stdin so the
+# selftest can hand it a list it wrote rather than the tree it is running in.
+paths_read_as_the_policy() {
+  local line lowered base
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    lowered=$(printf '%s' "$line" | tr '[:upper:]' '[:lower:]')
+    base="${lowered##*/}"
+    case " ${POLICY_BASENAMES} " in
+      *" ${base} "*) [ "$line" = "$POLICY" ] || printf '%s\n' "$line" ;;
+    esac
+  done
+}
+
+# Judges one path list. Prints every path that shadows the policy and sets fail.
+judge_policy_names() {
+  local label="$1" shadows
+  shadows=$(paths_read_as_the_policy)
+
+  if [ -n "$shadows" ]; then
+    echo "::error::${label}: a tracked path other than ${POLICY} carries a basename an analysis reads as the security policy. The check that scores this repository matches the basename and stops at the first path it finds, so the document an outside reader is scored on is whichever of these git lists first - not the policy."
+    printf '%s\n' "$shadows" | sed 's/^/  /'
+    fail=1
+    return 1
+  fi
+
+  echo "ok    ${label}: no tracked path but ${POLICY} is read as the policy"
+  return 0
+}
+
 cmd_check() {
   local root="${1:-.}"
   local model_file="${root%/}/${THREAT_MODEL}"
@@ -216,6 +274,10 @@ cmd_check() {
 
   judge "$model_file" "$policy_file" "tree"
   judge_quotations "$model_file" "$policy_file" "tree"
+  # Process substitution rather than a pipe: a function on the right of a pipe
+  # runs in a subshell, and the fail it sets there is lost. That was written as a
+  # pipe first and the leg printed its refusal while the check exited 0.
+  judge_policy_names "tree" < <(git -C "$root" ls-files)
   return $fail
 }
 
@@ -236,14 +298,14 @@ cmd_selftest() {
     IFS='@' read -r name expected <<< "$entry"
     dir="${FIXTURES}/${name}"
 
-    if [ ! -f "${dir}/threat-model.md" ] || [ ! -f "${dir}/SECURITY.md" ]; then
-      echo "::error::${name}: missing a fixture. Every case owns ${dir}/threat-model.md and ${dir}/SECURITY.md."
+    if [ ! -f "${dir}/threat-model.md" ] || [ ! -f "${dir}/${FIXTURE_POLICY}" ]; then
+      echo "::error::${name}: missing a fixture. Every case owns ${dir}/threat-model.md and ${dir}/${FIXTURE_POLICY}."
       fail=1
       continue
     fi
 
     model_items=$(items_in_the_section "${dir}/threat-model.md")
-    policy_paragraphs=$(paragraphs_in_the_section "${dir}/SECURITY.md")
+    policy_paragraphs=$(paragraphs_in_the_section "${dir}/${FIXTURE_POLICY}")
     missing=$(comm -23 <(printf '%s\n' "$model_items" | sort) \
                        <(printf '%s\n' "$policy_paragraphs" | sort))
 
@@ -297,14 +359,14 @@ cmd_selftest_quotations() {
     IFS='@' read -r name want_dropped want_added <<< "$entry"
     dir="${FIXTURES}/${name}"
 
-    if [ ! -f "${dir}/threat-model.md" ] || [ ! -f "${dir}/SECURITY.md" ]; then
-      echo "::error::${name}: missing a fixture. Every case owns ${dir}/threat-model.md and ${dir}/SECURITY.md."
+    if [ ! -f "${dir}/threat-model.md" ] || [ ! -f "${dir}/${FIXTURE_POLICY}" ]; then
+      echo "::error::${name}: missing a fixture. Every case owns ${dir}/threat-model.md and ${dir}/${FIXTURE_POLICY}."
       fail=1
       continue
     fi
 
     model_quotes=$(quotations_in "${dir}/threat-model.md")
-    policy_quotes=$(quotations_in "${dir}/SECURITY.md")
+    policy_quotes=$(quotations_in "${dir}/${FIXTURE_POLICY}")
     dropped=$(comm -23 <(printf '%s
 ' "$model_quotes" | sort)                        <(printf '%s
 ' "$policy_quotes" | sort))
@@ -338,8 +400,65 @@ cmd_selftest_quotations() {
   return $fail
 }
 
+# The third leg's own cases. It reads a path list rather than a pair of
+# documents, so its fixtures are lists written here: a tree that is clean, three
+# that shadow the policy in the three ways this has actually been reached, and
+# the near misses that have to stay quiet. The near misses are the half worth
+# spending the effort on - a rule that named docs/security-policy.md would be
+# refusing an ordinary document for a resemblance.
+cmd_selftest_policy_names() {
+  local clean shadowed near_misses got want
+
+  clean='SECURITY.md
+docs/threat-model.md
+.github/lint/fixtures/undefended-parity/clean/policy.md'
+
+  # One per way this is reached: a second policy at a path the analysis names
+  # itself, a fixture named after the real file, and a spelling that differs
+  # from the policy only in case and extension.
+  shadowed='.github/SECURITY.md
+.github/lint/fixtures/undefended-parity/clean/SECURITY.md
+docs/Security.RST'
+
+  near_misses='docs/security-policy.md
+SECURITY.md.bak
+docs/security.txt
+Jellyfin.Plugin.Invites/Security.cs'
+
+  got=$(printf '%s\n' "$clean" | paths_read_as_the_policy)
+  if [ -n "$got" ]; then
+    echo "::error::policy-names clean: a tree with only the real policy is refused. The leg would red a pull request that had done nothing wrong."
+    printf '%s\n' "$got" | sed 's/^/  /'
+    fail=1
+  else
+    echo "bites policy-names clean: the policy itself is not read as a shadow of itself"
+  fi
+
+  want="$shadowed"
+  got=$(printf '%s\n' "$shadowed" | paths_read_as_the_policy)
+  if [ "$got" != "$want" ]; then
+    echo "::error::policy-names trip: expected every shadowing path to be named and only those."
+    echo "  expected: $(printf '%s' "$want" | tr '\n' ' ')"
+    echo "  got:      $(printf '%s' "$got" | tr '\n' ' ')"
+    fail=1
+  else
+    echo "bites policy-names trip: $(printf '%s\n' "$got" | grep -c .) shadowing path(s) named"
+  fi
+
+  got=$(printf '%s\n' "$near_misses" | paths_read_as_the_policy)
+  if [ -n "$got" ]; then
+    echo "::error::policy-names near-miss: a path an analysis does not read as the policy is named. A rule that refuses an ordinary document for its resemblance to the policy is worse than none."
+    printf '%s\n' "$got" | sed 's/^/  /'
+    fail=1
+  else
+    echo "bites policy-names near-miss: $(printf '%s\n' "$near_misses" | grep -c .) neighbouring path(s), none named"
+  fi
+
+  return $fail
+}
+
 case "${1:-}" in
   check)    cmd_check "${2:-.}" ;;
-  selftest) cmd_selftest; cmd_selftest_quotations ;;
+  selftest) cmd_selftest; cmd_selftest_quotations; cmd_selftest_policy_names ;;
   *)        echo "usage: $0 check [root] | $0 selftest" >&2; exit 2 ;;
 esac
